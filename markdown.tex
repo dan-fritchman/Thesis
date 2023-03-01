@@ -1,0 +1,603 @@
+%%
+%% This is file `markdown.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% markdown.dtx  (with options: `tex')
+%% 
+%% Copyright (C) 2016-2019 Vít Novotný
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status `maintained'.
+%% The Current Maintainer of this work is Vít Novotný.
+%% 
+%% Send bug reports, requests for additions and questions
+%% either to the GitHub issue tracker at
+%% 
+%%   https://github.com/Witiko/markdown/issues
+%% 
+%% or to the e-mail address <witiko@mail.muni.cz>.
+%% 
+%% MODIFICATION ADVICE:
+%% 
+%% If you want to customize this file, it is best to make a copy of
+%% the source file(s) from which it was produced.  Use a different
+%% name for your copy(ies) and modify the copy(ies); this will ensure
+%% that your modifications do not get overwritten when you install a
+%% new release of the standard system.  You should also ensure that
+%% your modified source file does not generate any modified file with
+%% the same name as a standard file.
+%% 
+%% You will also need to produce your own, suitably named, .ins file to
+%% control the generation of files from your source file; this file
+%% should contain your own preambles for the files it generates, not
+%% those in the standard .ins files.
+%% 
+%% The names of the source files used are shown above.
+%% 
+\def\markdownLastModified{2019/04/30}%
+\def\markdownVersion{2.8.1}%
+\let\markdownBegin\relax
+\let\markdownEnd\relax
+\let\markdownInput\relax
+\def\markdownOptionHelperScriptFileName{\jobname.markdown.lua}%
+\def\markdownOptionInputTempFileName{\jobname.markdown.in}%
+\def\markdownOptionOutputTempFileName{\jobname.markdown.out}%
+\def\markdownOptionErrorTempFileName{\jobname.markdown.err}%
+\def\markdownOptionOutputDir{.}%
+\def\markdownOptionCacheDir{\markdownOptionOutputDir/_markdown_\jobname}%
+\let\markdownOptionBlankBeforeBlockquote\undefined
+\let\markdownOptionBlankBeforeCodeFence\undefined
+\let\markdownOptionBlankBeforeHeading\undefined
+\let\markdownOptionBreakableBlockquotes\undefined
+\let\markdownOptionCitations\undefined
+\let\markdownOptionCitationNbsps\undefined
+\let\markdownOptionContentBlocks\undefined
+\let\markdownOptionContentBlocksLanguageMap\undefined
+\let\markdownOptionDefinitionLists\undefined
+\let\markdownOptionFootnotes\undefined
+\let\markdownOptionFencedCode\undefined
+\let\markdownOptionHashEnumerators\undefined
+\let\markdownOptionHeaderAttributes\undefined
+\let\markdownOptionHtml\undefined
+\let\markdownOptionHybrid\undefined
+\let\markdownOptionInlineFootnotes\undefined
+\let\markdownOptionPipeTables\undefined
+\let\markdownOptionPreserveTabs\undefined
+\let\markdownOptionShiftHeadings\undefined
+\let\markdownOptionSlice\undefined
+\let\markdownOptionSmartEllipses\undefined
+\let\markdownOptionStartNumber\undefined
+\let\markdownOptionTableCaptions\undefined
+\let\markdownOptionTightLists\undefined
+\def\markdownOptionStripPercentSigns{false}%
+\def\markdownIfOption#1{%
+  \def\next##1##2##3##4##5{%
+    \expandafter\def\expandafter\next\expandafter{%
+      \csname iffalse\endcsname}%
+    \if##1t\if##2r\if##3u\if##4e
+      \expandafter\def\expandafter\next\expandafter{%
+        \csname iftrue\endcsname}%
+    \fi\fi\fi\fi
+    \next}%
+  \expandafter\expandafter\expandafter\next
+    \csname markdownOption#1\endcsname\relax\relax\relax\relax\relax}
+\def\markdownRendererInterblockSeparator{%
+  \markdownRendererInterblockSeparatorPrototype}%
+\def\markdownRendererLineBreak{%
+  \markdownRendererLineBreakPrototype}%
+\def\markdownRendererEllipsis{%
+  \markdownRendererEllipsisPrototype}%
+\def\markdownRendererNbsp{%
+  \markdownRendererNbspPrototype}%
+\def\markdownRendererLeftBrace{%
+  \markdownRendererLeftBracePrototype}%
+\def\markdownRendererRightBrace{%
+  \markdownRendererRightBracePrototype}%
+\def\markdownRendererDollarSign{%
+  \markdownRendererDollarSignPrototype}%
+\def\markdownRendererPercentSign{%
+  \markdownRendererPercentSignPrototype}%
+\def\markdownRendererAmpersand{%
+  \markdownRendererAmpersandPrototype}%
+\def\markdownRendererUnderscore{%
+  \markdownRendererUnderscorePrototype}%
+\def\markdownRendererHash{%
+  \markdownRendererHashPrototype}%
+\def\markdownRendererCircumflex{%
+  \markdownRendererCircumflexPrototype}%
+\def\markdownRendererBackslash{%
+  \markdownRendererBackslashPrototype}%
+\def\markdownRendererTilde{%
+  \markdownRendererTildePrototype}%
+\def\markdownRendererPipe{%
+  \markdownRendererPipePrototype}%
+\def\markdownRendererCodeSpan{%
+  \markdownRendererCodeSpanPrototype}%
+\def\markdownRendererLink{%
+  \markdownRendererLinkPrototype}%
+\def\markdownRendererImage{%
+  \markdownRendererImagePrototype}%
+\def\markdownRendererContentBlock{%
+  \markdownRendererContentBlockPrototype}%
+\def\markdownRendererContentBlockOnlineImage{%
+  \markdownRendererContentBlockOnlineImagePrototype}%
+\def\markdownRendererContentBlockCode{%
+  \markdownRendererContentBlockCodePrototype}%
+\def\markdownRendererUlBegin{%
+  \markdownRendererUlBeginPrototype}%
+\def\markdownRendererUlBeginTight{%
+  \markdownRendererUlBeginTightPrototype}%
+\def\markdownRendererUlItem{%
+  \markdownRendererUlItemPrototype}%
+\def\markdownRendererUlItemEnd{%
+  \markdownRendererUlItemEndPrototype}%
+\def\markdownRendererUlEnd{%
+  \markdownRendererUlEndPrototype}%
+\def\markdownRendererUlEndTight{%
+  \markdownRendererUlEndTightPrototype}%
+\def\markdownRendererOlBegin{%
+  \markdownRendererOlBeginPrototype}%
+\def\markdownRendererOlBeginTight{%
+  \markdownRendererOlBeginTightPrototype}%
+\def\markdownRendererOlItem{%
+  \markdownRendererOlItemPrototype}%
+\def\markdownRendererOlItemEnd{%
+  \markdownRendererOlItemEndPrototype}%
+\def\markdownRendererOlItemWithNumber{%
+  \markdownRendererOlItemWithNumberPrototype}%
+\def\markdownRendererOlEnd{%
+  \markdownRendererOlEndPrototype}%
+\def\markdownRendererOlEndTight{%
+  \markdownRendererOlEndTightPrototype}%
+\def\markdownRendererDlBegin{%
+  \markdownRendererDlBeginPrototype}%
+\def\markdownRendererDlBeginTight{%
+  \markdownRendererDlBeginTightPrototype}%
+\def\markdownRendererDlItem{%
+  \markdownRendererDlItemPrototype}%
+\def\markdownRendererDlItemEnd{%
+  \markdownRendererDlItemEndPrototype}%
+\def\markdownRendererDlDefinitionBegin{%
+  \markdownRendererDlDefinitionBeginPrototype}%
+\def\markdownRendererDlDefinitionEnd{%
+  \markdownRendererDlDefinitionEndPrototype}%
+\def\markdownRendererDlEnd{%
+  \markdownRendererDlEndPrototype}%
+\def\markdownRendererDlEndTight{%
+  \markdownRendererDlEndTightPrototype}%
+\def\markdownRendererEmphasis{%
+  \markdownRendererEmphasisPrototype}%
+\def\markdownRendererStrongEmphasis{%
+  \markdownRendererStrongEmphasisPrototype}%
+\def\markdownRendererBlockQuoteBegin{%
+  \markdownRendererBlockQuoteBeginPrototype}%
+\def\markdownRendererBlockQuoteEnd{%
+  \markdownRendererBlockQuoteEndPrototype}%
+\def\markdownRendererInputVerbatim{%
+  \markdownRendererInputVerbatimPrototype}%
+\def\markdownRendererInputFencedCode{%
+  \markdownRendererInputFencedCodePrototype}%
+\def\markdownRendererHeadingOne{%
+  \markdownRendererHeadingOnePrototype}%
+\def\markdownRendererHeadingTwo{%
+  \markdownRendererHeadingTwoPrototype}%
+\def\markdownRendererHeadingThree{%
+  \markdownRendererHeadingThreePrototype}%
+\def\markdownRendererHeadingFour{%
+  \markdownRendererHeadingFourPrototype}%
+\def\markdownRendererHeadingFive{%
+  \markdownRendererHeadingFivePrototype}%
+\def\markdownRendererHeadingSix{%
+  \markdownRendererHeadingSixPrototype}%
+\def\markdownRendererHorizontalRule{%
+  \markdownRendererHorizontalRulePrototype}%
+\def\markdownRendererFootnote{%
+  \markdownRendererFootnotePrototype}%
+\def\markdownRendererCite{%
+  \markdownRendererCitePrototype}%
+\def\markdownRendererTextCite{%
+  \markdownRendererTextCitePrototype}%
+\def\markdownRendererTable{%
+  \markdownRendererTablePrototype}%
+\def\markdownRendererInterblockSeparatorPrototype{}%
+\def\markdownRendererLineBreakPrototype{}%
+\def\markdownRendererEllipsisPrototype{}%
+\def\markdownRendererNbspPrototype{}%
+\def\markdownRendererLeftBracePrototype{}%
+\def\markdownRendererRightBracePrototype{}%
+\def\markdownRendererDollarSignPrototype{}%
+\def\markdownRendererPercentSignPrototype{}%
+\def\markdownRendererAmpersandPrototype{}%
+\def\markdownRendererUnderscorePrototype{}%
+\def\markdownRendererHashPrototype{}%
+\def\markdownRendererCircumflexPrototype{}%
+\def\markdownRendererBackslashPrototype{}%
+\def\markdownRendererTildePrototype{}%
+\def\markdownRendererPipePrototype{}%
+\def\markdownRendererCodeSpanPrototype#1{}%
+\def\markdownRendererLinkPrototype#1#2#3#4{}%
+\def\markdownRendererImagePrototype#1#2#3#4{}%
+\def\markdownRendererContentBlockPrototype#1#2#3#4{}%
+\def\markdownRendererContentBlockOnlineImagePrototype#1#2#3#4{}%
+\def\markdownRendererContentBlockCodePrototype#1#2#3#4#5{}%
+\def\markdownRendererUlBeginPrototype{}%
+\def\markdownRendererUlBeginTightPrototype{}%
+\def\markdownRendererUlItemPrototype{}%
+\def\markdownRendererUlItemEndPrototype{}%
+\def\markdownRendererUlEndPrototype{}%
+\def\markdownRendererUlEndTightPrototype{}%
+\def\markdownRendererOlBeginPrototype{}%
+\def\markdownRendererOlBeginTightPrototype{}%
+\def\markdownRendererOlItemPrototype{}%
+\def\markdownRendererOlItemWithNumberPrototype#1{}%
+\def\markdownRendererOlItemEndPrototype{}%
+\def\markdownRendererOlEndPrototype{}%
+\def\markdownRendererOlEndTightPrototype{}%
+\def\markdownRendererDlBeginPrototype{}%
+\def\markdownRendererDlBeginTightPrototype{}%
+\def\markdownRendererDlItemPrototype#1{}%
+\def\markdownRendererDlItemEndPrototype{}%
+\def\markdownRendererDlDefinitionBeginPrototype{}%
+\def\markdownRendererDlDefinitionEndPrototype{}%
+\def\markdownRendererDlEndPrototype{}%
+\def\markdownRendererDlEndTightPrototype{}%
+\def\markdownRendererEmphasisPrototype#1{}%
+\def\markdownRendererStrongEmphasisPrototype#1{}%
+\def\markdownRendererBlockQuoteBeginPrototype{}%
+\def\markdownRendererBlockQuoteEndPrototype{}%
+\def\markdownRendererInputVerbatimPrototype#1{}%
+\def\markdownRendererInputFencedCodePrototype#1#2{}%
+\def\markdownRendererHeadingOnePrototype#1{}%
+\def\markdownRendererHeadingTwoPrototype#1{}%
+\def\markdownRendererHeadingThreePrototype#1{}%
+\def\markdownRendererHeadingFourPrototype#1{}%
+\def\markdownRendererHeadingFivePrototype#1{}%
+\def\markdownRendererHeadingSixPrototype#1{}%
+\def\markdownRendererHorizontalRulePrototype{}%
+\def\markdownRendererFootnotePrototype#1{}%
+\def\markdownRendererCitePrototype#1{}%
+\def\markdownRendererTextCitePrototype#1{}%
+\def\markdownRendererTablePrototype#1#2#3{}%
+\def\markdownInfo#1{}%
+\def\markdownWarning#1{}%
+\def\markdownError#1#2{}%
+\let\markdownMakeOther\relax
+\let\markdownReadAndConvert\relax
+\begingroup
+  \catcode`\|=0\catcode`\\=12%
+  |gdef|markdownBegin{%
+    |markdownReadAndConvert{\markdownEnd}%
+                           {|markdownEnd}}%
+|endgroup
+\ifx\markdownMode\undefined
+  \ifx\directlua\undefined
+    \def\markdownMode{0}%
+  \else
+    \def\markdownMode{2}%
+  \fi
+\fi
+\def\markdownLuaRegisterIBCallback#1{\relax}%
+\def\markdownLuaUnregisterIBCallback#1{\relax}%
+\def\markdownInfo#1{%
+  \immediate\write-1{(l.\the\inputlineno) markdown.tex info: #1.}}%
+\def\markdownWarning#1{%
+  \immediate\write16{(l.\the\inputlineno) markdown.tex warning: #1}}%
+\def\markdownError#1#2{%
+  \errhelp{#2.}%
+  \errmessage{(l.\the\inputlineno) markdown.tex error: #1}}%
+\def\markdownRendererInterblockSeparatorPrototype{\par}%
+\def\markdownRendererLineBreakPrototype{\hfil\break}%
+\let\markdownRendererEllipsisPrototype\dots
+\def\markdownRendererNbspPrototype{~}%
+\def\markdownRendererLeftBracePrototype{\char`\{}%
+\def\markdownRendererRightBracePrototype{\char`\}}%
+\def\markdownRendererDollarSignPrototype{\char`$}%
+\def\markdownRendererPercentSignPrototype{\char`\%}%
+\def\markdownRendererAmpersandPrototype{\char`&}%
+\def\markdownRendererUnderscorePrototype{\char`_}%
+\def\markdownRendererHashPrototype{\char`\#}%
+\def\markdownRendererCircumflexPrototype{\char`^}%
+\def\markdownRendererBackslashPrototype{\char`\\}%
+\def\markdownRendererTildePrototype{\char`~}%
+\def\markdownRendererPipePrototype{|}%
+\def\markdownRendererCodeSpanPrototype#1{{\tt#1}}%
+\def\markdownRendererLinkPrototype#1#2#3#4{#2}%
+\def\markdownRendererContentBlockPrototype#1#2#3#4{%
+  \markdownInput{#3}}%
+\def\markdownRendererContentBlockOnlineImagePrototype{%
+  \markdownRendererImage}%
+\def\markdownRendererContentBlockCodePrototype#1#2#3#4#5{%
+  \markdownRendererInputFencedCode{#3}{#2}}%
+\def\markdownRendererImagePrototype#1#2#3#4{#2}%
+\def\markdownRendererUlBeginPrototype{}%
+\def\markdownRendererUlBeginTightPrototype{}%
+\def\markdownRendererUlItemPrototype{}%
+\def\markdownRendererUlItemEndPrototype{}%
+\def\markdownRendererUlEndPrototype{}%
+\def\markdownRendererUlEndTightPrototype{}%
+\def\markdownRendererOlBeginPrototype{}%
+\def\markdownRendererOlBeginTightPrototype{}%
+\def\markdownRendererOlItemPrototype{}%
+\def\markdownRendererOlItemWithNumberPrototype#1{}%
+\def\markdownRendererOlItemEndPrototype{}%
+\def\markdownRendererOlEndPrototype{}%
+\def\markdownRendererOlEndTightPrototype{}%
+\def\markdownRendererDlBeginPrototype{}%
+\def\markdownRendererDlBeginTightPrototype{}%
+\def\markdownRendererDlItemPrototype#1{#1}%
+\def\markdownRendererDlItemEndPrototype{}%
+\def\markdownRendererDlDefinitionBeginPrototype{}%
+\def\markdownRendererDlDefinitionEndPrototype{\par}%
+\def\markdownRendererDlEndPrototype{}%
+\def\markdownRendererDlEndTightPrototype{}%
+\def\markdownRendererEmphasisPrototype#1{{\it#1}}%
+\def\markdownRendererStrongEmphasisPrototype#1{{\bf#1}}%
+\def\markdownRendererBlockQuoteBeginPrototype{\par\begingroup\it}%
+\def\markdownRendererBlockQuoteEndPrototype{\endgroup\par}%
+\def\markdownRendererInputVerbatimPrototype#1{%
+  \par{\tt\input#1\relax{}}\par}%
+\def\markdownRendererInputFencedCodePrototype#1#2{%
+  \markdownRendererInputVerbatimPrototype{#1}}%
+\def\markdownRendererHeadingOnePrototype#1{#1}%
+\def\markdownRendererHeadingTwoPrototype#1{#1}%
+\def\markdownRendererHeadingThreePrototype#1{#1}%
+\def\markdownRendererHeadingFourPrototype#1{#1}%
+\def\markdownRendererHeadingFivePrototype#1{#1}%
+\def\markdownRendererHeadingSixPrototype#1{#1}%
+\def\markdownRendererHorizontalRulePrototype{}%
+\def\markdownRendererFootnotePrototype#1{#1}%
+\def\markdownRendererCitePrototype#1{}%
+\def\markdownRendererTextCitePrototype#1{}%
+\def\markdownLuaOptions{{%
+\ifx\markdownOptionBlankBeforeBlockquote\undefined\else
+  blankBeforeBlockquote = \markdownOptionBlankBeforeBlockquote,
+\fi
+\ifx\markdownOptionBlankBeforeCodeFence\undefined\else
+  blankBeforeCodeFence = \markdownOptionBlankBeforeCodeFence,
+\fi
+\ifx\markdownOptionBlankBeforeHeading\undefined\else
+  blankBeforeHeading = \markdownOptionBlankBeforeHeading,
+\fi
+\ifx\markdownOptionBreakableBlockquotes\undefined\else
+  breakableBlockquotes = \markdownOptionBreakableBlockquotes,
+\fi
+  cacheDir = "\markdownOptionCacheDir",
+\ifx\markdownOptionCitations\undefined\else
+  citations = \markdownOptionCitations,
+\fi
+\ifx\markdownOptionCitationNbsps\undefined\else
+  citationNbsps = \markdownOptionCitationNbsps,
+\fi
+\ifx\markdownOptionCodeSpans\undefined\else
+  codeSpans = \markdownOptionCodeSpans,
+\fi
+\ifx\markdownOptionContentBlocks\undefined\else
+  contentBlocks = \markdownOptionContentBlocks,
+\fi
+\ifx\markdownOptionContentBlocksLanguageMap\undefined\else
+  contentBlocksLanguageMap =
+    "\markdownOptionContentBlocksLanguageMap",
+\fi
+\ifx\markdownOptionDefinitionLists\undefined\else
+  definitionLists = \markdownOptionDefinitionLists,
+\fi
+\ifx\markdownOptionFootnotes\undefined\else
+  footnotes = \markdownOptionFootnotes,
+\fi
+\ifx\markdownOptionFencedCode\undefined\else
+  fencedCode = \markdownOptionFencedCode,
+\fi
+\ifx\markdownOptionHashEnumerators\undefined\else
+  hashEnumerators = \markdownOptionHashEnumerators,
+\fi
+\ifx\markdownOptionHeaderAttributes\undefined\else
+  headerAttributes = \markdownOptionHeaderAttributes,
+\fi
+\ifx\markdownOptionHtml\undefined\else
+  html = \markdownOptionHtml,
+\fi
+\ifx\markdownOptionHybrid\undefined\else
+  hybrid = \markdownOptionHybrid,
+\fi
+\ifx\markdownOptionInlineFootnotes\undefined\else
+  inlineFootnotes = \markdownOptionInlineFootnotes,
+\fi
+\ifx\markdownOptionPipeTables\undefined\else
+  pipeTables = \markdownOptionPipeTables,
+\fi
+\ifx\markdownOptionPreserveTabs\undefined\else
+  preserveTabs = \markdownOptionPreserveTabs,
+\fi
+\ifx\markdownOptionShiftHeadings\undefined\else
+  shiftHeadings = "\markdownOptionShiftHeadings",
+\fi
+\ifx\markdownOptionSlice\undefined\else
+  slice = "\markdownOptionSlice",
+\fi
+\ifx\markdownOptionSmartEllipses\undefined\else
+  smartEllipses = \markdownOptionSmartEllipses,
+\fi
+\ifx\markdownOptionStartNumber\undefined\else
+  startNumber = \markdownOptionStartNumber,
+\fi
+\ifx\markdownOptionTableCaptions\undefined\else
+  tableCaptions = \markdownOptionTableCaptions,
+\fi
+\ifx\markdownOptionTightLists\undefined\else
+  tightLists = \markdownOptionTightLists,
+\fi
+\ifx\markdownOptionUnderscores\undefined\else
+  underscores = \markdownOptionUnderscores,
+\fi}
+}%
+\def\markdownPrepare{%
+local lfs = require("lfs")
+local cacheDir = "\markdownOptionCacheDir"
+if not lfs.isdir(cacheDir) then
+  assert(lfs.mkdir(cacheDir))
+end
+local md = require("markdown")
+local convert = md.new(\markdownLuaOptions)
+}%
+\csname newread\endcsname\markdownInputFileStream
+\csname newwrite\endcsname\markdownOutputFileStream
+\begingroup
+  \catcode`\^^I=12%
+  \gdef\markdownReadAndConvertTab{^^I}%
+\endgroup
+\begingroup
+  \catcode`\^^M=13%
+  \catcode`\^^I=13%
+  \catcode`|=0%
+  \catcode`\\=12%
+  |catcode`@=14%
+  |catcode`|%=12@
+  |gdef|markdownReadAndConvert#1#2{@
+    |begingroup@
+    |immediate|openout|markdownOutputFileStream@
+      |markdownOptionInputTempFileName|relax@
+    |markdownInfo{Buffering markdown input into the temporary @
+      input file "|markdownOptionInputTempFileName" and scanning @
+      for the closing token sequence "#1"}@
+    |def|do##1{|catcode`##1=12}|dospecials@
+    |catcode`| =12@
+    |markdownMakeOther@
+    |def|markdownReadAndConvertStripPercentSign##1{@
+      |markdownIfOption{StripPercentSigns}@
+        |if##1%@
+          |expandafter|expandafter|expandafter@
+            |markdownReadAndConvertProcessLine@
+        |else@
+          |expandafter|expandafter|expandafter@
+            |markdownReadAndConvertProcessLine@
+            |expandafter|expandafter|expandafter##1@
+        |fi@
+      |else@
+        |expandafter@
+          |markdownReadAndConvertProcessLine@
+          |expandafter##1@
+      |fi}@
+    |def|markdownReadAndConvertProcessLine##1#1##2#1##3|relax{@
+      |ifx|relax##3|relax@
+        |immediate|write|markdownOutputFileStream{##1}@
+      |else@
+        |def^^M{@
+          |markdownInfo{The ending token sequence was found}@
+          |immediate|closeout|markdownOutputFileStream@
+          |endgroup@
+          |markdownInput|markdownOptionInputTempFileName@
+          #2}@
+      |fi@
+      ^^M}@
+    |catcode`|^^I=13@
+    |def^^I{|markdownReadAndConvertTab}@
+    |catcode`|^^M=13@
+    |def^^M##1^^M{@
+      |def^^M####1^^M{@
+        |markdownReadAndConvertStripPercentSign####1#1#1|relax}@
+      ^^M}@
+    ^^M}@
+|endgroup
+\ifnum\markdownMode<2\relax
+\ifnum\markdownMode=0\relax
+  \markdownInfo{Using mode 0: Shell escape via write18}%
+\else
+  \markdownInfo{Using mode 1: Shell escape via os.execute}%
+\fi
+\ifx\pdfshellescape\undefined
+  \ifx\shellescape\undefined
+    \ifnum\markdownMode=0\relax
+      \def\markdownExecuteShellEscape{1}%
+    \else
+      \def\markdownExecuteShellEscape{%
+        \directlua{tex.sprint(status.shell_escape or "1")}}%
+    \fi
+  \else
+    \let\markdownExecuteShellEscape\shellescape
+  \fi
+\else
+  \let\markdownExecuteShellEscape\pdfshellescape
+\fi
+\ifnum\markdownMode=0\relax
+  \def\markdownExecuteDirect#1{\immediate\write18{#1}}%
+\else
+  \def\markdownExecuteDirect#1{%
+    \directlua{os.execute("\luaescapestring{#1}")}}%
+\fi
+\def\markdownExecute#1{%
+  \ifnum\markdownExecuteShellEscape=1\relax
+    \markdownExecuteDirect{#1}%
+  \else
+    \markdownError{I can not access the shell}{Either run the TeX
+      compiler with the --shell-escape or the --enable-write18 flag,
+      or set shell_escape=t in the texmf.cnf file}%
+  \fi}%
+\begingroup
+  \catcode`|=0%
+  \catcode`\\=12%
+  |gdef|markdownLuaExecute#1{%
+    |immediate|openout|markdownOutputFileStream=%
+      |markdownOptionHelperScriptFileName
+    |markdownInfo{Writing a helper Lua script to the file
+      "|markdownOptionHelperScriptFileName"}%
+    |immediate|write|markdownOutputFileStream{%
+      local ran_ok, error = pcall(function()
+        local kpse = require("kpse")
+        kpse.set_program_name("luatex")
+        #1
+      end)
+      if not ran_ok then
+        local file = io.open("%
+          |markdownOptionOutputDir
+          /|markdownOptionErrorTempFileName", "w")
+        if file then
+          file:write(error .. "\n")
+          file:close()
+        end
+        print('\\markdownError{An error was encountered while executing
+               Lua code}{For further clues, examine the file
+               "|markdownOptionOutputDir
+               /|markdownOptionErrorTempFileName"}')
+      end}%
+    |immediate|closeout|markdownOutputFileStream
+    |markdownInfo{Executing a helper Lua script from the file
+      "|markdownOptionHelperScriptFileName" and storing the result in the
+      file "|markdownOptionOutputTempFileName"}%
+    |markdownExecute{texlua "|markdownOptionOutputDir
+      /|markdownOptionHelperScriptFileName" > %
+      "|markdownOptionOutputDir
+      /|markdownOptionOutputTempFileName"}%
+    |input|markdownOptionOutputTempFileName|relax}%
+|endgroup
+\else
+\markdownInfo{Using mode 2: Direct Lua access}%
+\def\markdownLuaExecute#1{\directlua{local print = tex.print #1}}%
+\fi
+\begingroup
+  \catcode`|=0%
+  \catcode`\\=12%
+  |gdef|markdownInput#1{%
+    |markdownInfo{Including markdown document "#1"}%
+    |openin|markdownInputFileStream#1
+    |closein|markdownInputFileStream
+    |markdownLuaExecute{%
+      |markdownPrepare
+      local input = assert(io.open("%
+        |markdownOptionOutputDir
+        /#1", "r"):read("*a"))
+      print(convert(input:gsub("\r\n?", "\n")))}}%
+|endgroup
+\endinput
+%%
+%% End of file `markdown.tex'.
