@@ -3,6 +3,8 @@
 
 A dissertation submitted in partial satisfaction of the requirements for the degree of Doctor of Philosophy in Electrical Engineering & Computer Sciences in the Graduate Division of the University of California, Berkeley.
 
+Most content is readable in Markdown for normies in [content.md](./content.md). And eventually for nerds in formatted PDF. 
+
 ---
 
 ## On the template and format 
