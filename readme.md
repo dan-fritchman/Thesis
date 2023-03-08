@@ -1,7 +1,7 @@
 
 # Thesis
 
-A dissertation submitted in partial satisfaction of the requirements for the degree of Doctor of Philosophy in Electrical Engineering & Computer Sciences in the Graduate Division of the University of California, Berkeley
+A dissertation submitted in partial satisfaction of the requirements for the degree of Doctor of Philosophy in Electrical Engineering & Computer Sciences in the Graduate Division of the University of California, Berkeley.
 
 ---
 
