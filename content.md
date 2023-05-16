@@ -944,13 +944,6 @@ Each Hdl21 schematic is accordingly a single SVG file, requiring no external dep
 
 ![dvbe](fig/dvbe.jpg "Example SVG Schematic")
 
-# Hdl21 Schematics
-
-SVG based integrated circuit schematics that seamlessly import and run as [Hdl21](https://github.com/dan-fritchman/Hdl21)'s Python circuit generators.
-
-_Jump to [Installation](#installation)_ | _[Development](#dev-quickstart)_
-
----
 
 [Schematics](https://en.wikipedia.org/wiki/Circuit_diagram) are graphical representations of electronic circuits. In integrated circuit (IC, silicon, chip) design they the _lingua franca_ for analog circuits, and also commonly used for transistor-level digital circuits.
 
@@ -1455,69 +1448,64 @@ Differences between the inferred and stored dot locations are logged and reporte
 
 Note: SVG includes a definitions (`<defs>`) section, which in principle can serve as a place to hold the element symbol definitions. Doing so would save space in the hypertext content. But we have very quickly found that popular platforms we'd like to have render schematics (ahem, GitHub) do not support the `<defs>` and corresponsing `<use>` elements.
 
----
-
-## Development
-
-The Hdl21 schematic system largely breaks into two interdependent pieces of software:
-
-- The core schematic-schema and editor, located in [Hdl21SchematicEditor](./[Hdl21SchematicEditor]), and
-- The Python importer, located in [Hdl21SchematicImporter](./[Hdl21SchematicImporter]).
-
-One notable difference between the two: their programming language. The editor uses a TypeScript-based web-stack, and the importer is pure Python. The two require different toolchains (`yarn` and `pip`), both of which are highly accessible and easy to install.
-
-### Dev Quickstart
-
-To debug the desktop application:
-
-- `cd Hdl21Schematics/Hdl21SchematicEditor/packages/EditorApp`
-- `yarn` to install dependencies
-- `yarn start` to start the application
-
-To debug the VsCode Extension:
-
-- `cd Hdl21Schematics/Hdl21SchematicEditor/packages/VsCodePlugin/`
-- `yarn` to install dependencies
-- `yarn watch` to build the extension and watch for changes
-- `F5` to start the VsCode Extension in debug mode
-
-To dev-install the Python importer:
-
-- `cd Hdl21SchematicImporter`
-- `pip install -e ".[dev]"` to install in dev mode
-- `pytest` to run the test suite
-
-### Editor Dev
-
-[Hdl21SchematicEditor](./Hdl21SchematicEditor/) is broken in several components, organized as JavaScript packages:
-
-- [EditorCore](./Hdl21SchematicEditor/packages/EditorCore/) provides the core editor functionality. This is where the overwhelming majority of the action happens.
-- [EditorApp](./Hdl21SchematicEditor/packages/EditorApp/) exposes the editor as a standalone desktop application, using the Electron framework.
-- [VsCodePlugin](./Hdl21SchematicEditor/packages/VsCodePlugin/) exposes the editor as a VS Code plug-in.
-- [PlatformInterface](./Hdl21SchematicEditor/packages/PlatformInterface/) defines the interface between `EditorCore` and its underlying "platforms", i.e. the other packages.
-- A web-based "platform" is also possible, [and is TBC](https://github.com/Vlsir/Hdl21Schematics/issues/10).
-- A command-line utility for schematic checking, exporting, schema migration, and the like is also possible, [and is TBC](https://github.com/Vlsir/Hdl21Schematics/issues/21).
 
 
 
 # Programming Models for IC Layout
 
+Essentially all the (10**xyz) transistors produced in the IC industry's 75 year history have been designed by one of two methods: 
+
+1. The digital way. Using a combination of logic synthesis and automatically placed and routed layout.
+2. The analog way. Using a graphical interface to produce essentially free-form layout shapes.
+
+Layout of digital circuits has proven amenable to automatic generation in countless ways that analog layout has not. Nearly the entirety of the IC industry's gains in productivity and scale, all of the enablement of chips with millions or billions of transistors, is owed to a stack of software in which designers can: 
+
+* Write hardware in C-like HDL code
+* Compile an RTL-level subset of this code to logic gates, in a process typically called logic synthesis
+* Place and route a gate-level circuit netlist into physical layout
+
+The combination of logic synthesis and PnR layout serves as a powerful "hardware compiler" from portable HDL code to target silicon technologies. Analogous attempts at the compilation of analog circuits have generally failed, or failed to achieve substantial industry adoption. 
+
 What makes digital circuits so amenable to layout compilation, and analog circuits so poor? 
 
-synchronous
-static timing 
-easily computable surrogates therefore, such as wirelength
+First, PnR compilers typically target *synchronous* digital circuits, in which a fixed-frequency clock "heartbeat" synchronizes all activity. This circuit style is so ubiquitous that it might be rolled into the common usage of the term "digital circuits". Synchronous circuits offer a simple set of criteria for the circuits' success or failure: each of its *synchronous timing constraints* must be met. Such timing constraints come in two primary flavors: 
 
-in this sense the anaogy between the digital layout pipeline and the tupical programming language compiler breaks down. Digital pnr does nore than compile a hardware circuit, and does more than thr good faith optimization attrmpts allowed by most optimizing compilers. instead it wraps this compilation in an optimization layer, in which tje optimization objectives (a) are met by design, or the process is deemed jnsuccessful, and (b) are user programmable. the most common and prominent example such metric is the shnchronous clock frwquency. pnr users comminly secify such a frwquenxy or peiord as their sole input constraint. the process is analogous to a c compiler with user inputs dictating its maximum instruction count or memory usage in executing its main program. while such efforts may exist in research or in specialty contexts, they are not the primary use model for popular compolers such as gcc or LLVM/ clang. the term "optikizing compiler" is commonly used to describe these projexts; it would more accurately be applied to digital PnR, in which compilation is wrapped in an optikizing layer rich with goals and constraints. 
+* *Setup time constraints* dictate that each combinational logic path complete propagation within the clock period. This generally manifests as a *maximum* propagation delay.
+* *Hold time constraints* demand that each path completes outside of the state elements' "blind windows", during which they are subject to errant sampling. This generally manifests as a *minimum* propagation delay.
 
-analog circuits lack the generalizavle criteria dornsuccess or failure afforded by static timing analysis. each analogncircuit typically 
+This *timing closure* problem is parameterized by a small set of numbers - principally the clock period and power-supply voltage which dictates logic-cell delays. Several other parameters, such as skews throughout the clock network, inject second-order effects. 
+
+Second, timing closure has been proven to be efficiently computable, particularly via *static timing analysis* (STA). While the transistor-level simulation scales incredibly poorly to million-transistor circuits, the combination of synchronous digital logic and STA avoids it altogether. In the STA methodology, the largest circuit which needs direct transistor-level simulation is the largest standard logic cell, e.g. a flip-flop. Each element of the logic-cell library is characterized offline for delay, setup and hold time, and any other relevant timing metrics. These results are summarized in (typically tabular) *timing models* which capture their dependence on key variables such as capacitive loading or incoming transition times. 
+
+With these timing model libraries in tow, STA's evaluation of timing constraints boils down to: 
+
+* A graph-analysis stage, determining the set of paths between all state elements, and
+* Simple arithmetic for totaling up each of their delays. 
+
+Both have proven scalable to large circuits. 
+
+Third, these delays have easily computable surrogates. In a common example, layout placers often use total wirelength - i.e. the sum of distances between connected elements - as a quality metric for placements. Other such layout-driven quantities such as specific paths' lengths, metal layer selections, and driver sizes have direct, well-understood effects on delays, and can be optimized for in a layout-compiler. 
+
+In summary: 
+
+1. Synchronous logic offers a very straightforward set of pass/ fail measures; 
+2. Static timing analysis offers an efficient means of computing those measures;
+3. Readily available surrogates for STA quantities offer *even more* effecient means of estimating those quantities
+4. All of those same methods apply to *all synchronous digital circuits*.
+
+Analog circuits lack all of these traits. They have no "analog" to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. These criteria generally lack any efficient surrogates; their success can generally only be evaluated through transistor-level simulation. 
+
+--- 
+
+In this sense the anaogy between the digital layout pipeline and the typical programming language compiler breaks down. Digital PnR does nore than compile a hardware circuit, and does more than the good faith optimization attempts afforded by most optimizing compilers. Instead it wraps this compilation in an optimization layer, in which the optimization objectives 
+
+* (a) Are met by design, or the process is deemed unsuccessful, and
+* (b) Are, at least to an extent, user programmable.
+
+The most common and prominent example such metric is the synchronous clock frequency. PnR users commonly specify such a frequency or period as their sole input constraint. The process is analogous to a C-language compiler with user inputs dictating its maximum instruction count or memory usage. While such efforts may exist in research or in specialty contexts, they are not the model deployed by commercially successful "optimizing compilers" (e.g. gcc, LLVM/ clang). While the term "optimizing" is commonly used to describe these projects; it would more accurately be saved for digital PnR, in which compilation is explicitly wrapped in an optimizing layer rich with goals and constraints. 
 
 
-## the two most tried and failed models
-
-
-# Programmed-Custom Layout 
-
+---
 
 Code-based "programming" of (digital) circuits has been commonplace since the introduction of the still-popular hardware description languages in the 1980s. Successful programming models for semi-custom layout have proven more elusive. Most research efforts can be grouped into two large categories: 
 
@@ -1530,17 +1518,37 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 
 ![mos_stack](fig/pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
 
-# Compiled Layout 
 
-tbd 
 
-# the ml part
+## The Two Most Tried and Failed Models
 
-tbd 
+1. Analog PnR
+2. Programmed-custom
+
+
+# Programmed-Custom Layout 
+
+tbc 
+
+# Compiled (Analog) Layout
+
+tbc 
+
+# Machine Learners Learn Circuits 101
+
+tbc 
 
 # Applications
 
-tbd 
+tbc 
+
+---
+
+# 
+
+# 
+
+# 
 
 # H1 creates a chapter
 
