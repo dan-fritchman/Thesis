@@ -1,7 +1,9 @@
 
-# Some kinda intro to the whole problem
+# Introduction
 
 * This is about integrated circuits
+* A section on the importance of making more
+  * Like with some end of Moore's Law stuff
 * Particularly the analog parts
 * The whole conceptual layer-cake on which they get designed
 
@@ -1449,11 +1451,9 @@ Differences between the inferred and stored dot locations are logged and reporte
 Note: SVG includes a definitions (`<defs>`) section, which in principle can serve as a place to hold the element symbol definitions. Doing so would save space in the hypertext content. But we have very quickly found that popular platforms we'd like to have render schematics (ahem, GitHub) do not support the `<defs>` and corresponsing `<use>` elements.
 
 
-
-
 # Programming Models for IC Layout
 
-Essentially all the (10**xyz) transistors produced in the IC industry's 75 year history have been designed by one of two methods: 
+In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history/?key=13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's roughly 75 year history, it has shipped rough 13 sextillion (1.3e22) total transistors. (This total has certainly risen, likely dramatically, in the few years since.) Essentially all of them have been designed by one of two methods: 
 
 1. The digital way. Using a combination of logic synthesis and automatically placed and routed layout.
 2. The analog way. Using a graphical interface to produce essentially free-form layout shapes.
@@ -1466,14 +1466,16 @@ Layout of digital circuits has proven amenable to automatic generation in countl
 
 The combination of logic synthesis and PnR layout serves as a powerful "hardware compiler" from portable HDL code to target silicon technologies. Analogous attempts at the compilation of analog circuits have generally failed, or failed to achieve substantial industry adoption. 
 
+## Why does PnR work for digital, but fail for analog? 
+
 What makes digital circuits so amenable to layout compilation, and analog circuits so poor? 
 
-First, PnR compilers typically target *synchronous* digital circuits, in which a fixed-frequency clock "heartbeat" synchronizes all activity. This circuit style is so ubiquitous that it might be rolled into the common usage of the term "digital circuits". Synchronous circuits offer a simple set of criteria for the circuits' success or failure: each of its *synchronous timing constraints* must be met. Such timing constraints come in two primary flavors: 
+First, PnR compilers typically target *synchronous* digital circuits, in which a fixed-frequency clock "heartbeat" synchronizes all activity. This circuit style is sufficiently ubiquitous to often be rolled into the common usage of the term "digital circuits". Synchronous circuits offer a simple set of criteria for the circuits' success or failure: each of its *synchronous timing constraints* must be met. Such timing constraints come in two primary flavors: 
 
 * *Setup time constraints* dictate that each combinational logic path complete propagation within the clock period. This generally manifests as a *maximum* propagation delay.
 * *Hold time constraints* demand that each path completes outside of the state elements' "blind windows", during which they are subject to errant sampling. This generally manifests as a *minimum* propagation delay.
 
-This *timing closure* problem is parameterized by a small set of numbers - principally the clock period and power-supply voltage which dictates logic-cell delays. Several other parameters, such as skews throughout the clock network, inject second-order effects. 
+This *timing closure* problem is parameterized by a small set of numbers - principally the clock period and a few parameters which dictate logic-cell delays (power-supply voltage, process "corner", etc.). Several other parameters, such as skews throughout the clock network, inject second-order effects. 
 
 Second, timing closure has been proven to be efficiently computable, particularly via *static timing analysis* (STA). While the transistor-level simulation scales incredibly poorly to million-transistor circuits, the combination of synchronous digital logic and STA avoids it altogether. In the STA methodology, the largest circuit which needs direct transistor-level simulation is the largest standard logic cell, e.g. a flip-flop. Each element of the logic-cell library is characterized offline for delay, setup and hold time, and any other relevant timing metrics. These results are summarized in (typically tabular) *timing models* which capture their dependence on key variables such as capacitive loading or incoming transition times. 
 
@@ -1493,9 +1495,19 @@ In summary:
 3. Readily available surrogates for STA quantities offer *even more* effecient means of estimating those quantities
 4. All of those same methods apply to *all synchronous digital circuits*.
 
-Analog circuits lack all of these traits. They have no "analog" to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. These criteria generally lack any efficient surrogates; their success can generally only be evaluated through transistor-level simulation. 
+Contrast this with analog circuits:
+
+1. Virtually no two circuits have the same set of success and failure metrics;
+2. Transistor-level simulation is the sole means of evaluating those metrics;
+3. Even the production of simulation collateral and metric extraction is highly circuit and context-specific
+
+In short: fail across the board. Analog circuits have no "analog" to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each have depends on wholly different criteria. These criteria generally lack any efficient surrogates; their success can generally only be evaluated through transistor-level simulation. Such simulations scale poorly with the number of circuit elements, quickly requiring hours to complete on feasible contemporary hardware. Moreover their efficiency is dramatically reduced by the inclusion of *parasitic elements*, the very layout information that a PnR solver is attempting to optimize. Including a sufficiently high-fidelity simulation model for making productive layout decisions generally means requiring extensive runtimes. Embedding such evaluations in an iterative layout-optimizer has proven too costly to ever be deployed widely. Machine learning based optimizers such as BagNET [@chang2018bag2] use a combination of wholesale removal of layout elements (i.e. "schematic level" simulations) and lower-cost surrogate simulations (e.g. a DC operating point standing in for a high-frequency response) to evaluate design candidates. 
+
+
 
 --- 
+
+### Aside on digital layout "compilation"
 
 In this sense the anaogy between the digital layout pipeline and the typical programming language compiler breaks down. Digital PnR does nore than compile a hardware circuit, and does more than the good faith optimization attempts afforded by most optimizing compilers. Instead it wraps this compilation in an optimization layer, in which the optimization objectives 
 
@@ -1506,6 +1518,13 @@ The most common and prominent example such metric is the synchronous clock frequ
 
 
 ---
+
+## The Two Most Tried (and Failed) Models
+
+FIXME: 
+
+1. Analog PnR
+2. Programmed-custom
 
 Code-based "programming" of (digital) circuits has been commonplace since the introduction of the still-popular hardware description languages in the 1980s. Successful programming models for semi-custom layout have proven more elusive. Most research efforts can be grouped into two large categories: 
 
@@ -1520,39 +1539,27 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 
 
 
-## The Two Most Tried and Failed Models
-
-1. Analog PnR
-2. Programmed-custom
-
-
 # Programmed-Custom Layout 
 
 tbc 
 
 # Compiled (Analog) Layout
 
-tbc 
+Berkeley IC research 
+ALIGN
 
 # Machine Learners Learn Circuits 101
 
-tbc 
+FIXME: 
 
-# Applications
+- AutoCkt [@autockt] 
+- BagNET [@bagnet]
+- CktGym
 
-tbc 
 
----
+# Notes for Editing
 
-# 
-
-# 
-
-# 
-
-# H1 creates a chapter
-
-this one is here at the end for examples of all the content types
+- H1 creates a chapter
 
 ## H2 creates a section
 
@@ -1586,9 +1593,8 @@ module WHY #( /* ... */ );
 endmodule
 ```
 
-Citations: 
+How to cite: 
 
-* Latex [@latexcompanion]
 * BAG [@chang2018bag2]
 * MAGICAL [@chen2020magical]
 * ALIGN [@kunal2019align]
