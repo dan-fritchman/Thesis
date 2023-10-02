@@ -1541,12 +1541,36 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 
 # Programmed-Custom Layout 
 
-tbc 
+- Direct libs: gdstk, gdsfactory
+- "P-cells" for low-level devices 
+- BAG programming model
+- Layout21
+- raw/ direct mode
+- tetris
 
 # Compiled (Analog) Layout
 
-Berkeley IC research 
-ALIGN
+Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solves. Emphasis on the BAG project and its programmed-custom model has been the primary artifact. 
+
+- Hdl21 is a great place to store all that metadata
+- 
+
+The relatively sad state of analog layout production does offer 
+Think of a typical design feedback loop: 
+
+1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
+2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (typical for pro's). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
+3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
+  a. Evaluations all succeed, congratulations! Circuit's done.
+  b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
+  c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
+
+The good news: we need not automate the entirety of this process to make valuable progress. 
+
+- VLSIR and Hdl21 improve step 1,
+- 
+
+BAG began with more or less this intent, to automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for *software* to perform step 2. The goal is to *perform step 2 more effectively than the manual methods*. This is where the programmed-custom systems tend to fail. 
 
 # Machine Learners Learn Circuits 101
 
@@ -1554,7 +1578,9 @@ FIXME:
 
 - AutoCkt [@autockt] 
 - BagNET [@bagnet]
-- CktGym
+- CktGym/ Discovery
+- Constructive angle
+- Draftsman/ LLM angle
 
 
 # Notes for Editing
