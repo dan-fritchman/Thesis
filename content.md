@@ -1,4 +1,6 @@
 
+\setkeys{Gin}{width=.5\linewidth}
+
 # Introduction
 
 * This is about integrated circuits
@@ -96,6 +98,8 @@ message Instance {
 
 The VLSIR schema defines such types for circuits, layout, spice-class simulation input and output, and process technology. 
 The schema format serves as a core exchange medium for a variety of programs and libraries written in a variety of languages, with varying trade-offs between designer productivity and performance. 
+
+![](./fig/vlsir-system.png "The VLSIR System")
 
 # The Analog Religion's Sacred Cow
 
@@ -1453,6 +1457,8 @@ Note: SVG includes a definitions (`<defs>`) section, which in principle can serv
 
 # Programming Models for IC Layout
 
+![](./fig/two-successful-models.png "The Two Successful Models for Producing IC Layout")
+
 In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history/?key=13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's roughly 75 year history, it has shipped rough 13 sextillion (1.3e22) total transistors. (This total has certainly risen, likely dramatically, in the few years since.) Essentially all of them have been designed by one of two methods: 
 
 1. The digital way. Using a combination of logic synthesis and automatically placed and routed layout.
@@ -1465,6 +1471,8 @@ Layout of digital circuits has proven amenable to automatic generation in countl
 * Place and route a gate-level circuit netlist into physical layout
 
 The combination of logic synthesis and PnR layout serves as a powerful "hardware compiler" from portable HDL code to target silicon technologies. Analogous attempts at the compilation of analog circuits have generally failed, or failed to achieve substantial industry adoption. 
+
+![](fig/layout_quadrants.png "Relationship Between Custom and Programmed Layout Generation in the Digital and Analog Design Flows")
 
 ## Why does PnR work for digital, but fail for analog? 
 
@@ -1535,7 +1543,11 @@ While we believe VLSIR's modular design enables both approaches, its application
 
 A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
 
-![mos_stack](fig/pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+![](fig/tetris_routing.png "Tetris Routing Concept")
+
+![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+
+![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
 
 
 
@@ -1549,6 +1561,18 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 - tetris
 
 # Compiled (Analog) Layout
+
+Attempts to compile analog and otherwise "custom" circuit layout are not new. 
+
+- Primitives - generally programmed-custom "p-cells"
+- Placement - generally formulated in optimization terms
+- Routing - not optimization, just get it done
+- Specialty analog constraints - matching, coupling, differential-ness, overall higher care level
+- passive components
+
+Many such frameworks focus on small transistor-level circuits, such as those for the logical "standard cells" which serve as the primitives of the digital flow, or a relatively simple amplifier. Circuits with less than, say, 20 transistors. These frameworks often focus on stringent optimality goals for such small-scale circuits, and often embed a goal to reach *provable* optimality for those metrics, such as diffusion sharing or overall layout area. Placement is then generally cast into an optimization framework such as integer linear programming (ILP), in which the reward function directly evaluates the target metric. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in @gupta98ilp, ILP based placement "implicitly explores all possible transistor placements". This exploration isn't really implicit; it *explicitly* grows exponentially with the size of the placement problem. ALIGN uses ILP-based placement and... it's slow enough to be useless? 
+
+--- 
 
 Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solves. Emphasis on the BAG project and its programmed-custom model has been the primary artifact. 
 
@@ -1572,6 +1596,16 @@ The good news: we need not automate the entirety of this process to make valuabl
 
 BAG began with more or less this intent, to automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for *software* to perform step 2. The goal is to *perform step 2 more effectively than the manual methods*. This is where the programmed-custom systems tend to fail. 
 
+\setkeys{Gin}{width=.5\linewidth}
+
+![](./fig/hdl21-pnr.jpg "Hdl21 to Analog PnR Flow")
+
+![](./fig/hdl21-primitives.png "Primitives in a Typical Programming Language, and in Hdl21")
+
+![](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
+
+![](./fig/high-quality-schematic.png "A High Quality Schematic")
+
 # Machine Learners Learn Circuits 101
 
 FIXME: 
@@ -1582,6 +1616,11 @@ FIXME:
 - Constructive angle
 - Draftsman/ LLM angle
 
+![](./fig/cktgym.png "CktGym Framework")
+
+![](./fig/ml-designer.png "ML Designer")
+
+![](./fig/ml-draftsman.png "Natural Language Draftsman")
 
 # Notes for Editing
 
@@ -1624,7 +1663,7 @@ How to cite:
 * BAG [@chang2018bag2]
 * MAGICAL [@chen2020magical]
 * ALIGN [@kunal2019align]
-
+* TED [@ye2023_ted_analog]
 
 Inline code: `print("...")`  
 
