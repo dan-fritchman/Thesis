@@ -3,11 +3,24 @@
 
 # Introduction
 
+FIXME: for the outline for now. 
+
+Sub-outline: 
+
 * This is about integrated circuits
 * A section on the importance of making more
   * Like with some end of Moore's Law stuff
 * Particularly the analog parts
 * The whole conceptual layer-cake on which they get designed
+
+## The IC Design Process 
+
+FIXME: write 
+
+## The Need for More
+
+FIXME: write 
+
 
 Integrated circuits are "integrated" in the sense that more than one - and often in current practice, more than ten orders of magnitude more than one - circuit component is integrated in a single silicon die. 
 
@@ -55,7 +68,117 @@ A further sub-thesis: making the next rounds of progress will require taking a f
 - A survey of both historical research attempts to, and first-person software attempts to, rethink the custom layout process. Several are tried here to varying effect. My primary answer to what works best remains "it depends".
 - An introduction to "ML for X", where "X" becomes circuits. What does it require for machine learning techniques to make real contributions to the production of circuits, layouts, or the software that aids them? 
 
+## Lessons of the “Generator Era” 
+
+Or, rambling thoughts on:
+
+- (a) Sharing of design content, and
+- (b) Amenability to automatic design-generation
+
+in three related domains:
+
+- Software
+- Integrated circuits (ICs)
+- System-level hardware, i.e. that comprised of printed circuit boards (PCBs) and combinations thereof
+
+I often remark that of all the software, tools, and practices prevalent in hardware design, at least 99% were in place by around 1990. Much of this treatment is framed in terms of the changes in the software space over the roughly 30 year span since.
+
+### Software
+
+Over those 30 years, two changes in software-sharing stand out as most impactful: the open-source movement, and the emergence of the SaaS model overhauling how most commercial software is distributed.
+
+In 1990, integrating commercial library-level generally required buying a license from its author, and being shipped physical disks-full of two kinds of content: executable binaries, and interface-files telling application code how to call them. The source/ header file split of the C/C++ family was particularly well-paired with this model. While the binary-ness of the primary executable programs is notionally for sake of program-size and ease of installation, it has a material side-benefit: binaries have generally been sufficiently inscrutable to generally evade reverse-engineering and (too much) piracy. Whether for "security" or not, the binary/ header split patterns an abstract vs implementation separation. Integrators of such libraries work against abstract versions (the headers), without needing details of their implementation (the binaries).
+
+Later the internet enabled the "as a service" software-sharing model, in which library-level code is not distributed as a binary, but as network-based API calls to a library-author-managed server. Distribution as-a-service added benefits in its ease-of-update, both to its author and to its users. Binary distribution still pervades high-performance environments, such as the physics engines which power advanced 3D games.
+
+Software distribution and development have also been overhauled by the emergence of open-source development. Open-source software is prevalent at all levels of the software-stack, but particularly for library-level building blocks: languages, compilers, runtimes, frameworks, and the like. Sharing and designing open-source software have essentially merged into a single activity, facilitated by public hubs such as GitHub. The integration of git's popular revision-control and development meta-material such as bug-tracking, access control, testing, and documentation publication have made these hubs functional one-stop shops for the development of these projects.
+
+While GitHub has become the face of open-source software _development_, it is almost certainly not where or how most open-source software is shared to be _used_. Instead each coherent community, commonly either a programming language or operating system, generally defines a package manager abstraction. These managers generally comprise two parts: (a) a database of published, versioned, documented designs, and (b) a suite of user-tools co-designed with their package-format, which comprehends how to incorporate, compile, or integrate modules from the database. The combination enables reuse among users with faint awareness of the combined system at work, e.g. via simple installation or compilation commands such as "pip install numpy".
+
+### Integrated Circuits
+
+The integrated circuit (IC) space essentially cleaves in two camps: digital circuits, which benefit from several software-like factors, and analog/custom circuits (including memory), which generally do not.
+
+Digital IC design has primarily lived in C-ish-level hardware-description languages since their advent in the 1980s. Popular digital HDLs are then commonly "compiled" (although often not called this) to one of two targets: simulation-targeted binary executables, and implementation process technologies. The two most prominent HDLs, (System)Verilog and VHDL, are both open IEEE standards. HDL code written in these languages is (in principle) technology-portable. Designs using either language are (again, in principle) shareable as open-source software. Increasingly many are shared through public hubs such as GitHub, although usage of these in larger systems remains harder to gauge, and likely highly limited.
+
+The HDL "simulation compiler" transforms an HDL "program" into a binary executable on an evaluation machine, often the same machine on which it is being designed. These logic-level simulations are often used for much (or most) of a digital-IC design process, until it needs to be mapped into a target technology.
+
+The latter "implementation compiler" targets a realizable chip-blueprint, or "layout". This compilation commonly occurs in two steps: logic synthesis first transforms a "hardware program" into a set of logic-gate-level primitives available in the target technology. Most commonly these primitives are either (a) standard logic cells in ASIC targets, or (b) LUTs in FPGA targets. The second stage, "place and route" (PnR), maps these gates into a physical layout, choosing locations for each and geometries for wiring between them. PnR is generally iterative: it guesses a candidate layout, evaluates one or more quality metrics, and updates that layout based on its observed quality. Closure is reached in fixed-point style, when iterations cease to produce material changes. The original circuit is often modified inline by these programs, changing their relative drive strengths, splitting or combining logic gates, and/or inserting and removing logically equivalent networks, i.e. by inserting logic buffers. Much as the binary output of a C compiler is generally unrecognizable to its C-language author, the gate-level netlists produced by auto-PnR are generally unrecognizable by their HDL authors. Complex state machines are (necessarily) broken into individual bit-level gates, and (frequently) heavily rearranged to reduce area or power.
+
+These synthesized layouts are commonly optimized for one or more of (a) total wire length, which is often found proportional to delay and power consumption, (b) closure of timing constraints (in "timing driven" optimizers), or (c) power consumption itself. Two important delineations enable a layout optimizer to make thousands of layout-iterations and evaluations of these metrics:
+
+- First is the separation between behavior and timing. Layout-compilation programs do not, for example, evaluate whether a design continues to correctly execute its target instruction-set between iterations. This is instead broken in two verification steps. First, logical simulation determines whether a candidate design behaves as intended, assuming synchronous timing constraints are met. Static timing analysis then determines whether those constraints are in fact met. Transformations made during layout synthesis maintain this behavior by ensuring that the network's logical function is unchanged; only timing is modified.
+- Second, while evaluation of static timing closure is itself costly, it has several quickly evaluatable surrogates. Total wirelength (for all nets) has long served as a primary in-situ metric for layout compilation.
+
+Several classes of digital circuits are also amenable to "high-level" synthesis, generally from procedural programs. These programs typically accept a C or C++ program, which may or may not be multi-threaded, as input, and produce as output an RTL-level circuit which efficiently "executes" the input program. This allows for designers to operate in the typically more human-intuitive procedural mode, while allowing the compiler to produce inherently parallel-executing hardware. HLS has been most successful for circuits with highly regular data-paths, such as those for digital signal processing. Circuits more-prominently dominated by control logic have proven less amenable.
+
+### Analog & Custom IC Content
+
+Analog and custom circuits (hereon referred to as "analog", but notably including very-digital custom things such as SRAM and IOs) have escaped nearly all these productivity-enhancing pieces of software. These circuits often have performance metrics or design methods which evade the technology-portable hardware-description concepts. They are typically designed in and for a specific implementation technology. Automated design and layout of these circuits has long been an academic pursuit, but one with little industrial adoption. Notably these circuits escape the behavior/ timing layout-quality-evaluation dichotomy. Checking whether the layout of, say, a comparator, meets a set of specifications amounts to fully evaluating whether the circuit behaves as a comparator. These evaluation times are further (greatly) exacerbated in modern technologies by the injection of layout-parasitic circuit elements, which for accurate evaluation often outnumber intentional circuit elements by orders of magnitude. Iterative layout is therefore rendered order of magnitude slower than for digital circuits, which itself can often incur runtimes of several days.
+
+### Sharing of IC Content via "Silicon IP"
+
+The sharing of IC-level circuits is materially affected by several practical considerations. Both the underlying implementation technologies and commercial software tools are strenuously guarded by their owners. Access to even trailing-edge (much less leading-edge) IC technology requires substantial legal and commercial agreement, and has increasingly become the target of international public policy. These agreements are generally designed per institution. Sharing design-data using Foundry-X between (design) Company-A and Company-B generally requires the permission of Foundry-X. Accordingly only the largest institutions with sufficient commercial benefit or scale to amortize these agreements participate. Commercial EDA software, such as that used for layout PnR or simulation, uses a similar per-institution licensing model, generally limited to the institution's on-premise physical machines. These EDA programs are also prohibitively costly for all but the largest institutions to license, often totaling in millions of USD per designer-year.
+
+Despite these constraints. commercial "sharing" of these IC-level circuits is a common practice, typically known as silicon IP. "IP" is a term of art in the silicon space. In context it means something fairly different from in the rest of the world. Silicon "IPs" might be more descriptively called "virtual sub-chips": they consist of the design-files for IC sub-circuits. These IP-blocks can be distributed at several levels of detail (e.g. "soft" HDL code, vs "hardened" physical layout). Probably the most successful company in silicon-IP's history has been ARM, the designer-licensor of the overwhelming majority of the world's embedded processors. While one commonly refers to these devices as containing "ARM chips", even industry-insiders often forget that ARM does not make chips at all. They make virtual sub-chips, licensed by and integrated into the chips of a wide range of IC companies.
+
+### System-Level Hardware
+
+System-level circuits have unique constraints, but among the previously examined cases, look most like analog IC design. Designers typically "program" their hardware in graphical schematics, comprised of symbolic physical components and connections there-between. Simulation plays a much smaller role than for IC-level circuits. Automatic design and/or layout generation is essentially nonexistent, largely attributable to the lack of reusable, quickly evaluatable quality metrics.
+
+Sharing of PCB circuits is aided by their implementation technology: PCBs and discrete physical components. Unlike silicon process technologies and silicon IP, the required information to integrate discrete components is generally publicly available. These "component abstracts" commonly include physical footprints and specification documents. (Automatic interpretation of these documents is of course much more limited.) Publicly-available components generally have publicly-available such information.
+
+Sharing of these component-descriptions has however remained largely ad-hoc. While millions of such part-descriptions are shared on several public distribution hubs such as DigiKey, designs using them commonly self-vendor design-files and relevant information for their integration. At large (and even small) hardware companies, integration into enterprise-level software databases, e.g. those for inventory and sales projections, are as important as their technical content. These substantial databases therefore remain siloed within each institution.
+
+PCBs are also widely available without substantial overhead (e.g. NDA agreements with a PCB fab). Their z-axis cross-section, commonly called a stack-up, is highly customizable by most fabs and for most boards.
+
+PCB circuit-level sharing is far less common. While PCB-level circuits are (in principle) "virtual sub-PCBs" in the same sense that silicon IPs are "virtual sub-chips", nothing resembling the silicon IP ecosystem has emerged at this layer of the stack. Silicon's primary "IP-ization" technologies are those which abstract an underlying circuit, allowing an integrator to make use of an abstract representation without internalizing the details of its implementation. For such abstract descriptions to be sufficiently comprehensive, they typically must include more than one view of the underlying design. Logical and physical views are common examples for silicon IP, which generally map to schematics and layouts on PCBs.
+
+Re-use of PCB layout is often hindered by the very flexibility of their implementation technology: the z-axis stack-ups of PCBs, and the varying capacities of PCB fabs and PCBA assemblers. Analogizing to the silicon space, PCBs have a functionally infinite number of "process technologies".
+
+### On "Generators", Programs That Make Hardware
+
+The IC community, particularly its outpost here at UC Berkeley, has spent much of the past decade promoting the role of "generators" as the future's design-mechanism. Just what this term means varies wildly among proponents. One common thread cuts through seemingly all definitions: generators are (at least) _procedural code that executes and produces hardware descriptions_. At what level of detail, and on what factors are included, opinions vary widely.
+
+Two prominent Berkeley-originated projects, Chisel and BAG, serve as prime examples. Chisel is a "hardware construction library" embedded in the Scala programming language, targeting generation of RTL-level circuits. Conceptually one can think of it as a high-powered replacement for the popular HDLs' parametric and behavioral constructs. BAG, in contrast, uses the same term generator to refer to programs which map process-portable custom circuits into (hopefully) arbitrary implementation technologies, generally requiring lengthy simulation-based optimizations (hours or days) along the way.
+
+Utopia for the most dedicated generator-ists seems to be along the lines of "put ten spec-numbers in, get some complicated circuit out". (Said "complicated circuit" might be an RF transceiver, a single-board computer, or anything else.) Setting aside how achievable that end might be, I don't find it a great mission-statement to begin with.
+
+To start by analogizing back to the field we so badly wish we had - open-source software - this is clearly not what has happened. There is no "put ten numbers in, get a {compiler, operating system, etc.} out" program-generator. (There are likely such things somewhere in academia, but not useful ones.) There's a test I often offer these projects: what proportion of the expertise required to actually design the output-target is required to just use the (even theoretically-ideal) "automatic generator software" - and crucially, to have confidence in the results. For many cases, I think that ratio is quite high, perhaps near 100%. Just knowing the parameter-space of what's good and bad can be quite a lot. There's too much expertise to be had, and not enough time in the day, to even convey the trade-offs in profitably twiddling those "ten numbers". The "ten numbers in" program helps a worldview in which there are bazillions of distinct {circuits, compilers, OSes}, and correspondingly many users putting those ten numbers in. And again, that's not really what successful software has done. Instead, experts design in their expert-domain, and (crucially) share the results.
+
+The design-idioms that have actually worked, in contrast, tend to be much more atomic. Functions, structs, classes, (and more recently) packages in software-space. Modules, transistors, gates, ports, etc for hardware.
+
+### What Holds Us Back
+
+While hardware generation and compilation remain invaluable technologies, the prior section's thesis drives a change in focus, away from "how can we most quickly generate any hardware imaginable", and toward "what is stopping the best-designed hardware from being widely shared". Primary answers vary between IC and system levels.
+
+Silicon content-sharing is primarily limited by commercial and legal hurdles placed directly by foundries and EDA software, and in the former case indirectly placed by public policy. While limited efforts at lowering or removing these barriers (primarily Google + SkyWater) are ongoing, we expect they will remain the field's norm for the foreseeable future. Facilitating design-sharing therefore requires a system with buy-in from at least one of these gate-keepers (foundry and/or EDA). Of the two, EDA seems vastly more likely (and preferable) to be driven out by open-source and/or more commercially-economical software, perhaps initially at a detriment in performance.
+
+System-level circuit-sharing generally lacks these commercial and legal hurdles. Based on technical principle it should already be happening today. The primary limitations have generally been (a) the lack of technologies for abstracting designs to their required interfaces, (b) the diversity of PCB implementation-technologies, and relatedly (c) lack of automatic mapping of circuits onto these technologies. Failure to share component-data has likewise contributed, but does not seem due to technical limitations.
+
+While these system and IC contexts generate different hurdles, they also have several in common. Designers are (rationally) predisposed to circuits which have been real-world verified (no matter how relevant that verification is to their use-case). "Tape-out proven" is a common such description of silicon IP. System-level circuits derive similar confidence from having been fabricated and tested. Lacking technical tools for tracking and automatically verifying that such real-world testing has occurred, the next-best substitute would seem to be a community/ reputation-based model, in which designers and  users and verifiers are encouraged to share test data and experiences.
+
+Lastly, each of these fields lacks the re-use power of the package manager abstraction commonly deployed throughout popular open-source programming languages. The package concept primarily requires the two components described in our software-section, namely the published database and coherent user-side tooling which comprehends its content.
+
+### Where To Go
+
+An outline of a system-design software-suite realizing these ideas:
+
+- A design platform connected to:
+  - (a) A central component database, and
+  - (b) A design-package manager similar to those prominent for popular open-source software languages (PyPI, NPM, Cargo, etc), and, 
+  - (c) An execution environment for system-hardware design-generators
+  - (Think a web-app for simple design, and connected dedicated app or IDE plug-in for more complicated ones.)
+- Formats and software for system-level sub-design abstraction, particularly including physical design (layout).
+- Best-practices from IC design generators (e.g. programmatic design elaboration, structured hierarchical connections), designed for construction of system-level circuits.
+- A standard set of commonly-used PCB stack-ups.
+- Generation/ compilation to those standard PCB stack-ups, and potentially to arbitrary others.
+
+
+
 # IC Design Databases
+
+## "Databases" (Ahem) 101
 
 IC design data is commonly represented in "design databases". These formats and their access software generally look much like the low layers of a relational database management system (RDMS). They include a binary format for storing and packing records, and a API for querying and writing those records. Their central goal is to enable efficient offloading between memory and disk, especially for designs too large to reasonably fit in memory. This goal is near entirely driven by one application: digital PnR layout compilation. For common digital circuits including millions of gates and associated metadata, the optimization makes sense. Optimal PnR, and even "good enough" PnR, remains an NP-complete problem which commonly requires industrial-scale resources and days of runtime. Without such optimizations, large compilations often fail to complete. 
 
@@ -63,7 +186,7 @@ Analog circuits differ in several respects. First and perhaps most importantly: 
 
 Second, analog circuits demand to be designed and laid out hierarchically for another reason: their verification is hierarchical. Their necessary mode of evaluation - the SPICE-class simulation - is far too slow, and scales far too poorly, to evaluate compound circuits in useful runtimes. Compound analog circuits such as RF transceivers, wireline SERDES transceivers, data converters, and PLLs are commonly comprised of subsystems whose simulation-based verification is far more tractable than that of the complete system. 
 
-## Protocol Buffers
+## ProtoBuf 101
 
 The 21st century advent of 
 
@@ -94,8 +217,7 @@ Maybe:
 * JSON, YAML etc, the need for the binary-ness. Maybe in the next section
 
 
-## The VLSIR Design Database Schema
-
+## The `VLSIR` Design Database Schema
 
 [VLSIR's core design database](https://github.com/vlsir/vlsir) is defined in the open-source [Protocol Buffers](https://github.com/protocolbuffers/protobuf) schema description language (SDL). Protocol Buffers were originally designed as an efficient binary data format for exchange between programs running in isolated, often mutually-incompatible container environments. Given a data schema, an associated compiler generates interface code in a variety of popular programming languages. A simplified excerpt from the VLSIR schema, defining the `layout.Instance` type, is included below. 
 
@@ -117,8 +239,19 @@ The schema format serves as a core exchange medium for a variety of programs and
 
 ![](./fig/vlsir-system.png "The VLSIR System")
 
+## Design of the `VLSIR` Software System
+
+FIXME: write
+
 # The Analog Religion's Sacred Cow
 
+## The limitations of life in pictures
+
+FIXME: Write
+
+## The `Hdl21` Analog Hardware Description Library
+
+FIXME: this short intro was from a conference talk; 
 The primary high-productivity interface to producing VLSIR circuits and simulations is the [Hdl21](https://github.com/dan-fritchman/Hdl21) hardware description library. Hdl21's central goal is enabling "circuit programming" by circuit designers with little programming experience. Hdl21 exposes the field's most familiar core concepts  - instances of circuit elements, modular combinations thereof, signals and ports, simulations and their results - as Python objects. The core circuit-reuse element `hdl21.Module`, analogous to the Verilog `module` or Spice `subckt`, is typically defined through a class-body full of element declarations. 
 
 ```python
@@ -147,13 +280,13 @@ def MyGen(params: MyParams) -> h.Module:
 While Hdl21 includes features for common analog circuit use-cases such as differential pairs, arrays of instances, process technologies, and PVT corners, these two concepts - the module as a data structure, and generators as functions which create them - are sufficient for designers to produce powerful, parametric hardware. 
 
 
-## The _Hdl21_ Analog Hardware Description Library
+## A (Somewhat) Brief Intro to `Hdl21`
 
 Hdl21 is a [hardware description library](https://en.wikipedia.org/wiki/Hardware_description_language) embedded in Python. It is targeted and optimized for analog and custom integrated circuits, and for maximum productivity with minimum fancy-programming skill.
 
 Hdl21 generates hardware databases in the [VLSIR](https://github.com/Vlsir/Vlsir) interchange formats, defined through [Google Protocol Buffers](https://developers.google.com/protocol-buffers/). Through [VLSIR's Python tools](https://pypi.org/project/vlsirtools/) Hdl21 also includes drivers for popular industry-standard data formats and popular spice-class simulation engines.
 
-## Modules
+### Modules
 
 Hdl21's primary unit of hardware reuse is the `Module`. Think of it as Verilog's `module`, or VHDL's `entity`, or SPICE's `subckt`. Better yet if you are used to graphical schematics, think of it as the content of a schematic. Hdl21 `Modules` are containers of a handful of `hdl21` types. Think of them as including:
 
@@ -200,13 +333,13 @@ class MyModule:
     z, y, x, w = h.Signals(4)
 ```
 
-## Signals
+### Signals
 
 Hdl21's primary connection type is `Signal`. Think of it as Verilog's `wire`, or a node in that schematic. Each `Signal` has an integer-valued bus `width` field, and can be connected to any other equal-width `Port`.
 
 A subset of `Signals` are exposed outside their parent `Module`. These externally-connectable signals are referred to as `Ports`. Hdl21 provides four port constructors: `Input`, `Output`, `Inout`, and `Port`. The last creates a directionless (or direction unspecified) port akin to those of common spice-level languages.
 
-## Connections
+### Connections
 
 Popular HDLs generally feature one of two forms of connection semantics. Verilog, VHDL, and most dedicated HDLs use "connect by call" semantics, in which signal-objects are first declared, then passed as function-call-style arguments to instances of other modules.
 
@@ -286,7 +419,7 @@ m.i1 = AnotherModule()
 m.i2 = AnotherModule(a=m.i1.a, b=m.i1.b, c=m.i1.c)
 ```
 
-## Generators
+### Generators
 
 Hdl21 `Modules` are "plain old data". They require no runtime or execution environment. They can be (and are!) fully represented in markup languages such as ProtoBuf, JSON, and YAML. The power of embedding `Modules` in a general-purpose programming language lies in allowing code to create and manipulate them. Hdl21's `Generators` are functions which produce `Modules`, and have a number of built-in features to aid embedding in a hierarchical hardware tree.
 
@@ -344,7 +477,7 @@ def MyThirdGenerator(params: MyParams) -> h.Module:
     return Outer
 ```
 
-## Parameters
+### Parameters
 
 `Generators` must take a single argument `params` which is a collection of `hdl21.Params`. Generator parameters are strongly type-checked at runtime. Each requires a data-type `dtype` and description-string `desc`. Optional parameters include a default-value, which must be an instance of `dtype`.
 
@@ -400,13 +533,13 @@ d2 = asdict(o)
 assert d1 == d2
 ```
 
-## A Note on Parametrization
+### A Note on Parametrization
 
 Hdl21 `Generators` have parameters. `Modules` do not.
 
 This is a deliberate decision, which in this sense makes `hdl21.Module` less feature-rich than the analogous `module` concepts in existing HDLs (Verilog, VHDL, and even SPICE). These languages support what might be called "static parameters" - relatively simple relationships between parent and child-module parameterization. Setting, for example, the width of a signal or number of instances in an array is straightforward. But more elaborate parametrization-cases are either highly cumbersome or altogether impossible to create. (As an example, try using Verilog parametrization to make a programmable-depth binary tree.) Hdl21, in contrast, exposes all parametrization to the full Python-power of its generators.
 
-## `Prefixed` Numeric Parameters
+### `Prefixed` Numeric Parameters
 
 Hdl21 provides an [SI prefixed](https://www.nist.gov/pml/owm/metric-si-prefixes) numeric type `Prefixed`, which is especially common for physical generator parameters. Each `Prefixed` value is a combination of the Python standard library's `Decimal` and an enumerated SI `Prefix`:
 
@@ -464,7 +597,7 @@ from hdl21.prefix import e, µ
 These `e()` values are also most common in multiplication expressions,
 to create `Prefixed` values in "floating point" style such as `11 * e(-9)`.
 
-## Exporting and Importing
+### Exporting and Importing
 
 Hdl21's primary import/ export format is [VLSIR](https://github.com/Vlsir/Vlsir). VLSIR is a binary ProtoBuf-based format with support for a variety of industry-standard formats and tools. The `hdl21.to_proto()` function converts an Hdl21 `Module` or group of `Modules` into VLSIR `Package`. The `hdl21.from_proto()` function similarly imports a VLSIR `Package` into a namespace of Hdl21 `Modules`.
 
@@ -488,7 +621,7 @@ h.netlist(Rlc, sys.stdout, fmt="spice")
 
 `hdl21.netlist` takes a second destination argument `dest`, which is commonly either an open file-handle or `sys.stdout`. All its remaining arguments are passed to `vlsirtools.netlist`.
 
-## Spice-Class Simulation
+### Spice-Class Simulation
 
 Hdl21 includes drivers for popular spice-class simulation engines commonly used to evaluate analog circuits.
 The `hdl21.sim` package includes a wide variety of spice-class simulation constructs, including:
@@ -611,7 +744,7 @@ s.options(reltol=1e-9)
 s.run()
 ```
 
-## Primitives and External Modules
+### Primitives and External Modules
 
 The leaf-nodes of each hierarchical Hdl21 circuit are generally defined in one of two places:
 
@@ -706,7 +839,7 @@ class DiodePlus:
     # ... Everything else ...
 ```
 
-## Process Technologies
+### Process Technologies
 
 Designing for a specific implementation technology (or "process development kit", or PDK) with Hdl21 can use either of (or a combination of) two routes:
 
@@ -804,7 +937,7 @@ CmosCorner = TT | FF | SS | SF | FS
 
 Hdl21 exposes each of these corner-types as Python enumerations and combinations thereof. Each PDK package then defines its mapping from these `Corner` types to the content they include, typically in the form of external files.
 
-### PDK Installations and Sites
+#### PDK Installations and Sites
 
 Much of the content of a typical process technology - even the subset that Hdl21 cares about - is not defined in Python. Transistor models and SPICE "library" files, such as those defining the `_nfet` and `_pfet` above, are common examples pertinent to Hdl21. Tech-files, layout libraries, and the like are similarly necessary for related pieces of EDA software. These PDK contents are commonly stored in a technology-specific arrangement of interdependent files. Hdl21 PDK packages structure this external content as a `PdkInstallation` type.
 
@@ -894,17 +1027,6 @@ SimMyPdk.run()
 
 Note that `sim_my_pdk.py` need not necessarily import or directly depend upon `sitepdks` itself. So long as `sitepdks` is imported and configures the PDK installation anywhere in the Python program, further code will be able to refer to the PDK's `install` fields.
 
-## Examples Library
-
-Hdl21's source tree includes a built-in [examples](./examples/) library. Each is designed to be a straightforward but realistic use-case, and is a self-contained Python program which can be run directly, e.g. with:
-
-```bash
-python examples/rdac.py
-```
-
-Reading, copying, or cloning these example programs is generally among the best ways to get started.  
-And adding an example is a **highly** encouraged form of [pull request](https://github.com/dan-fritchman/Hdl21/pulls)!
-
 ## Why Use Python?
 
 Custom IC design is a complicated field. Its practitioners have to know (a lot of stuff), independent of any programming background. Many have little or no programming experience at all. Python is reknowned for its accessibility to new programmers, largely attributable to its concise syntax, prototyping-friendly execution model, and thriving community. Moreover, Python has also become a hotbed for many of the tasks hardware designers otherwise learn programming for: numerical analysis, data visualization, machine learning, and the like.
@@ -950,15 +1072,28 @@ There are lots of other very cool hardware-description projects out there which 
 - [PyMtl](https://github.com/cornell-brg/pymtl) / [PyMtl3](https://github.com/pymtl/pymtl3)
 - [Clash](https://clash-lang.org/)
 
----
-
-
-Note: Hdl21 is commonly co-developed with the [VLSIR](https://github.com/Vlsir/Vlsir) interchange formats.
-The [scripts](./scripts) folder includes two short installation scripts which install VLSIR from either PyPi or GitHub. Tweaks to PyPi-released versions Hdl21 may be able to use the PyPi versions of VLSIR. Most Hdl21 development cannot, and should clone VLSIR from GitHub. The `install-dev` script will install VLSIR alongside `Hdl21/`, i.e. in the parent directory of the Hdl21 clone.
-
 
 # Web-Native Schematics 
 
+## OK, not *all* of those schematics are bad
+
+FIXME: write
+
+## What's a schematic really?
+
+FIXME: outline - 
+
+- circuit and a picture
+- some structured data which captures the circuit content
+- some image data which produces the visual
+- usually, some paired software to render and/or interpret it
+- reverse order of "picture" and "circuit"
+
+## SVG 101
+
+FIXME: write
+
+## Hdl21 Schematics
 
 Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. We nonetheless find for a small subset of schematics - the ones containing elements that any designer would recognize - the pictorial schematic remains the most intuitive mode. Hdl21 includes a [paired schematic system](https://github.com/vlsir/Hdl21Schematics) in which each schematic is both a web-native SVG image and is directly executable as an Hdl21 Python generator. 
 
@@ -974,7 +1109,7 @@ In short: a schematic is two things -
 1. A Circuit
 2. A Picture
 
-## Hdl21 Schematics are SVG Images
+### Hdl21 Schematics are SVG Images
 
 [Scalable Vector Graphics (SVG)](https://developer.mozilla.org/en-US/docs/Web/SVG) is the W3C's open web-standard for two dimensional vector graphics. SVG is an XML-based markup language which all modern browsers natively render, and includes the capacity for semi-custom content structure and metadata.
 
@@ -1066,7 +1201,7 @@ For a schematic to produce a valid Hdl21 generator, the result of evaluating eac
 - An Hdl21 `Instantiable`, and
 - Include the same ports as the symbol
 
-## Schematics as Circuits: Hdl21 Generators
+## Schematics as Circuits, particularly Hdl21 Generators
 
 [Hdl21](https://github.com/dan-fritchman/Hdl21) is a high-productivity analog hardware description library (HDL) embedded in Python. Hdl21's `Generator`s are Python functions which produce circuit `Module`s. Hdl21 schematics are designed to seamlessly import into Hdl21-based Python programs, as a kind of "graphical Python module".
 
@@ -1126,7 +1261,7 @@ class Params:
 ```
 
 
-## Importing into Python
+### Importing into Python
 
 Hdl21 schematics are designed to seamlessly integrate into Python programs using Hdl21. They are essentially "graphical Python modules". The `hdl21schematicimporter` Python package makes this as simple as:
 
@@ -1173,57 +1308,6 @@ The answer is simple: you don't.
 **Write HDL code instead.**
 
 There are no custom symbols. On purpose. **And there never will be.**
-
----
-
-
-## Installation
-
-Reading SVG schematics requires no special software or installation: if your web browser can display SVG (and [it can](https://caniuse.com/svg)), you can read schematics. Double-click on them or open them with the OS-native method of your choice. Or borrow grandma's copy of Internet Explorer and open it with that. Voila.
-
-Editing schematics can, in principle, be done with general-purpose SVG editing software. [InkScape](https://inkscape.org) and [Boxy SVG](https://boxy-svg.com) are popular examples. Or even with a general-purpose text editor. This requires diligently sticking to the [schematic schema](#the-svg-schematic-schema) described below. Many an SVG editor will make this very hard to do, particularly with respect to element hierarchy and grouping. The dedicated schematic editor is highly recommended instead.
-
-### Installing the Python Importer Package
-
-The Python schematic-importer package is named `hdl21schematicimporter`. It is distributed via PyPi at [pypi.org/project/hdl21schematicimporter](https://pypi.org/project/hdl21schematicimporter/). To install the Python importer: 
-
-```
-pip install hdl21schematicimporter
-```
-
-To install the Python importer from source, see the [development quickstart](#dev-quickstart).
-
-
-### Building & Installing the Schematic Editor GUI 
-### (from source, don't worry, we promise it's not hard)
-
-The schematic editor uses a popular web-technologies stack. It is written in [TypeScript](https://www.typescriptlang.org/) and its peripheral components use the [React](https://reactjs.org/) UI framework. The desktop app uses the cross-platform [Electron](https://www.electronjs.org/) framework. All of this is very popular, very well-supported, and very easy to get started with.
-
-The schematic editor has a sole dependency: the JavaScript package manager [Yarn](https://classic.yarnpkg.com/en/docs/install).
-
-- On MacOS [Homebrew](https://brew.sh/) makes this particularly easy to [install](https://formulae.brew.sh/formula/yarn)
-- On Debian, Ubuntu, and similar Linux:
-  - Install `npm` and `node` through `apt`: `sudo apt install nodejs npm`
-  - Update `node` through `npm`: `sudo npm install -g n && sudo n stable`
-
-### Building the Desktop App from Source
-
-- `cd Hdl21Schematics/Hdl21SchematicEditor/packages/EditorApp`
-- `yarn` to install dependencies
-- `yarn make` to build
-
-This will produce a platform-specific app in the `out` directory.
-
-### Building the VsCode Extension from Source
-
-- `cd Hdl21SchematicEditor/packages/VsCodePlugin/`
-- `yarn` to install dependencies
-- `yarn package` to build
-- `code --install-extension hdl21-schematic-editor-0.0.1.vsix` to install
-
-For development-mode installations see the [development quickstart](#dev-quickstart).
-
-### Coming Soon: Installing the GUI from Pre-Packaged Bundles
 
 ---
 
@@ -1501,6 +1585,80 @@ Why? In short: in modern technologies, the lowest levels are the hardest - both 
 
 ![layout_quadrants](fig/layout_quadrants.png "Relationship Between Custom and Programmed Layout Generation in the Digital and Analog Design Flows")
 
+--- 
+
+### Aside on digital layout "compilation"
+
+In this sense the anaogy between the digital layout pipeline and the typical programming language compiler breaks down. Digital PnR does nore than compile a hardware circuit, and does more than the good faith optimization attempts afforded by most optimizing compilers. Instead it wraps this compilation in an optimization layer, in which the optimization objectives 
+
+* (a) Are met by design, or the process is deemed unsuccessful, and
+* (b) Are, at least to an extent, user programmable.
+
+The most common and prominent example such metric is the synchronous clock frequency. PnR users commonly specify such a frequency or period as their sole input constraint. The process is analogous to a C-language compiler with user inputs dictating its maximum instruction count or memory usage. While such efforts may exist in research or in specialty contexts, they are not the model deployed by commercially successful "optimizing compilers" (e.g. gcc, LLVM/ clang). While the term "optimizing" is commonly used to describe these projects; it would more accurately be saved for digital PnR, in which compilation is explicitly wrapped in an optimizing layer rich with goals and constraints. 
+
+
+---
+
+## The Two Most Tried (and Failed) Models
+
+![fraunhofer_history](./fig/fraunhofer_history.png "Some History, 'Courtesy' LAYGEN II Paper, extended by Fraunhofer IIS. FIXME: replace ")
+
+FIXME: 
+
+1. Analog PnR
+2. Programmed-custom
+
+Code-based "programming" of (digital) circuits has been commonplace since the introduction of the still-popular hardware description languages in the 1980s. Successful programming models for semi-custom layout have proven more elusive. Most research efforts can be grouped into two large categories: 
+
+* 1. _Constraint-based_ systems, which expose an API or language for setting constraints and/ or goals for a _layout solver_.
+* 2. _Programmed custom_ systems, notably including BAG, which instead expose an elaborate API to directly manipulate _layout content_.
+
+While we believe VLSIR's modular design enables both approaches, its applications to date have focused on approach (2). Like the overall framework, layout programming with VLSIR is both modular and layered. The lowest-abstraction, most-detailed layout-programming layer directly manipulates geometric objects and hierarchical instances thereof. This "raw" layer is the basis of open-source generators for SRAM and FPGAs. 
+
+A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
+
+![](fig/tetris_routing.png "Tetris Routing Concept")
+
+![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+
+![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
+
+
+
+# Programmed-Custom Layout 
+
+## State of the Art(?)
+
+- Direct libs: gdstk, gdsfactory
+- "P-cells" for low-level devices 
+- BAG programming model
+
+## `Layout21`'s Layered Design
+
+FIXME: write
+
+- general approach
+- rust
+- raw/ direct mode
+
+## Tetris Placement & Routing
+
+FIXME: write
+
+## Programmed-Custom Successes (mostly SRAM compilers)
+
+The most successful depolyments of programmed-custom layout have generally been _circuit family_ specific. E.g. while a layout-program at minimum produces a single circuit, these best-use-cases find families of similar circuits over which to find a set of meta-parameters, enabling the production of a small family. SRAM arrays have probably been the most successful example. SRAM serves as the primary high-density memory solution for nearly all of the digital flow, comprising most cache, register files, and configuration of most large digital SOCs. SRAM is therefore extremely area-sensitive, especially at its lowest and most detailed design layers. A common workflow uses the custom graphical methods to produce these "bit-cells" and similarly detailed layers, which using "SRAM compiler" programs to aggregate bits into usable IP blocks. An SRAM compiler is a programmed-custom layout program. It leverages the fact that large swathes of popular SRAM usage has a consistent set of parameters: size in bits, word width, numbers of read and write ports, and the like. The compiler (or what we might call "generator") programs generalize over this space and produce a family of memory IPs. 
+
+The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems implemented this marriage with analog signal processing, using physical device characeristics (e.g. programmable resistors) to perform multiplication, and more amenable quantities (e.g. current, charge) to perform addition. (We always thought this was a bad idea.)
+
+- FIXME:
+- add some imagery from SRAM CIM 
+- cite SRAM22/ whatever that library's called now
+
+
+
+# Compiled (Analog) Layout
+
 
 ## Why does PnR work for digital, but fail for analog? 
 
@@ -1540,69 +1698,7 @@ Contrast this with analog circuits:
 In short: fail across the board. Analog circuits have no "analog" to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each have depends on wholly different criteria. These criteria generally lack any efficient surrogates; their success can generally only be evaluated through transistor-level simulation. Such simulations scale poorly with the number of circuit elements, quickly requiring hours to complete on feasible contemporary hardware. Moreover their efficiency is dramatically reduced by the inclusion of *parasitic elements*, the very layout information that a PnR solver is attempting to optimize. Including a sufficiently high-fidelity simulation model for making productive layout decisions generally means requiring extensive runtimes. Embedding such evaluations in an iterative layout-optimizer has proven too costly to ever be deployed widely. Machine learning based optimizers such as BagNET [@chang2018bag2] use a combination of wholesale removal of layout elements (i.e. "schematic level" simulations) and lower-cost surrogate simulations (e.g. a DC operating point standing in for a high-frequency response) to evaluate design candidates. 
 
 
-
---- 
-
-### Aside on digital layout "compilation"
-
-In this sense the anaogy between the digital layout pipeline and the typical programming language compiler breaks down. Digital PnR does nore than compile a hardware circuit, and does more than the good faith optimization attempts afforded by most optimizing compilers. Instead it wraps this compilation in an optimization layer, in which the optimization objectives 
-
-* (a) Are met by design, or the process is deemed unsuccessful, and
-* (b) Are, at least to an extent, user programmable.
-
-The most common and prominent example such metric is the synchronous clock frequency. PnR users commonly specify such a frequency or period as their sole input constraint. The process is analogous to a C-language compiler with user inputs dictating its maximum instruction count or memory usage. While such efforts may exist in research or in specialty contexts, they are not the model deployed by commercially successful "optimizing compilers" (e.g. gcc, LLVM/ clang). While the term "optimizing" is commonly used to describe these projects; it would more accurately be saved for digital PnR, in which compilation is explicitly wrapped in an optimizing layer rich with goals and constraints. 
-
-
----
-
-## The Two Most Tried (and Failed) Models
-
-
-![fraunhofer_history](./fig/fraunhofer_history.png "Some History, 'Courtesy' LAYGEN II Paper, extended by Fraunhofer IIS. FIXME: replace ")
-
-FIXME: 
-
-1. Analog PnR
-2. Programmed-custom
-
-Code-based "programming" of (digital) circuits has been commonplace since the introduction of the still-popular hardware description languages in the 1980s. Successful programming models for semi-custom layout have proven more elusive. Most research efforts can be grouped into two large categories: 
-
-* 1. _Constraint-based_ systems, which expose an API or language for setting constraints and/ or goals for a _layout solver_.
-* 2. _Programmed custom_ systems, notably including BAG, which instead expose an elaborate API to directly manipulate _layout content_.
-
-While we believe VLSIR's modular design enables both approaches, its applications to date have focused on approach (2). Like the overall framework, layout programming with VLSIR is both modular and layered. The lowest-abstraction, most-detailed layout-programming layer directly manipulates geometric objects and hierarchical instances thereof. This "raw" layer is the basis of open-source generators for SRAM and FPGAs. 
-
-A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
-
-![](fig/tetris_routing.png "Tetris Routing Concept")
-
-![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
-
-![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
-
-
-
-# Programmed-Custom Layout 
-
-- Direct libs: gdstk, gdsfactory
-- "P-cells" for low-level devices 
-- BAG programming model
-- Layout21
-- raw/ direct mode
-- tetris
-- SRAM generation
-
-The most successful depolyments of programmed-custom layout have generally been _circuit family_ specific. E.g. while a layout-program at minimum produces a single circuit, these best-use-cases find families of similar circuits over which to find a set of meta-parameters, enabling the production of a small family. SRAM arrays have probably been the most successful example. SRAM serves as the primary high-density memory solution for nearly all of the digital flow, comprising most cache, register files, and configuration of most large digital SOCs. SRAM is therefore extremely area-sensitive, especially at its lowest and most detailed design layers. A common workflow uses the custom graphical methods to produce these "bit-cells" and similarly detailed layers, which using "SRAM compiler" programs to aggregate bits into usable IP blocks. An SRAM compiler is a programmed-custom layout program. It leverages the fact that large swathes of popular SRAM usage has a consistent set of parameters: size in bits, word width, numbers of read and write ports, and the like. The compiler (or what we might call "generator") programs generalize over this space and produce a family of memory IPs. 
-
-The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems implemented this marriage with analog signal processing, using physical device characeristics (e.g. programmable resistors) to perform multiplication, and more amenable quantities (e.g. current, charge) to perform addition. (We always thought this was a bad idea.)
-
-- FIXME:
-- add some imagery from SRAM CIM 
-- cite SRAM22/ whatever that library's called now
-
-
-
-# Compiled (Analog) Layout
+## Analog PnR Success(?) Stories
 
 Attempts to compile analog and otherwise "custom" circuit layout are not new. 
 
@@ -1615,6 +1711,9 @@ Attempts to compile analog and otherwise "custom" circuit layout are not new.
 Many such frameworks focus on small transistor-level circuits, such as those for the logical "standard cells" which serve as the primitives of the digital flow, or a relatively simple amplifier. Circuits with less than, say, 20 transistors. These frameworks often focus on stringent optimality goals for such small-scale circuits, and often embed a goal to reach *provable* optimality for those metrics, such as diffusion sharing or overall layout area. Placement is then generally cast into an optimization framework such as integer linear programming (ILP), in which the reward function directly evaluates the target metric. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in @gupta98ilp, ILP based placement "implicitly explores all possible transistor placements". This exploration isn't really implicit; it *explicitly* grows exponentially with the size of the placement problem. ALIGN uses ILP-based placement and... it's slow enough to be useless? 
 
 --- 
+
+
+## `AlignHdl21`
 
 Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solves. Emphasis on the BAG project and its programmed-custom model has been the primary artifact. 
 
@@ -1650,19 +1749,235 @@ BAG began with more or less this intent, to automate the entirety of this design
 
 # Machine Learners Learn Circuits 101
 
-FIXME: 
+
+## State of the Art(?)
+
+FIXME: write
 
 - AutoCkt [@autockt] 
 - BagNET [@bagnet]
-- CktGym/ Discovery
+
 - Constructive angle
 - Draftsman/ LLM angle
 
+## The `CktGym` Distributed Framework 
+
 ![](./fig/cktgym.png "CktGym Framework")
+
+FIXME: write plenty before this! 
+
+### Example Power of Circuit "Expert Knowledge"
+
+An example folded cascode, "rail to rail" dual input op-amp. This circuit consists of 26 transistors. An ML-based optimizer operating directly on its device widths therefore needs to jointly optimize these 26 variables. Operating on more complex device sizes (e.g. including length or segmentation in addition to unit width) further multplies this space. 
+
+Veteran designers of such circuits, in contrast, recognize they are not making 26 independent device sizing decisions. This circuit and most others in the classical analog genre operate based on device matching between pairs and groups of ostensibly identical transistors. This tactic pairs with both signaling schemes - primarily the prominence of differential signals in on-die contexts - and with surrounding needs such as replica-current biasing. 
+
+The rail to rail op-amp in fact includes only six unique unit devices: 
+
+- The input pair,
+- The bias curent sources, and
+- The cascodes
+- Each in NMOS and PMOS flavors
+
+These devices are then scaled by integer current ratios, for each input pair (herein referred to as `alpha` and `beta` respectively), and to the output stage (`gamma`). Figure XYZ depicts this circuit highlighting this reality. Several bias-current branches which do not directly dictate the circuit performance are fixed to the unit current `ibias`. The two input current souces are also fixed to identical current values equal to `ibias`. 
+
+These relationships are relevant for both human and ML designers. Embedding this "expert knowledge" reduces the parameter space from 26 (the number of devices) to 9: six to set unit device sizes, plus the three current ratios. If more detailed parameterization of the unit devices is desired (e.g. to set their length as well as width), this advantage grows similarly. 
+
+```python
+@h.paramclass
+class FcascParams:
+    # Unit device sizes
+    nbias = h.Param(dtype=int, desc="Bias Nmos Unit Width", default=2)
+    pbias = h.Param(dtype=int, desc="Bias Pmos Unit Width", default=4)
+    ncasc = h.Param(dtype=int, desc="Cascode Nmos Unit Width", default=2)
+    pcasc = h.Param(dtype=int, desc="Cascode Pmos Unit Width", default=4)
+    ninp = h.Param(dtype=int, desc="Input Nmos Unit Width", default=2)
+    pinp = h.Param(dtype=int, desc="Input Pmos Unit Width", default=4)
+
+    # Current Mirror Ratios
+    alpha = h.Param(dtype=int, desc="Alpha (Pmos Input) Current Ratio", default=2)
+    beta = h.Param(dtype=int, desc="Beta (Nmos Input) Current Ratio", default=2)
+    gamma = h.Param(dtype=int, desc="Gamma (Output Cascode) Current Ratio", default=2)
+```
+
+```python
+@h.generator
+def Fcasc(params: FcascParams) -> h.Module:
+    """# Rail-to-Rail, Dual Input Pair, Folded Cascode, Diff to SE Op-Amp"""
+
+    # Multiplier functions of the parametric devices
+    nbias = lambda x: nmos(m=params.nbias * x)
+    ncasc = lambda x: nmos(m=params.ncasc * x)
+    ninp = lambda x: nmos(m=params.ninp * x)
+    pbias = lambda x: pmos(m=params.pbias * x)
+    pcasc = lambda x: pmos(m=params.pcasc * x)
+    pinp = lambda x: pmos(m=params.pinp * x)
+
+    # Give these some shorter-hands
+    alpha, beta, gamma = params.alpha, params.beta, params.gamma
+
+    @h.module
+    class Fcasc:
+        # ... 
+        
+        ## Output Stack
+        pbo = h.Pair(pbias(x=gamma + beta))(g=outn, d=psd, s=VDD, b=VDD)
+        pco = h.Pair(pcasc(x=gamma))(g=pcascg, s=psd, d=outd, b=VDD)
+        nco = h.Pair(ncasc(x=gamma))(g=ibias2, s=nsd, d=outd, b=VSS)
+        nbo = h.Pair(nbias(x=gamma + alpha))(g=ibias1, d=nsd, s=VSS, b=VSS)
+
+        ## Input Pairs
+        ## Nmos Input Pair
+        nin_bias = nbias(x=2 * alpha)(g=ibias1, s=VSS, b=VSS)
+        nin_casc = ncasc(x=2 * alpha)(g=ibias2, s=nin_bias.d, b=VSS)
+        nin = h.Pair(ninp(x=alpha))(g=inp, d=psd, s=nin_casc.d, b=VSS)
+        ## Pmos Input Pair
+        pin_bias = pbias(x=2 * beta)(g=pbiasg, s=VDD, b=VDD)
+        pin_casc = pbias(x=2 * beta)(g=pbiasg, s=pin_bias.d, b=VDD)
+        pin = h.Pair(pinp(x=beta))(g=inp, d=nsd, s=pin_casc.d, b=VDD)
+```
+
+## A Different Kinda Analog RL Thing
 
 ![](./fig/ml-designer.png "ML Designer")
 
+### Background, Prior Art
+
+The problem formulation for these systems is typically of the form: given a fixed circuit topology and fixed figure of merit, find optimum sizes for each device in the circuit. Reinforcement learning designer-agents, typically comprised of deep neural networks, are deployed to perform these optimizations. Moving a new circuit topology or new FOM generally requires an altogether new agent, each of which requires a training process many-times the length of its actual task. Attempts at transfering the learning derived from each circuit, where attempted, are generally limited to highly-correlated cases, such as the differences between schematic-based and layout-parasitic-annotated versions of the same circuit.  
+
+This is far from how human designers approach the task on several fronts.  
+
+- Human designers clearly learn to infer more complex circuits from simpler ones. Core analog building-blocks such as current mirrors form the basis of large (also core building blocks) of various shapes and sizes.
+- Designers are commonly faced with similar design-tasks featuring similar goals, metrics, constraints, and/or technologies, and quickly learn to extrapolate between them. "Porting" of a circuit from one process-technology to another similar technology is a common example. Designers quickly come to recognize which technologies are "most similar", even if only dimly aware of any specific criteria for similarity. They similarly learn to extrapole between metrics, i.e. trading off power for bandwidth, and other constraints such as area.
+- Casting circuit design as optimization is also some bullshit math-department-envy. Real design-efforts have constrained resources such as design-time and expertise. Their goals are not of the form "thou must find the optimal solution", but of "thou must find a solution better than X (and the more the merrier)".
+
+In some respects this framing is also forced onto the traditional machine-learning paradigm. The separation between "training" and "inference" is particularly strained. The notion of a discrete "training stage" is valuable in several machine-learning contexts:
+
+- (a) Instances of supervised learning, in which a system is foreground-trained, then subsequently not updated while performing (hopefully many) much lower-cost inference-steps, and
+- (b) Instances of transfer learning, for example of a neural-network-based robotics system trained in a physics simulator, then transferred into a physical robot.
+
+Analogizing to human agents, these trained ML systems are like Olympic athletes: their performance only matters a (sometimes quite small) subset of the time, i.e. on "game days". Once every four years they face a particularly high-leverage competition. The rest of their time is spent preparing for those big moments. Nothing tracks or cares about their performance on intermediate "training days", except inasmuch as it ultimately effects their game-day performance. Game-playing reinforcement-learning agents such as AlphaZero have similar constraints, again due to the dichotomy between "training time" versus "game time".
+
+Most human jobs do not work like this. Janitors, for example, don't have "game days". They do janitor-ing every day. This work is in part premised on the circuit designer's task being more like the janitor than the olympic athlete. There is no game-day for either; their contributions at any point in time count the same.
+
+Existing circuit-RL systems adopt this training-inference distinction, as best we can tell, for (a) inertia, and (b) a sort of "academic peacocking" - the demand to find a straightforward, tangible metric to compare to similar work (typically the post-training inference time).
+
+### The (Proposed) New Thing
+
+This work proposes an RL-based circuit-design system which endeavors to:
+- (a) Not just provide device sizing for human-provided circuits, but to design circuits of its own.
+- (b) Does so while inferring from related circuits, goals, and constraints.
+- (c) Continuously improves upon state-of-the-art designs.
+- (d) Accepts new goals and constraints from its human designers.
+
+It includes:
+
+- Programmable circuit goals, each of which includes
+- A test suite, generally comprised of simulation-based testbenches
+- A scalar figure of merit, and
+- A set of constraints, including both performance requirements (e.g. "power < 1mW") and availability constraints, e.g. the device-set available in a particular implementation technology.
+- A comprehensive database of past goals, attempts, and their results.
+- A designer-agent, which manipulates and evaluates circuits through a discrete action-space.
+- An overseeing "boss", which provides the designer-agent with a stream of circuit-goals
+
+The designer-agent's performance is rewarded against a single metric: performance relative to the best existing figure-of-merit for the given goal. The designer-agent is therefore perennially incentivized to create "state of the art" circuits for each goal.
+
+Separable notions of "training" and "inference" break down in this mold. Like the human-designer, the designer-agent sees no "game-day" to prepare for. Its circuit-inventions made on "training days" are just as valuable as any other. Both the designer-agent and boss (which may or may not be implemented as an RL agent) run online, indefinitely. Additional goals can be injected at any time, with priority dictated by the ultimate (human) boss.
+
+The combination is designed to allow the designer-agent to learn along several axes:
+
+- From simple circuits, e.g. current mirror
+- From similar test suites, i.e. those for similar circuits
+- From same test-benches, similar FOMs
+- From similar technologies/ constraints
+
+### The Designer-Agent and Her Environment
+
+The designer-agent has a discrete action-space highly similar to that available to a human designer. It consists of four discrete actions:
+
+- Add a device
+- Change a port-connection, on a single device
+- Change a parameter-value, again on a single device
+- Evaluate the circuit, i.e. run simulations and determine its FOM
+
+Each (but the last) has a small parameter-space including: 
+
+- Adding a device is parametrized by a device-type, represented as an integer "device type ID".
+- Each constraint-set, generally via an underlying implementation-technology component, includes a valid set of devices. Selecting an invalid device-type incurs the minimum reward, and does not modify the circuit.
+- Changing a port-connection is parametrized by three integer values: (a) an instance reference, denoted as an index in the circuit component-list, (b) a port-reference, again represented as an integer, and (c) the net to be connected, again denoted as an integer, as common in SPICE-netlist-style representations. An invalid port-reference incurs the minimum reward, and does not modify the circuit.
+- Changing a parameter-value has essentially the same three parameters: (instance, param (index), new value). Note this implies that all instance-parameters are integer-valued. An invalid parameter-index again incurs the minimum reward, and does not modify the circuit.
+The "evaluate" action has no parameters.
+
+Using Rust-style algebraic-enum syntax, the designer's action-space then looks something like:
+
+```rust
+/// Type Alias for each Index-type
+type Index = u8;
+
+/// Designer-Agent's Action Space
+enum Action {
+ AddDevice(Index),
+ Connect {
+   instance: Index,
+   port: Index,
+   node: u8,
+},
+ SetParam {
+   instance: Index,
+   param: Index,
+   value: u8,
+},
+ Evaluate
+}
+```
+
+Actions are encoded similarly to how compilers commonly lay out tagged unions. An initial integer-value indicates the action-type, while remaining fields dictate their data. The designer action-space is therefore encodable as a four-integer tuple: one for the discriminant, and three for the parameters of the largest actions (Connect and SetParam). Actions with invalid discriminant-values incur the minimum reward, and do not modify the circuit.
+
+(This is all similar to the "Conditional Action Tree" agents described here: https://ieee-cog.org/2021/assets/papers/paper_89.pdf. More reference follow-up'ing to come.)
+
+### The Environment
+
+The designer-agent's sole reward function is its circuit's performance relative to the state of the art for its task. Like the human designer, it has a wide variety of information to bring to bear in seeking this reward, and much more information it is either dimly aware of or altogether unaware of. The entirety of this universe, or environment in RL terms, includes both the boss-agent and the comprehensive results database, covered in later sections. The designer-agent's directly observable subset of the environment includes:
+
+- Its currently-designed circuit, as produced by its prior actions
+- Simulation results for its most-recently simulated circuit
+- A detailed representation of its current goal, including:
+- Circuit representations of the goal's testbenches
+- Serialized representations of its constraints, generally in the form of mathematical inequalities
+- The serialized figure-of-merit evaluation routine, represented as an evaluation tree
+- The state of the art circuit for its current goal, and its simulation results
+
+Much more of the environment-information would be of use to the designer-agent, and may be worth adding to its observation-space. High-utility information may include:
+
+- State of the art circuits for similar goals, i.e. those with near-identical constraints or figures of merit
+- Results of its other past circuit evaluations
+
+Expansion of the designer-agent's observable space is only constrained by its efficiency in making its own updates. Note that many more tangential relationships, such as "technology A is more similar to technology B than technology C", can in principle be learned into its network coefficients.
+
+### The "Design Manager", or Boss-Agent
+
+The designer-agent has a single objective: create the best circuit it can for a given goal. _Selecting_ these goals is outside her purview, and is the primary task of the "boss-agent". In our human-designer analogy the boss-agent serves as the "design manager", determining towards which goals designer-time should be dedicated, subject to a number of goals and constraints. (As of this writing it remains undecided whether this "boss" will in fact become an RL agent; we refer to her as the "boss agent" nonetheless.)
+
+The relationship between the boss-agent and designer-agent occurs in fixed-length design-attempts, or in RL terms, episodes. The boss-agent provides the designer-agent's goal and initial environment, potentially including a suggested circuit, e.g. from similar goals or similar constraints. This often, but not necessarily, is set identical to the state of the art circuit for the goal. The boss-agent then allows the designer a fixed number of actions to improve upon this circuit, then records the final design, its simulated results and figure of merit. These fixed-length "design sprints" pattern a human design environment. Where the human design-manager might assign "produce the best circuit you can in a month", the design-manager-agent assigns "produce the best circuit you can in N actions".
+
+The boss-agent interacts with two long-accumulating datasets: the results database and goals database. Results are updated after sufficiently successful design-attempts, particularly those which near or exceed the prior state of the art. Prioritized goals are injected by the boss-agent's human designers, and eventually potentially by a larger design community.
+
+The boss-agent's goal-selection is influenced by:
+
+- Progress. Goals for which the designer-agent is improving upon the state of the art are prioritized as likely to incur further improvements. Goals for which improvement has stagnated are deemed more likely to have reached more fundamental constraints.
+- Priority. The boss-agent interacts with a goal-database which can be updated at any time by its human-designers, or eventually by a larger design-community. Each goal is affixed with (human-dictated) priority-weighting and expectations. Realistically-set goal-expectations, in values of the goal's figure-of-merit, allow for the agents to escape local minima. Typical sources of these expectations would be from human-designed circuits. Priorities may be set in terms of these expectations, for example a fixed maximum priority-level until reaching the expectation, then a linearly-decreasing priority for further performance which exceeds it. An eventual community-driven model of these priority-weights might include expertise-driven (e.g. reputation-based) or market-based (e.g. auction) mechanisms for setting these weights.
+- Comprehensiveness. Additional emphasis is placed on goals, figures of merit, and constraint-sets which have been least covered by past design attempts. A prime example is the injection of a new process-technology into the available set, and associated attempts to map each past goal into the technology.
+
+The boss-agent also accepts human-designed circuits. Along with figure-of-merit expectations, such circuit-suggestions are a primary mechanism for the injection of human expertise. Each human-recommended circuit is quickly evaluated against any paired goals, and if improving upon the designer-agent's state of the art, quickly injected into its observed environment for those goals.
+
+Both the designer-agent and boss-agent run continuously in a server-style mode. Their collective task is best interpreted not as one of optimization, but as one of improvement. No matter their perceived optimality of their circuit-designs to date, the boss-agent will continue identifying a highest-priority goal, and the designer-agent will continue to attempt to improve upon it.
+
+An ultimate boss-agent, or perhaps a "boss's boss agent", would include several further capabilities, notably including extrapolation of new constraints and goals. If a figure of merit is valuable subject to the constraint that, for example, power consumption does not exceed 2mW, then in all likelihood the same FOM subject to a 1mW constraint would be similarly valuable. Similarly, most figures of merit will comprise weighted combinations of several conflicting metrics, e.g. power versus bandwidth. If a particular weighting of these metrics is deemed valuable, then similar (or perhaps wildly different) ones are likely to be as well. This generation of new constraints and goals, and its weighing against continued attempts at human-provided goals, is left as future work.
+
+## The Natural Language "Draftsman"
+
 ![](./fig/ml-draftsman.png "Natural Language Draftsman")
+
 
 # Notes for Editing
 
