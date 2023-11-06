@@ -175,6 +175,203 @@ An outline of a system-design software-suite realizing these ideas:
 - Generation/ compilation to those standard PCB stack-ups, and potentially to arbitrary others.
 
 
+## MixedYard
+
+Options and plans for integration of mixed-signal circuits. 
+
+
+
+---
+
+
+
+### Goals
+
+Principally, to facilitate the creation of research-grade chips incorporating both novel digital and analog circuits, and substantial interaction between the two. Foreseeable examples would include: 
+
+* Advances in RISC-V micro-architecture, paired mixed-signal machine learning accelerators 
+* SoC-class research chips with integrated power and clock management, for sake of power-aware performance benchmarks 
+* IoT-class chips including both substantial digital (CPU, accelerators), analog, and RF content
+
+
+
+To facilitate these goals, this work proposes: 
+
+* A top-down, abstract-driven mixed-signal design methodology 
+* A digital-integration-focused mixed-signal physical design style 
+* Abstract versus implementation comparisons for behavioral, physical, and timing models 
+
+
+
+---
+
+
+
+### General State of Berkeley Chip-Making
+
+The past decade's work at Berkeley (as well as many peer institutions) has included a renewed commitment to the *design productivity* of IC designers. In addition to producing advances in computer architecture and circuit design, research programs have included substantial software development efforts towards making chips easier to design and build, with substantially less design effort, in a wider variety of semiconductor process technologies. Substantial research-products in this area have included the Chisel digital HDL, Hammer digital back-end framework, ChipYard integration framework, and BAG analog-circuit generation framework. 
+
+Digital- and analog-domain efforts in these areas have nonetheless remained relatively silo'ed. Berkeley researchers have produced a number of integrated mixed-signal chips (examples?), but find this point of integration has escaped the program of design-productivity gains. Despite substantial gains in both the digital and analog silos, the connective tissue between the two remains as difficult as ever. Recent research tape-outs have more commonly retreated to one silo or the other: purely-digital machine learning accelerators and CPU architectures in one camp, and purely analog PLLs, transceivers, and biomedical ICs in the other. Many of these chips suffer directly and materially from the lack of the alternate discipline. For example, architecture chips lack any substantial off-chip bandwidth due to the lack of high-speed PHYs, while analog chips have fallen into common pitfalls of digital design in custom methodology (missing timing paths, behavioral inconsistencies, etc.) 
+
+
+
+### The Modern Berkeley Digital Flow 
+
+UCB's digital IC and computer architecture research is primarily performed in home-grown front-end and back-end frameworks. The Chisel HDL, embedded in the Scala programming language, adds a rich set of parametric RTL-generator facilities above industry-standard tools such as SystemVerilog. Back-end design primarily uses the Hammer framework, based in Python, for configuration of process technologies and back-end EDA tools. The overarching ChipYard framework largely serves to integrate the two, while also enabling several other home-grown design-productivity tools, such as cloud-FPGA-accelerated simulation via FireSim. Researchers in these areas have seen substantial productivity gains from this suite of tooling, often creating large-scale research chips with small teams on limited schedule. 
+
+
+
+### Berkeley's Analog Generator Framework, BAG 
+
+Analog design lacks the clear separating between front- and back-ends that the digital paradigm afford. Berkeley flows are a central example - the principal front- and back-end frameworks (Chisel and Hammer, respectively) can be used together, or either can be paired with external, third-party, or industry standard tools. 
+
+Berkeley's analog design generation framework (BAG), in contrast, includes both the "front" and "back" ends of analog designs (to the extent these exist), as well as facilities for creating test benches, running SPICE-class simulations, processing simulation data, and generating digital-targeted abstract views, typically in the form of LEF and Liberty-format files. 
+
+This begs an aside on the use of the term "generator", for use in any of these contexts. "Generators" have become an umbrella term of sorts at Berkeley, generally associated with somehow using modern programming practices to generate IC hardware content. More specific associations differ quite widely between the analog and digital "generator frameworks". Chisel's digital generators might be thought of as Scala programs whose output is synthesizable RTL, represented either in SystemVerilog or FIR-RTL. Typical parameter-spaces include the width of buses and instance arrays, modal controls enabling or disabling RTL features, and similar. Generator inputs for the Gemmini ML accelerator illustrate an example case:
+
+(code example)
+
+
+
+BAG's analog generators, in contrast, attempt to codify a design process in a near-arbitrary process technology. These programs tend to look a bit more like constrained optimizers. Typicaly inputs include a set of target performance specifications (e.g. gain, noise, resolution), and a representation of the target process technology. Often reaching design-closure requires launching and analyzing dozens or hundreds of simulations, requiring run-times of hours or days. Just as often, a given combination of generator-code, target-specs, and constraints is unable to converge on a solution. Often the high-level *behavior* (and/ or IO interface) of the generated analog circuit is a strong function of its technology and constraints. 
+
+Point being: *generators* mean fairly different things to these different audiences. Inline integration of the two is possible in principal, by running BAG generators with inputs provided from parent Chisel generators during RTL elaboration. But their differences in use-case and run-time favor a model in which BAG's generators are run "offline", and incorporated into digital design in the more conventional fashion of "hard IP". 
+
+Whether run "inline" or "offline", each parent block must have reasonable assurance that it knows its sub-block interfaces, for any set of parameters it may provide. Addition or removal of ports based on input parameters serves as a common example of where this assurance is broken. Including physical design (e.g. outline, pin placement, layers and blockages) dramatically expands the scope of these potential errors. 
+
+
+
+### BAG Layout Generation 
+
+A central facet of the BAG framework is its ability to generate semi-custom process-portable layout. High priority is placed on the portability of an analog circuit from one technology to another. Less emphasis is placed on physical integration into any particular digital design flow. This portability is in part achieved by placing layout elements on a "base grid", analogous (although aways more flexible than) standard-cell or gate-array style CMOS placement. Each process technology is represented by a Python package, largely configured through a set of paired YAML configuration. Overall, layout styles are dictated by two primary layers of such configuration: 
+
+* (a) Technology-specific configuration, which set the allowable line widths, spacings, and device sizes
+* (b) Per-generator configuration, which set what the BAG community call its "floorpan" (which standard cell library designers would more commonly call a "template" or "layout style")
+
+(Maybe include an example) 
+
+
+
+The technology-specific configuration of (a) is particularly brittle for sake of digital integration. Digital back-end design, such as done via Hammer, dictates an analogous set of process-specific and design-specific wiring rules, of which BAG is unaware. Reconciling the two requires one of: 
+
+* (Very) good fortune that the two align, or
+* Concession by the digital back-end to adopt the BAG template, or 
+* Re-design of the BAG process-technology package, or
+* A "reconciliation area" surrounding the analog circuit, converting between its and the digital layout's metal grid. By definition, design of this area must be done in the digital back-end flow, where custom metal placement is often even more taxing than in semi-custom layout. 
+
+
+
+
+
+### Abstracts as Contracts
+
+A central facet of any modern, high-complexity IC design flow is the capacity to design *hierarchically*. Sub-chips are broken into conceptual units ("modules" or "subcircuits") which the remainder of the system can comprehend without a complete implementation, via *abstract views*. These sub-chips commonly include one (or more) abstract view per discipline, including:  
+
+* *Layout abstracts*, most commonly in LEF format, summarize layout implementations (commonly GDS or OA)
+* *Timing abstracts*, most commonly in Liberty format, summarize an broad set of timing-related behaviors, including the inclusion of logic paths, interface timing constraints, drive strengths, and input loads. In principal these stand in for hundreds of time-consuming simulations. 
+
+Note that while particular file-formats may be required by particular design tools (e.g. place and route, STA), the conceptual content can appear in any format. 
+
+These "summarization" facilities of the abstract-formats are commonly used after designs are complete. Most layout-generation software (such as BAG) will output a "summarizing" LEF-file given a complete layout implementation. Static timing analyzers similarly "summarize" their results into Liberty format. While the summarization-mode is *necessary* for large and complex IC designs, it can by definition only be of use once a candidate design is complete. This offers little to the design process leading to its generation, or the ability for sub-chip designers to define inter-block interfaces and confidently execute against them. 
+
+Introduce *abstract as contract*. In this model, interfaces between sub-chips (for example, analog vs digital) are defined by these abstract design-views. These definitions occur (very) early in the design process, and consititute the *contract* between blocks. Design on either side of this contract-interface then amounts in some sense to filling in detail which *implements* this abstract-contract. Determination of success or failure amounts to a comparative check of whether a design implements the contract. 
+
+Take an analogy (which will particularly land for analog designers) - the parametric specification table. We'll imagine an amplifier embedded in an analog signal chain, of sufficient complexity to have different top-level and amplifier-level designers. The parametric specifications provided to the amplifier designer might look something like so: 
+
+| Spec                          | Min  | Max  | Unit |
+| ----------------------------- | ---- | ---- | ---- |
+| 3dB Bandwidth                 | 100  | -    | MHz  |
+| Input Common-Mode Voltage     | 0.4  | 0.6  | V    |
+| Power Consumption             | -    | 500  | µW   |
+| Input-Referred Offset Voltage |      | 5    | mV   |
+
+This is the common form of an analog-designer's work-statement: given a qualitative description of a circuit's behavior and a quantitative set of spec-requirements, produce a realizable design (schematics, layout drawings, and the like) which adhere to the specs. The spec-table is the *performance abstract* in this sense; the signal-chain designer need not refer to each detailed simulation, but instead relies on their adherence to the (vastly simplified) spec-table. It serves as the contract between layers, against which the signal-chain designer can perform his own calculations and go about his own design process. 
+
+Now to complete our analogy: imagine that after months of detailed work, a subtle realization causes the designers to realize that the amplifier's offset is, say, 3.5mV instead of 4mV. (This might be from a device-model change, a misplaced simulation setting, or any other external factor.) What happens? Generally *just about nothing*. Both values of offset adhere to the contract. The top-level designer need not re-analyze, re-simulate, or re-plan for the new values, so long as his past analysis assumes the contracted performance (and no more). 
+
+Industry-standard practice (and common sense) dictates that designers do this all the time. We erect relatively abstract fences, and allow each neighbor to work on her own side of them. Physical and timing design have largely escaped this bit of common sense. Were the change instead to, for instance, the input capacitance of a pin in a Liberty timing abstract, common practice would be to re-generate these summaries at every involved level of hierarchy, and re-do any associated analysis. The physical and timing analyses tend to base themselves on implementations rather than their abstract-contracts. In an even more common case for custom physical design, unintended changes to layout implementation often bubble up through LEF "summaries", disrupting neighboring blocks. 
+
+
+
+The *abstract as contract* methodology requires two essential components for each design-view:
+
+* (a) Efficient *abstract generation*, to create the contract-views before having detailed design in hand 
+* (b) *Implementation versus abstract comparison*, for determining whether a design implementation adheres to its contract
+
+Many tools have been written to aid in (a), at least when targeted at a particular discipline. None have either reached industry-standard common usage, or targeted producing the abstracts for *several* disciplines (e.g. timing plus physical plus behavioral). Instead designers commonly deploy one-off scripting and programming to generate the target abstract-file-formats. This is furthered by their common text-based representations, particularly for LEF and Liberty. This text-basedness also furthers the ad-hoc comprehension of the formats. Each is typically represented by a substantial PDF-based manual and small set of examples. Rarely will generation programs comprehend the entirety of these formats, or have facilities for checking their compatibility with any other implementation of the standards. 
+
+Any existing tools for facet (b), comparison, remain unknown to the author. Automated *abstract as contract* methodology would require authoring such comparison programs, initially for the physical and timing disciplines. Both would appear to be tractable and valuable contributions to the field. As noted in our prior example, parametric-abstract comparison essentially happens all the time, in the form of simulation measurements and their comparisons against target metrics. (Automation of these tasks can of course improve.) Behavioral *contracts* might take on a number of forms, including (a) vectored simulation, exercising each system-desired behavior, and/or (b) formal-verification methods. 
+
+
+
+---
+
+
+
+### Paths Forward
+
+
+
+The eventual generation of efficient mixed-signal research-chips will require a number of steps on several axes. While prior sections largely focus on a desired eventual end-state, this section covers immediate-term steps to get started. 
+
+In assessing future IP candidates, we can break down each blocks integration-difficulty by its *behavioral* and *physical* elements. Behavioral integration complexity is increased with features such as:
+
+* Substantial mixed-signal behavioral interactions with digital blocks and/or software, e.g. for power or clock management
+* High-bandwidth data attempting to make its way into a compute system, as from a memory or serial interface
+* Internal power generation and/or non-standard supplies, such as those from integrated voltage regulators
+
+Physical integration complexity, in contrast, is driven by features such as:
+
+* Multiple supplies, or complex relationships between supplies
+* Use of bumps, redistribution layers, and other chip-level resources
+* Use of large custom or non-standard analog-centric layout elements, such as integrated transformers or MIM caps
+* Constraints on coupling between these elements
+
+We can view each category of likely mixed-signal IP in light of these complications. Mixed-signal ML accelerators have low behavioral complexity, and require essentially only physical integration. Fully- and largely-digital PLLs add a low level of behavioral complexity, so long as they are not embedded in larger chip-level power-management schemes. These two use-cases serve as most desirable pilot cases. Wireline serial links, wireless transceivers, and memory interfaces each add sufficient behavioral and physical complexity to warrant waiting for later. 
+
+
+
+Two candidate IP blocks appear most likely:
+
+* A mixed-signal machine learning accelerator, perhaps dropping into the interface of the existing Gemmini for sake of performance and energy-efficiency comparisons
+* A largely-digital PLL such as those designed by (Huang, Rahman), largely configured and controlled by software-accessible interfaces (rather than hardened power-management logic). 
+
+
+
+### PLL Path 
+
+Digital PLLs such as (Huang, Rahman) serve as viable candidates, as they are largely designed using digital-style tools and flows, e.g. SystemVerilog HDL and the Hammer back-end. Typically one or more internal sub-blocks, such as an oscillator, phase detector, regulator or bias network, will require (semi) custom design and layout, either in a framework such as BAG or in more conventional analog design environments. Reported "fully synthesizable" PLLs have avoided these custom-designed blocks altogether, through a combination of architectural choices (injection locking, centralized oscillator control), and detailed control of back-end tools. 
+
+The behavioral interface of such PLLs can be broken into three elements:
+
+* (a) A *configuration interface* for setting the values of internal parameters, likely via an addressable and software-accessible bus such as APB,
+* (b) A *control interface* for performing changes to the PLL state, such as frequency changes, undergoing internal calibrations, or entering low-power states, and 
+* (c) The *functional interface*, primarily including the reference and generated clocks, along with any low-latency status flags (e.g. lock and error indicators)
+
+The relative abstract-ability of this interface makes it a desirable point of separation between the PLL and the rest-of-chip. Ideally this interface can be designed sufficiently abstractly to fit future PLL IPs of different design implementation and target specs. 
+
+
+
+Proposals:
+
+* Rahman-style DCO digital PLL. Phase detector TBD. 
+* Reconcile any BAG layout *inside* the PLL IP. Allow Hammer to drive the PLL's overall layout and size. 
+* Design PLL circuits principally in SystemVerilog. Figure out how they plug into the Chisel.
+
+Open questions:
+
+* Where Chisel and SystemVerilog meet
+* What register/ config bus do we use? APB? 
+* Just how much BAG layout stuff to tear up 
+
+
+
+
+
+### ML Path 
+
+(To be continued)
+
 
 # IC Design Databases
 
@@ -1072,12 +1269,290 @@ There are lots of other very cool hardware-description projects out there which 
 - [PyMtl](https://github.com/cornell-brg/pymtl) / [PyMtl3](https://github.com/pymtl/pymtl3)
 - [Clash](https://clash-lang.org/)
 
+## How Hdl21 Works
+
+Hdl21's primary goal is to provide the root-level concepts that circuit designers know and think in terms of, in the most accessible programming context available. This principally manifests as a user-facing *hdl data model*, comprised of the core hardware elements - `Module`, `Signal`, `Instance`, `Bundle`, and the like - plus their behaviors and interactions. Many programs will benefit from operating directly on Hdl21's data model. A prominent example will be highlighted in Chapter (FIXME: the PnR chapter). However Hdl21 does not endeavor to reproduce the entirety of the EDA software field in terms of its data model. Many elements are more recent inventions, borrowed from other high-level hardware programming libraries, or invented anew in Hdl21 itself. Nor does Hdl21 have access to the internals of many invaluable EDA programs, most of which are commerical and closed-source, to translate its content into their own. To be useful, Hdl21's designer-centric data model must therefore be transformable into existing data formats supported by existing EDA tools. 
+
+These transformations occur in nested layers of several steps. A key component is the VLSIR data model and its surrounding software suite. The `vlsir.circuit` schema-package defines VLSIR's circuit data model. VLSIR's model is intentionally low-level, similar to that of structural Verilog. 
+
+- As in Hdl21 and Verilog, VLSIR's principal element of hardware reuse is called its `Module`.
+- `vlsir.circuit.Module`s consist of:
+  - Instances of other `Module`s, or or externally-defined `ExternalModule` headers
+  - Signals, each of potentially non-unity `width`. Each `vlsir.circuit.Signal` is therefore similar to the bus or vector of many popular HDLs, or more literally to the *packed array* of Verilog. A subset of `Signal`s are annotated with `Port` attributes which indicate their availability for external connections. 
+  - Connections there-between. Since `Signal`s, including those used as `Port`s, have non-unit bus widths, combinations to comprise their connections include sub-bus `Slice`s as well as series `Concatentation`s. This is the principal difference between VLSIR's model and that of lower-level models such as common in SPICE languages; signals and ports are all buses, and therefore can be combined in this variety of ways.
+- The principal collection of hardware content, `vlsir.circuit.Package`, is a collection of `Module` definitions which may instantiate each other. The VLSIR Package might commonly be named "Library" in similar models. Each `Package` includes a dependency-ordered list of `Module`s, as well as the headers to any `ExternalModule`s it requires.
+
+A simplified excerpt of the `vlsir.circuit` data schema: 
+
+```protobuf
+//!
+//! # vlsir Circuit Schema
+//!
+
+syntax = "proto3";
+package vlsir.circuit;
+import "utils.proto";
+
+// # Package
+// A Collection of Modules and ExternalModules
+message Package {
+  // Domain Name
+  string domain = 1;
+  // `Module` Definitions
+  repeated Module modules = 2;
+  // `ExternalModule` interfaces used by `modules`, and available externally
+  repeated ExternalModule ext_modules = 3;
+  // Description
+  string desc = 10;
+}
+
+// # Port
+// An externally-visible `Signal` with a `Direction`.
+message Port {
+  enum Direction {
+    INPUT = 0;
+    OUTPUT = 1;
+    INOUT = 2;
+    NONE = 3;
+  }
+  string signal = 1;        // Reference to `Signal` by name
+  Direction direction = 2;  // Port direction
+}
+
+// # Signal
+// A named connection element, potentially with non-unit `width`.
+message Signal {
+  // Signal Name
+  string name = 1;
+  // Bus Width
+  int64 width = 2;
+}
+
+// # Signal Slice
+// Reference to a subset of bits of `signal`.
+// Indices `top` and `bot` are both inclusive, similar to popular HDLs.
+message Slice {
+  // Parent Signal Name
+  string signal = 1;
+  // Top Index
+  int64 top = 2;
+  // Bottom Index
+  int64 bot = 3;
+}
+
+// Signal Concatenation
+// FIXME: documentation of ordering, MSB-LSB
+message Concat {
+  repeated ConnectionTarget parts = 1;
+}
+
+// # ConnectionTarget Union
+// Enumerates all types that can be
+// (a) Connected to Ports, and
+// (b) Concatenated
+message ConnectionTarget {
+  oneof stype {
+    string sig = 1;     // Reference to `Signal` (name) `sig`
+    Slice slice = 2;    // Slice into signals
+    Concat concat = 3;  // Concatenation of signals
+  }
+}
+
+// # Port Connection 
+// Pairing between an Instance port (name) and a parent-module ConnectionTarget.
+message Connection {
+  string portname = 1;
+  ConnectionTarget target = 2;
+}
+
+// Module Instance
+message Instance {
+  // Instance Name
+  string name = 1;
+  // Reference to Module instantiated
+  vlsir.utils.Reference module = 2;
+  // Parameter Values
+  repeated vlsir.utils.Param parameters = 3;
+  // Port `Connection`s
+  repeated Connection connections = 4;
+}
+
+// Module - the primary unit of hardware re-use
+message Module {
+  // Module Name
+  string name = 1;
+  // Port List, referring to elements of `signals` by name 
+  // Ordered as they will be in order-sensitive formats, such as typical netlist formats. 
+  repeated Port ports = 2;
+  // Signal Definitions, including externally-facing `Port` signals
+  repeated Signal signals = 3;
+  // Module Instances
+  repeated Instance instances = 4;
+  // Parameters
+  repeated vlsir.utils.Param parameters = 5;
+  // Literal Contents, e.g. in downstream EDA formats
+  repeated string literals = 6;
+}
+
+// Spice Type, used to identify what a component is in spice
+enum SpiceType {
+  // The default value is implicitly SUBCKT
+  SUBCKT = 0;
+  RESISTOR = 1;
+  CAPACITOR = 2;
+  INDUCTOR = 3;
+  MOS = 4;
+  DIODE = 5;
+  BIPOLAR = 6;
+  VSOURCE = 7;
+  ISOURCE = 8;
+  VCVS = 9;
+  VCCS = 10;
+  CCCS = 11;
+  CCVS = 12;
+  TLINE = 13;
+}
+
+// # Externally Defined Module
+// Primarily for sake of port-ordering, for translation with connect-by-position
+// formats.
+message ExternalModule {
+
+  // Qualified External Module Name
+  vlsir.utils.QualifiedName name = 1;
+  // Description
+  string desc = 2;
+  // Port Definitions
+  // Ordered as they will be in order-sensitive formats, such as typical netlist formats. 
+  repeated Port ports = 3;
+  // Signal Definitions, limited to those used by external-facing ports.
+  repeated Signal signals = 4;
+  // Params
+  repeated vlsir.utils.Param parameters = 5;
+  // Spice Type, SUBCKT by default
+  SpiceType spicetype = 6;
+}
+```
+
+
+Hdl21's transformation from its own data model to legacy EDA formats is, in an important sense, divided in two steps: 
+
+1. Transform Hdl21 data into VLSIR
+2. Hand off to the VLSIR libraries for conversion into EDA content
+
+This division, particularly the definition of the intermediate data model, allows the latter to be reused across a variety of VLSIR-system programs and libraries beyond Hdl21. The former step - transforming HDL data into VLSIR - is Hdl21's primary "behind the scenes" job. It similarly divides in two: 
+
+1. An elaboration step, in which the more complex facets of the Hdl21 data model are "compiled out". These include `Bundle`s, instance arrays, and a variety of compound hierarchical references.
+2. An export step, in which the elaborated Hdl21 data is translated into VLSIR's protobuf-defined content. This step is fairly mechanical as the elaborated Hdl21 model is designed to closely mirror that of VLSIR, excepting the native differences between a serializable data language vs protobuf vs an executable model such as in Python. (Particularly: only the latter has pointers.)
+
+### Elaboration 
+
+Hdl21 elaboration is inspired by popular compiler designs and by Chisel's elaboration process. During elaboration a user-design `Module` or set of `Module`s are compiled into a simplified version of the Hdl21 data model suitable for export. Programs using Hdl21 therefore divide into two conceptual regions: 
+
+1. *Generation time*, which might alternately be called "user time". This is when user-level code runs, constructing hardware content. This informally describes essentially all Hdl21-user-code, including all this document's preceding examples.
+2. *Elaboration time*. That hierarchical hardware tree is handed off to Hdl21's internally-defined elaboration process. This is where Hdl21 does most of its heavy lifting.
+
+- Elaboration consists of an ordered set of *elaboration passes*
+- Each elaboration pass is implemented as a Python class. Many core functions such as common data-model traversal operations are implemented in a shared base class.
+- Each elaboration pass performs a targeted, highly specific task, over a design hierarchy at a time. Examples include resolving undefined references, flattening `Bundle` definitions, and checking for valid port connections.
+- Elaboration is performed by an `Elaborator`, which is principally comprised of an ordered list of such elaboration-pass classes. This enables customization of the elaboration process by downstream (advanced) usage, e.g. to add custom transformations or extract specific metrics at arbitrary points in the process. 
+
+### Elaboration Pass Example 
+
+Hdl21's simplest built-in elaboration pass is combats one of the central downsides of building an HDL-like library in a general-purpose programming language. Particularly, the latter has many more degrees of freedom in arranging objects and references between them, many of which produce valid runtime programs but invalid HDL content. To combat many of these cases, Hdl21 adopts a loose notion of *ownership*, principally as defined by the Rust language's execution semantics, and by popular programming practice which preceded its design. 
+
+To illustrate the problem - the following is a perfectly valid (Python) program: 
+
+```python
+m1 = h.Module(name='m1')
+m1.s = h.Signal() # Signal `s` is now "parented" by `m1`
+
+m2 = h.Module(name='m2')
+m2.y = m1.s # Now `s` has been "orphaned" (or perhaps "cradle-robbed") by `m2`
+```
+
+Consider attempting to recreate this in Verilog. Module `m1` has a signal `s`, which because of the host language's reference semantics, can also be assigned into the content of module `m2`. A dedicated HDL would generally combat this at the syntax layer. Something like so would generally fail to parse: 
+
+```verilog
+module m1();
+  logic s; // Declare signal `s`
+endmodule
+
+module m2();
+  assign something = m1.s; // Fail right here: invalid 
+endmodule
+```
+
+Notably, it remains valid for Hdl21-programs to take *other* references to HDL objects. For example: 
+
+```python
+m1 = h.Module(name='m1')
+m1.s = h.Signal() # Signal `s` is now "parented" by `m1`
+
+my_favorite_signals = { "from_m1" : m1.s }
+```
+
+The dictionary `my_favorite_signals` includes a reference to the `Signal` `m1.s`. This might commonly be used as external metadata, e.g. for simulation results tracking, or for guiding a later layout-design program. We can imagine that if *all* references such as `m1.s` were to be produced by Hdl21, it could require their validity at creation time. This is not the reality of Hdl21's design. Instead Hdl objects are generally created first, and subsequently added to owning containers. Slightly reorganizing `m1` highlights this: 
+
+```python
+s = h.Signal(name="s") # Create `s` first
+m1 = h.Module(name='m1')
+m1.add(s) # Add it to `m1`
+
+my_favorite_signals = { "from_m1" : s }
+```
+
+Hdl21's rules of ownership are such that: 
+
+- `Module`s are the primary owners of Hdl content
+  - `Instance`s are owned by `Module`s
+  - Each instance connection-target `Connectable` must be owned by the same `Module` as the `Instance`
+- `Bundle` definitions own their `Signal`s and sub-bundle instances
+  - Notably these signal-objects are never instantiated elsewhere; they serve as templates for connectables added into a `Module` by the elaboration process. 
+
+Long story short: that slight impedance-mismatch in semantics can lead to very confusing difficulties when attempting to compile and export a module. Hdl21's built-in answer is its simplest elaboration pass: `Orphanage`. Its orphan-test is very simple: each Module-attribute is annotated with a `_parent_module` member upon insertion into the Module namespace. Orphan-testing simply requires that for each attribute, this member is identical to the parent `Module`. If not, the module is rejected as invalid. 
+
+Simplified source code for the orphan-testing elaboration pass: 
+
+```python
+class Orphanage(ElabPass):
+    """# A simplified version of the orphan-checking `ElabPass`.""""
+
+    def elaborate_module(self, module: Module) -> Module:
+        """Elaborate a Module"""
+
+        # Check each attribute in the module namespace for orphanage.
+        for attr in module.attrs():
+            if attr._parent_module is not module:
+                self.fail()
+```
+
+Here `Orphanage` is responsible for a single task: checking the parent status of each Hdl object. The abstract base `ElabPass` class performs data model traversal, caching, and other key background tasks, and presents a set of overridable methods such as `elaborate_module` for its concrete children to implement. The `Orphanage` pass is run as the first step in each elaboration process, to check all user-defined HDL objects. It is then run a second time, in essence for the elaborator to double-check its own work. 
+
+Most of Hdl21's built-in elaborators are aways more complicated. Inline flattening of class-defined and anonymous `Bundle`s serves as a particularly elaborate example. The built-in elaboration passes include: 
+
+- `Orphanage`, described above
+- `InstanceBundles`, which expands the "bundle of instances" constructs, principally the built-in differential `Pair` 
+- `ResolvePortRefs`, which transforms implicit connections such as `inst1.port1 = inst2.port2` into explicit signals
+- `ConnTypes`, which checks for validity of each instance connection, including signal and bundle types
+- The afformentioned `BundleFlattener`, which transforms (potentially nested) bundle definitions into a flattened set of resolved signals
+- `ArrayFlattener`, which performs a similar task on instance arrays
+- `SliceResolver`, which resolves nested slices and concatenations into their root signals and dependencies
+- Repeat passes through `Orphanage` and `ConnTypes`, the latter of which checks validity of all newly-generated signals and connections, so that it need not be done inline
+- A final `MarkModules` gives each module a reference to its elaborated result
+
+Customizing the elaboration process generally involves (a) defining new `ElabPass` classes, and (b) producing a similar such ordered list of overall passes. A prominent example of such a customized elaboration will be covered in Chapter 7.
+
 
 # Web-Native Schematics 
 
 ## OK, not *all* of those schematics are bad
 
 FIXME: write
+
+
+![](./fig/high-quality-schematic.png "A High Quality Schematic")
+
 
 ## What's a schematic really?
 
@@ -1745,8 +2220,6 @@ BAG began with more or less this intent, to automate the entirety of this design
 
 ![](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
 
-![](./fig/high-quality-schematic.png "A High Quality Schematic")
-
 # Machine Learners Learn Circuits 101
 
 
@@ -1767,6 +2240,12 @@ FIXME: write
 FIXME: write plenty before this! 
 
 ### Example Power of Circuit "Expert Knowledge"
+
+![](./fig/folded_opamp.png "Rail to Rail Input Op-Amp")
+
+![](./fig/folded_opamp_sections.png "Op-Amp Separated by Dessciptive Sections")
+
+![](./fig/folded_opamp_better.png "Op-Amp in terms of independent devices and current densities")
 
 An example folded cascode, "rail to rail" dual input op-amp. This circuit consists of 26 transistors. An ML-based optimizer operating directly on its device widths therefore needs to jointly optimize these 26 variables. Operating on more complex device sizes (e.g. including length or segmentation in addition to unit width) further multplies this space. 
 
