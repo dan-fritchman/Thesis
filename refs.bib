@@ -49,7 +49,7 @@
 
 @INPROCEEDINGS{autockt,
   author={Settaluri, Keertana and Haj-Ali, Ameer and Huang, Qijing and Hakhamaneshi, Kourosh and Nikolic, Borivoje},
-  booktitle={2020 Design, Automation & Test in Europe Conference & Exhibition (DATE)}, 
+  booktitle={2020 Design, Automation \& Test in Europe Conference \& Exhibition (DATE)}, 
   title={AutoCkt: Deep Reinforcement Learning of Analog Circuit Designs}, 
   year={2020},
   volume={},
@@ -188,3 +188,52 @@
   number={10},
   pages={2872-2885},
   doi={10.1109/TCAD.2019.2962782}}
+
+@inproceedings{matsakis_rustlang,
+author = {Matsakis, Nicholas D. and Klock, Felix S.},
+title = {The Rust Language},
+year = {2014},
+isbn = {9781450332170},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi-org.libproxy.berkeley.edu/10.1145/2663171.2663188},
+doi = {10.1145/2663171.2663188},
+abstract = {Rust is a new programming language for developing reliable and efficient systems. It is designed to support concurrency and parallelism in building applications and libraries that take full advantage of modern hardware. Rust's static type system is safe1 and expressive and provides strong guarantees about isolation, concurrency, and memory safety.Rust also offers a clear performance model, making it easier to predict and reason about program efficiency. One important way it accomplishes this is by allowing fine-grained control over memory representations, with direct support for stack allocation and contiguous record storage. The language balances such controls with the absolute requirement for safety: Rust's type system and runtime guarantee the absence of data races, buffer overflows, stack overflows, and accesses to uninitialized or deallocated memory.},
+booktitle = {Proceedings of the 2014 ACM SIGAda Annual Conference on High Integrity Language Technology},
+pages = {103–104},
+numpages = {2},
+keywords = {systems programming, affine type systems, rust, memory management},
+location = {Portland, Oregon, USA},
+series = {HILT '14}
+}
+
+@inproceedings{lattner_llvm,
+author = {Lattner, Chris and Adve, Vikram},
+title = {LLVM: A Compilation Framework for Lifelong Program Analysis \& Transformation},
+year = {2004},
+isbn = {0769521029},
+publisher = {IEEE Computer Society},
+address = {USA},
+abstract = {This paper describes LLVM (Low Level Virtual Machine),a compiler framework designed to support transparent, lifelongprogram analysis and transformation for arbitrary programs,by providing high-level information to compilertransformations at compile-time, link-time, run-time, and inidle time between runs.LLVM defines a common, low-levelcode representation in Static Single Assignment (SSA) form,with several novel features: a simple, language-independenttype-system that exposes the primitives commonly used toimplement high-level language features; an instruction fortyped address arithmetic; and a simple mechanism that canbe used to implement the exception handling features ofhigh-level languages (and setjmp/longjmp in C) uniformlyand efficiently.The LLVM compiler framework and coderepresentation together provide a combination of key capabilitiesthat are important for practical, lifelong analysis andtransformation of programs.To our knowledge, no existingcompilation approach provides all these capabilities.We describethe design of the LLVM representation and compilerframework, and evaluate the design in three ways: (a) thesize and effectiveness of the representation, including thetype information it provides; (b) compiler performance forseveral interprocedural problems; and (c) illustrative examplesof the benefits LLVM provides for several challengingcompiler problems.},
+booktitle = {Proceedings of the International Symposium on Code Generation and Optimization: Feedback-Directed and Runtime Optimization},
+pages = {75},
+location = {Palo Alto, California},
+series = {CGO '04}
+}
+
+@inproceedings{svg2002,
+author = {Jackson, Dean},
+title = {Scalable Vector Graphics (SVG): The World Wide Web Consortium's Recommendation for High Quality Web Graphics},
+year = {2002},
+isbn = {1581135254},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi-org.libproxy.berkeley.edu/10.1145/1242073.1242327},
+doi = {10.1145/1242073.1242327},
+abstract = {Scalable Vector Graphics (SVG) is a language for representing two-dimensional graphics. It was developed by the World Wide Web Consortium (W3C) to be the open standard format for both static and animated vector graphics on Web appliances, from desktop machines to mobile devices. The SVG 1.0 specification, whose authors Include representatives from Adobe, Microsoft, Sun, Kodak, Corel, Macromedia, IBM and Apple, became a W3C Recommendation in September 2001. SVG Is rapidly becoming the open standard of choice for graphics on the Web, and the many SVG implementations already in existence ensure the SVG documents can be viewed on a wide range of platforms.},
+booktitle = {ACM SIGGRAPH 2002 Conference Abstracts and Applications},
+pages = {319},
+numpages = {1},
+location = {San Antonio, Texas},
+series = {SIGGRAPH '02}
+}

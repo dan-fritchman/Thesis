@@ -112,7 +112,7 @@ These synthesized layouts are commonly optimized for one or more of (a) total wi
 
 Several classes of digital circuits are also amenable to "high-level" synthesis, generally from procedural programs. These programs typically accept a C or C++ program, which may or may not be multi-threaded, as input, and produce as output an RTL-level circuit which efficiently "executes" the input program. This allows for designers to operate in the typically more human-intuitive procedural mode, while allowing the compiler to produce inherently parallel-executing hardware. HLS has been most successful for circuits with highly regular data-paths, such as those for digital signal processing. Circuits more-prominently dominated by control logic have proven less amenable.
 
-### Analog & Custom IC Content
+### Analog \& Custom IC Content
 
 Analog and custom circuits (hereon referred to as "analog", but notably including very-digital custom things such as SRAM and IOs) have escaped nearly all these productivity-enhancing pieces of software. These circuits often have performance metrics or design methods which evade the technology-portable hardware-description concepts. They are typically designed in and for a specific implementation technology. Automated design and layout of these circuits has long been an academic pursuit, but one with little industrial adoption. Notably these circuits escape the behavior/ timing layout-quality-evaluation dichotomy. Checking whether the layout of, say, a comparator, meets a set of specifications amounts to fully evaluating whether the circuit behaves as a comparator. These evaluation times are further (greatly) exacerbated in modern technologies by the injection of layout-parasitic circuit elements, which for accurate evaluation often outnumber intentional circuit elements by orders of magnitude. Iterative layout is therefore rendered order of magnitude slower than for digital circuits, which itself can often incur runtimes of several days.
 
@@ -439,6 +439,11 @@ The schema format serves as a core exchange medium for a variety of programs and
 ## Design of the `VLSIR` Software System
 
 FIXME: write
+
+---
+
+While we believe VLSIR's modular design enables both approaches, its applications to date have focused on approach (2). Like the overall framework, layout programming with VLSIR is both modular and layered. The lowest-abstraction, most-detailed layout-programming layer directly manipulates geometric objects and hierarchical instances thereof. This "raw" layer is the basis of open-source generators for SRAM and FPGAs. 
+
 
 # The Analog Religion's Sacred Cow
 
@@ -1548,8 +1553,11 @@ Customizing the elaboration process generally involves (a) defining new `ElabPas
 
 ## OK, not *all* of those schematics are bad
 
-FIXME: write
+- FIXME: do we include the whole "dinner party test" bit?
+- FIXME: write more here
+- In IC design they the _lingua franca_ for analog circuits, and also commonly used for transistor-level digital circuits.
 
+Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. We nonetheless find for a small subset of schematics - the ones containing elements that any designer would recognize - the pictorial schematic remains the most intuitive mode. 
 
 ![](./fig/high-quality-schematic.png "A High Quality Schematic")
 
@@ -1564,29 +1572,76 @@ FIXME: outline -
 - usually, some paired software to render and/or interpret it
 - reverse order of "picture" and "circuit"
 
+Schematics are, at bottom, graphical representations of circuits. They include both the circuit-stuff required to populate a netlist or HDL code, as well as visual information about how the circuit should be rendered. In short: a schematic is two things -  
+
+- 1. A Circuit
+- 2. A Picture
+
+Typical software manifestations operate by designing a circuit-picture data format, which includes a combination of HDL-style circuit info with graphical visualization content. Notably, as in IC layout, these graphical representations are generally two-dimensional. Schematics consist of a set of 2D shapes and paths, generally annotated by purposes such as "part of an instance", "defines a wire", "annotation only", and the like. Unlike layout, they lack physical meaning of the third "half" dimension. Popular schematic data-formats make use of exactly the very same data structures and models used for layout, with the z-axis layer annotations repurposed to denote those schematic-centric purposes. Hierarchy is represented through instances of _schematic symbols_, which serve as references to other schematics or of primitive devices. 
+
+Such a dedicated format then generally requires at least one custom program, dedicated to (a) rendering the schematics as pictures, and often to (b) directly editing them in an interactive GUI. Some visualization-centric programs, e.g. those aiding in debug of post-synthesis or post-layout netlists, focus on (a). 
+
+- FIXME: "schematics are good if you draw them, and if not just write code"
+
 ## SVG 101
 
-FIXME: write
+[Scalable Vector Graphics (SVG)](https://www.w3.org/TR/SVG) [@svg2002] is the World Wide Web Consortium ([W3C](https://www.w3.org)) standard for two dimensional vector graphics. Along with HTML, CSS, JavaScript, and WebAssembly, it is one of the five primary internet standards. SVG is an XML-based markup language which [all modern browsers](https://caniuse.com/svg) natively support, and includes the capacity for semi-custom content structure and metadata.
+
+An SVG document is an XML document with a root `svg` element representing the entirety of an image. SVG makes use of XML namespaces (`xmlns`) to introduce element types. Once the `svg` namespace has been enabled, documents have access to elements which represent core two-dimensional graphical elements such as `rect`, `circle`, `path`, and `text`. [Example SVG content](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Getting_Started):
+
+```svg
+<svg version="1.1"
+     width="300" height="200"
+     xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="red" />
+  <circle cx="150" cy="100" r="80" fill="green" />
+  <text x="150" y="125" font-size="60" text-anchor="middle" fill="white">SVG</text>
+</svg>
+```
+
+Each graphical element includes a variety of positioning, styling, and customization data, such as the `cx` and `cy` (center) attributes of `circle`, the `width` and `height` attributes of `rect`, and the `font-size` attribute of the `text` element highlighted above. 
+
+SVG documents are hierarchical. Hierarchy is primary enabled through _groups_. The `g` element defines a group of sub-elements. Each group includes a similar set of transformation and styling attributes which are applied hierarchically to its children. 
+
+```svg
+<svg width="30" height="10">
+  <g fill="red">
+    <rect x="0" y="0" width="10" height="10" />
+    <rect x="20" y="0" width="10" height="10" />
+  </g>
+</svg>
+```
+
+Nodes and groups each include a rich set of transformation capabilities, setting position, rotation, reflection, skew, and the like. A general-purpose `matrix` operator allows for the combination of all of the above in a single statement and operation. These transformations nest across hierarchical groups. The net transformation of a leaf-level node in a hierarchical group is the product of the (matrix) transforms of its parents, applied top-down. 
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg">
+    <g transform="rotate(-10 50 100)
+        translate(-36 45.5)
+        skewX(40)
+        scale(1 0.5)" >
+        <g  x="10" y="10" width="30" height="20" fill="red"
+            transform="matrix(3 1 -1 3 30 40)" >
+            <rect   x="5" y="5" width="40" height="40" fill="yellow"
+                    transform="translate(50 50)" />
+        </g>
+    </g>
+</svg>
+```
 
 ## Hdl21 Schematics
 
-Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. We nonetheless find for a small subset of schematics - the ones containing elements that any designer would recognize - the pictorial schematic remains the most intuitive mode. Hdl21 includes a [paired schematic system](https://github.com/vlsir/Hdl21Schematics) in which each schematic is both a web-native SVG image and is directly executable as an Hdl21 Python generator. 
+- FIXME: hdl21 schematics are designed to get the good parts, make the good schematics easy, make the bad ones hard. 
+
+Hdl21 includes a [paired schematic system](https://github.com/vlsir/Hdl21Schematics) in which each schematic is both a web-native SVG image and is directly executable as an Hdl21 Python generator. 
 
 Each Hdl21 schematic is accordingly a single SVG file, requiring no external dependencies to be read. Linking with implementation technologies occur in code, upon execution of the schematic as an Hdl21 generator. Hdl21 schematics capitalize on the extension capabilities of Hdl21's embedded language, Python, which include custom expansion of its module-importing mechanisms, to include schematics solely with the language's built-in `import` keyword. 
 
 ![dvbe](fig/dvbe.jpg "Example SVG Schematic")
 
 
-[Schematics](https://en.wikipedia.org/wiki/Circuit_diagram) are graphical representations of electronic circuits. In integrated circuit (IC, silicon, chip) design they the _lingua franca_ for analog circuits, and also commonly used for transistor-level digital circuits.
-
-In short: a schematic is two things -
-
-1. A Circuit
-2. A Picture
-
 ### Hdl21 Schematics are SVG Images
 
-[Scalable Vector Graphics (SVG)](https://developer.mozilla.org/en-US/docs/Web/SVG) is the W3C's open web-standard for two dimensional vector graphics. SVG is an XML-based markup language which all modern browsers natively render, and includes the capacity for semi-custom content structure and metadata.
 
 Hdl21 schematics are not _like_ SVGs.  
 They are not _exportable to_ or _convertable to_ SVGs.  
@@ -1599,15 +1654,13 @@ So:
 - GitLab can read them.
 - Grandma's copy of Internet Explorer can read them.
 
-[This inverter](./docs/inverter.sch.svg is a valid schematic:
+--- 
 
-\includesvg[width=\textwidth]{fig/inverter.sch.svg}
+- FIXME: these SVGs screw up in Overleaf's PDF generator!!!
+- This inverter is a valid schematic:
+- And the same inverter with [OpenMoji's mind-blown emoji](https://openmoji.org/library/emoji-1F92F/) is also a valid schematic:
 
-![inv](./fig/inverter.sch.svg)
-
-And [the same inverter](./fig/inverter_mind_blown.sch.svg) with [OpenMoji's mind-blown emoji](https://openmoji.org/library/emoji-1F92F/) is also a valid schematic:
-
-![inv](./fig/inverter_mind_blown.sch.svg)
+--- 
 
 This is the first, probably biggest, difference between Hdl21 schematics and any other you've likely encountered. Instead of defining a custom schematic format and needing custom software to read it, Hdl21 schematics are general-purpose images. Any remotely modern web browser or OS can read them.
 
@@ -1616,6 +1669,11 @@ Embedding in SVG also allows for rich, arbitrary annotations and metadata, such 
 - Any other custom vector-graphics, e.g. block diagrams
 - Layout intent, e.g. how to position and/or route elements
 - Links to external content, e.g. testbenches, related schematics, etc.
+
+In other words, Hdl21 schematics reverse the order of what a schematic is, to be:
+
+1. A Picture
+2. A Circuit
 
 SVG is an XML-based schema and allows for semi-custom strucutre and metadata.
 This structure and metadata, detailed [later in this document](#the-svg-schematic-schema), is what makes an SVG a schematic.
@@ -1639,9 +1697,9 @@ Schematics consist of:
 
 The element-library holds similar content to that of SPICE: transistors, resistors, capacitors, voltage sources, and the like. It is designed in concert with Hdl21's [primitive element library](https://github.com/dan-fritchman/Hdl21#primitives-and-external-modules).
 
-The complete element library:
-
-![symbols](./fig/symbols.sch.svg)
+- FIXME: SVG sadly don't play nice with their PDFs
+- FIXME: probably make this a table?
+- The complete element library:
 
 Symbols are technology agnostic. They do not correspond to a particular device from a particular PDK. Nor to a particular device-name in an eventual netlist. Symbols solely dictate:
 
@@ -2076,31 +2134,36 @@ The most common and prominent example such metric is the synchronous clock frequ
 
 ## The Two Most Tried (and Failed) Models
 
-![fraunhofer_history](./fig/fraunhofer_history.png "Some History, 'Courtesy' LAYGEN II Paper, extended by Fraunhofer IIS. FIXME: replace ")
 
 FIXME: 
 
 1. Analog PnR
 2. Programmed-custom
 
-Code-based "programming" of (digital) circuits has been commonplace since the introduction of the still-popular hardware description languages in the 1980s. Successful programming models for semi-custom layout have proven more elusive. Most research efforts can be grouped into two large categories: 
-
-* 1. _Constraint-based_ systems, which expose an API or language for setting constraints and/ or goals for a _layout solver_.
-* 2. _Programmed custom_ systems, notably including BAG, which instead expose an elaborate API to directly manipulate _layout content_.
-
-While we believe VLSIR's modular design enables both approaches, its applications to date have focused on approach (2). Like the overall framework, layout programming with VLSIR is both modular and layered. The lowest-abstraction, most-detailed layout-programming layer directly manipulates geometric objects and hierarchical instances thereof. This "raw" layer is the basis of open-source generators for SRAM and FPGAs. 
-
-A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
-
-![](fig/tetris_routing.png "Tetris Routing Concept")
-
-![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
-
-![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
+![fraunhofer_history](./fig/fraunhofer_history.png "Some History, 'Courtesy' LAYGEN II Paper, extended by Fraunhofer IIS. FIXME: replace ")
 
 
 
-# Programmed-Custom Layout 
+# Programmed Custom Layout
+
+
+
+FIXME: 
+- Use code, not GUI
+- Replace all those GUI clicks with API calls
+- Maybe build up some conceptual hierarchy above that
+
+As illustrated in Figure~\ref{fig:layout_quadrants}, most GUI-drawn custom layout does include programmed-custom components, for its lowest-level primitives. These low-level layouts are commonly called _parametric cells_ or _p-cells_ for short. Typical instances produce a single transistor or passive element, parameterized by its physical dimensions, segmentation, and potentially by more elaborate criteria such as demands for redundant contacts. These low-level p-cells perform the highly invaluable task of producing DRC-compliant designs for the lowest, often most detailed and complicated layers of a technology-stack. 
+
+The programmed custom approach applies a similar methodology to module-level circuits. Rather than manipulate a GUI, designers invoke a layout API to add and manipulate content. Think of "the analog way", but replacing each GUI click with an API call. 
+
+Being based in code has advantages in and of itself. Text-based code has proven immeasurably more effective for sharing, distribution, review and feedback than the typical binary/ graphical data that it replaces. Parameterization in the graphical environment is particularly challenging; few (if any) environments provide a rich graphical programming mechanism to turn parameters into parametric layout content. Often if they do, it's by escaping into code form. 
+
+Several popular programming libraries 
+
+* BAG [@chang2018bag2]
+* TED [@ye2023_ted_analog]
+* LAYGO [@laygo]
 
 ## State of the Art(?)
 
@@ -2108,19 +2171,8 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 - "P-cells" for low-level devices 
 - BAG programming model
 
-## `Layout21`'s Layered Design
 
-FIXME: write
-
-- general approach
-- rust
-- raw/ direct mode
-
-## Tetris Placement & Routing
-
-FIXME: write
-
-## Programmed-Custom Successes (mostly SRAM compilers)
+## Programmed Custom Success Stories (Mostly SRAM Compilers)
 
 The most successful depolyments of programmed-custom layout have generally been _circuit family_ specific. E.g. while a layout-program at minimum produces a single circuit, these best-use-cases find families of similar circuits over which to find a set of meta-parameters, enabling the production of a small family. SRAM arrays have probably been the most successful example. SRAM serves as the primary high-density memory solution for nearly all of the digital flow, comprising most cache, register files, and configuration of most large digital SOCs. SRAM is therefore extremely area-sensitive, especially at its lowest and most detailed design layers. A common workflow uses the custom graphical methods to produce these "bit-cells" and similarly detailed layers, which using "SRAM compiler" programs to aggregate bits into usable IP blocks. An SRAM compiler is a programmed-custom layout program. It leverages the fact that large swathes of popular SRAM usage has a consistent set of parameters: size in bits, word width, numbers of read and write ports, and the like. The compiler (or what we might call "generator") programs generalize over this space and produce a family of memory IPs. 
 
@@ -2131,9 +2183,93 @@ The genesis of the layout21 library was in fact to produce a similar set of circ
 - cite SRAM22/ whatever that library's called now
 
 
+## `Layout21`'s Layered Design
+
+FIXME: write
+
+- general approach
+- rust
+- raw/ direct mode
+
+This work's primary tool for programmed custom layout design is the [layout21](https://github.com/dan-fritchman/layout21) library. Layout21 is designed to be layered and modular, and to support a modular and diverse set of layout programming applications. Each conceptual layer general is comprised of (a) an associated layout data model, and (b) code for manipulating its contents. Its lowest "raw" layer directly manipulates geometric layout content in a programming model similar to that of `gdstk` or `gdsfactory`. 
+
+```rust
+// Simplified `layout21::raw` Data Model
+
+pub struct Layout {
+    /// Cell Name
+    pub name: String,
+    /// Instances
+    pub insts: Vec<Instance>,
+    /// Primitive/ Geometric Elements
+    pub elems: Vec<Element>,
+}
+pub struct Instance {
+    /// Instance Name
+    pub name: String,
+    /// Cell Definition Reference
+    pub cell: Ptr<Cell>,
+    /// Transform: location, reflection, and rotation
+    pub xform: Xform,
+}
+pub struct Element {
+    pub net: Option<NetRef>,
+    pub layer: LayerRef,
+    pub purpose: LayerPurpose,
+    pub shape: Shape,
+}
+pub enum Shape {
+    Rect{ p0: Point, p1: Point },
+    Polygon{ points: Vec<Point> },
+    Path({ points: Vec<Point>, width: usize, style: PathStyle }),
+}
+```
+
+In the `layout21::raw` model, a layout is comprised of two kinds of entities: (1) layered geometric elements, and (2) located, oriented instances of other `Layout`s. This "geometry plus hierarchy" model largely tracks that of GDSII and of VLSIR's layout schema. Layout21's in-memory format is designed to be straightforwardly translatable to `vlsir.layout`, and therefore straightforwardly exchangeable between programs and languages. 
+
+Layout21's design incorporates a second, seemingly easy to miss fact about layout (even custom layout): it gets big, fast. Perhaps most significant among its principal design decisions, Layout21 is implemented in the Rust [@matsakis_rustlang] language. Rust is a "systems programming" language, designed for applications commonly implemented in C or C++. It compiles to native machine code via an LLVM [@lattner_llvm] based pipeline similar to that used by the popular Clang C compiler. It endeavors to further enable parallel applications via the inclusion of its _ownership and borrowing_ system, which, among other benefits, produces multi-threaded code which is provably race-free at compile time. Layout21 does not, as of this writing, capitalize on these parallelism opportunities. But many aspects of its design, notably including the implementation language from which it begins, are compatible with readily doing so. More impactfully on Layout21's usefulness, its host language's provable _memory safety_ removes large categories of (often fatal) program errors, generally resulting in program-killing segmentation faults. 
+
+Rust's safety guarantees are nice, and Layout21 benefits (some) from them. But they are not why Layout21 uses Rust. Moreso it has two attributes unavailable elsewhere: (1) its speed, and (2) its suite of modern development niceties. Package management, documentation, unit testing, sharing, and the like - all the semi-technical facets that actually _get code shared_ - come built in. It also helps that Rust features high "embedability", into both low-level languages such as C, and "slow languages" such as Python and JavaScript. There is a time-honored tradition of layout libraries beginning in such scripting languages, initially to great productivity gains. Then, slowly at first, and quickly later, layouts get bigger. Programs get slower, then much slower, then useless. Then the low-level "extension languages" - generally C or C++ - come in. This story played out both in the history of `BAG`, and of `gdspy` (renamed `gdstk` to commemorate the change). Layout21 made this realization upfront. 
+
+
+## `Tetris` Placement \& Routing
+
+FIXME: write
+
+A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
+
+![](fig/tetris_routing.png "Tetris Routing Concept")
+
+![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+
+![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
+
 
 # Compiled (Analog) Layout
 
+
+Attempts to compile analog and otherwise "custom" circuit layout are not new. 
+
+FIXME: give the like 1 clause each on these: 
+
+* EDP Expert Design Plan [@expert_design_plan]
+* SWARM/ Parasitic Aware [@swarm_parasitic_aware]
+* AIDA [@aida]
+* Approaches to Analog Synthesis 89 [@approaches_analog_synthesis89]
+* Laygen II [@laygen_ii]
+* LDS Layout Description Script [@lds_layout_description_script]
+* Habal Constraint Based [@habal_constraint_based]
+
+
+- Primitives - generally programmed-custom "p-cells"
+- Placement - generally formulated in optimization terms
+- Routing - not optimization, just get it done
+- Specialty analog constraints - matching, coupling, differential-ness, overall higher care level
+- passive components
+
+Many such frameworks focus on small transistor-level circuits, such as those for the logical "standard cells" which serve as the primitives of the digital flow, or a relatively simple amplifier. Circuits with less than, say, 20 transistors. These frameworks often focus on stringent optimality goals for such small-scale circuits, and often embed a goal to reach *provable* optimality for those metrics, such as diffusion sharing or overall layout area. Placement is then generally cast into an optimization framework such as integer linear programming (ILP), in which the reward function directly evaluates the target metric. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in @gupta98ilp, ILP based placement "implicitly explores all possible transistor placements". This exploration isn't really implicit; it *explicitly* grows exponentially with the size of the placement problem. ALIGN uses ILP-based placement and... it's slow enough to be useless? 
+
+The vast gulf in success between digital and analog layout automation begs a core question: why does PnR work for digital, but fail for analog? 
 
 ## Why does PnR work for digital, but fail for analog? 
 
@@ -2172,20 +2308,13 @@ Contrast this with analog circuits:
 
 In short: fail across the board. Analog circuits have no "analog" to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each have depends on wholly different criteria. These criteria generally lack any efficient surrogates; their success can generally only be evaluated through transistor-level simulation. Such simulations scale poorly with the number of circuit elements, quickly requiring hours to complete on feasible contemporary hardware. Moreover their efficiency is dramatically reduced by the inclusion of *parasitic elements*, the very layout information that a PnR solver is attempting to optimize. Including a sufficiently high-fidelity simulation model for making productive layout decisions generally means requiring extensive runtimes. Embedding such evaluations in an iterative layout-optimizer has proven too costly to ever be deployed widely. Machine learning based optimizers such as BagNET [@chang2018bag2] use a combination of wholesale removal of layout elements (i.e. "schematic level" simulations) and lower-cost surrogate simulations (e.g. a DC operating point standing in for a high-frequency response) to evaluate design candidates. 
 
+## Semi-Related: PnR of Digital Logic "Standard Cells"
 
-## Analog PnR Success(?) Stories
+FIXME: write 
 
-Attempts to compile analog and otherwise "custom" circuit layout are not new. 
-
-- Primitives - generally programmed-custom "p-cells"
-- Placement - generally formulated in optimization terms
-- Routing - not optimization, just get it done
-- Specialty analog constraints - matching, coupling, differential-ness, overall higher care level
-- passive components
-
-Many such frameworks focus on small transistor-level circuits, such as those for the logical "standard cells" which serve as the primitives of the digital flow, or a relatively simple amplifier. Circuits with less than, say, 20 transistors. These frameworks often focus on stringent optimality goals for such small-scale circuits, and often embed a goal to reach *provable* optimality for those metrics, such as diffusion sharing or overall layout area. Placement is then generally cast into an optimization framework such as integer linear programming (ILP), in which the reward function directly evaluates the target metric. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in @gupta98ilp, ILP based placement "implicitly explores all possible transistor placements". This exploration isn't really implicit; it *explicitly* grows exponentially with the size of the placement problem. ALIGN uses ILP-based placement and... it's slow enough to be useless? 
-
---- 
+* NvCell for Standard Cell Libraries [@nvcell]
+* burns [@stdcell_routing_sat_burns]
+* bonncell [@bonncell]
 
 
 ## `AlignHdl21`
@@ -2496,23 +2625,9 @@ endmodule
 
 How to cite: 
 
-* BAG [@chang2018bag2]
 * MAGICAL [@chen2020magical]
 * ALIGN [@kunal2019align]
-* TED [@ye2023_ted_analog]
-* LAYGO [@laygo]
-* EDP Expert Design Plan [@expert_design_plan]
-* SWARM/ Parasitic Aware [@swarm_parasitic_aware]
-* AIDA [@aida]
-* Approaches to Analog Synthesis 89 [@approaches_analog_synthesis89]
-* Laygen II [@laygen_ii]
-* LDS Layout Description Script [@lds_layout_description_script]
-* Habal Constraint Based [@habal_constraint_based]
 * CHISEL [@chisel12]
-* NvCell for Standard Cell Libraries [@nvcell]
-* burns [@stdcell_routing_sat_burns]
-* bonncell [@bonncell]
-
 
 
 
