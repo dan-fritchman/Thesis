@@ -2236,9 +2236,98 @@ Rust's safety guarantees are nice, and Layout21 benefits (some) from them. But t
 
 FIXME: write
 
-A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
+A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. 
 
-![](fig/tetris_routing.png "Tetris Routing Concept")
+![](fig/tetris_routing.png "Tetris Concept")
+
+### Tetris Placement 
+
+FIXME: write up relative placement 
+
+### Tetris Blocks
+
+"Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. These allowable block-shapes are designed in concert with Tetris's connection model and semantics. All Tetris layout instances are of *abstract* layouts, not their implementations. In addition to being of constrained rectilinear shapes, each Tetris layout includes implicit "blockage" throughout its x-y outline area, and from its topmost z-axis layer down. Each block therefore owns the entirety of its internal volume; no "route-through" is permitted. 
+
+These rules reduce the space of allowable block-level shapes and outlines, to the benefit of a substantially streamlined connection model and set of semantics. Tetris layouts are built atop a background z-axis `Stack`, conceptually analogous to that of popular digital PnR tools, or to the content of popular technolog-LEF data. Each `Stack` principally defines a set of routing and via layers and rules there-between. Routing is always unidirectional per layer; all layers are annotated as either horizontal or vertical. Adjacent routing layers are always of orthogonal routing direction. 
+
+The combination allows for each Tetris connection to be specified as a small set of integer values. Tetris blocks have three allowable categories of locations for ports: 
+
+- On the edge of an internal layer, specified by its layer index, a track index, and an enumerated `Side` (top, bottom, left, or right)
+- On the edge of their z-axis top-layer. These ports include a track index, but also an indication (in terms of tracks) as to how far into the body of the block the port extends.
+- Inside the x-y outline of the block, on its z-axis top layer. These ports are specified as a series of (x, y) track-valued tuples.
+
+A simplified version of the union-type which defines each Tetris port: 
+
+```rust
+pub enum PortKind {
+    /// Ports which connect on x/y outline edges
+    Edge {
+        layer: usize,
+        track: usize,
+        side: Side,
+    },
+    /// Ports accessible from bot top *and* top-layer edges
+    /// Note their `layer` field is implicitly defined as the cell's `metals`.
+    ZTopEdge {
+        /// Track Index
+        track: usize,
+        /// Side
+        side: Side,
+        /// Location into which the pin extends inward
+        into: (usize, RelZ),
+    },
+    /// Ports which are internal to the cell outline,
+    /// but connect from above in the z-stack.
+    /// These can be assigned at several locations across their track,
+    /// and are presumed to be internally-connected between such locations.
+    ZTopInner {
+        /// Locations
+        locs: Vec<TopLoc>,
+    },
+}
+```
+
+FIXME: add an illustration of what those look like 
+
+Tetris routing is similarly performed through the specification of a series of integer track indices. Tetris layout implementations principally consist of: 
+
+- Instances of other `Placeable` objects. These include `Instance`s of other layout-abstracts, two-dimensional `Array`s thereof, and named, located `Group`s of instances
+- `Assign`ments affixing net labels to track-crossings
+- `Cut`s to the track grid
+
+Simplified `tetris::Layout`:
+
+```rust
+pub struct Layout {
+    /// Cell Name
+    pub name: String,
+    /// Number of Metal Layers Used
+    pub metals: usize,
+    /// Outline shape, counted in x and y pitches of `stack`
+    pub outline: Outline,
+
+    /// Placeable objects, primarily instances
+    pub places: Vec<Placeable>,
+    /// Net-to-track assignments
+    pub assignments: Vec<Assign>,
+    /// Track cuts
+    pub cuts: Vec<TrackCross>,
+}
+```
+
+### Tetris Routing
+
+FIXME: write more 
+
+### Tetris Compilation
+
+A compilation step transforms these comparatively terse tetris-block objects into the discrete geometric shapes of layout21's `raw` data model. 
+
+
+### Tetris-Mos Gate Array Circuit Style 
+
+In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. 
+
 
 ![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
 
@@ -2349,10 +2438,22 @@ BAG began with more or less this intent, to automate the entirety of this design
 
 ![](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
 
-# Machine Learners Learn Circuits 101
+# Applications
+
+## Neural Sensor ADC in Intel 16nm FinFET
+
+FIXME: write 
+
+![](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
+
+## USB PHY in Open-Source SkyWater 130nm
+
+FIXME: write
+
+## Machine Learners Learn Circuits 101
 
 
-## State of the Art(?)
+### State of the Art(?)
 
 FIXME: write
 
