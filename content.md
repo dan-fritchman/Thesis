@@ -1254,7 +1254,7 @@ The industry's primary, 80s-born digital HDLs Verilog and VHDL have more of the 
 
 ### Chisel
 
-Explicitly designed for digital-circuit generators at the same home as Hdl21 (UC Berkeley), Chisel encodes RTL-level hardware in Scala-language classes. It's the closest of the alternatives in spirit to Hdl21. (And it's aways more mature.) If you want big, custom, RTL-level circuits - processors, full SoCs, and the like - you should probably turn to Chisel instead. Chisel makes a number of decisions that make it less desirable for custom circuits, and have accordingly kept their designers' hands-off.
+Explicitly designed for digital-circuit generators at the same home as Hdl21 (UC Berkeley), [Chisel](https://www.chisel-lang.org/) [@chisel12] encodes RTL-level hardware in Scala-language classes. It's the closest of the alternatives in spirit to Hdl21. (And it's aways more mature.) If you want big, custom, RTL-level circuits - processors, full SoCs, and the like - you should probably turn to Chisel instead. Chisel makes a number of decisions that make it less desirable for custom circuits, and have accordingly kept their designers' hands-off.
 
 The Chisel library's primary goal is producing a compiler-style intermediate representation (FIRRTL) to be manipulated by a series of compiler-style passes. We like the compiler-style IR (and may some day output FIRRTL). But custom circuits really don't want that compiler. The point of designing custom circuits is dictating exactly what comes out - the compiler _output_. The compiler is, at best, in the way.
 
@@ -1276,7 +1276,7 @@ There are lots of other very cool hardware-description projects out there which 
 
 ## How Hdl21 Works
 
-Hdl21's primary goal is to provide the root-level concepts that circuit designers know and think in terms of, in the most accessible programming context available. This principally manifests as a user-facing *hdl data model*, comprised of the core hardware elements - `Module`, `Signal`, `Instance`, `Bundle`, and the like - plus their behaviors and interactions. Many programs will benefit from operating directly on Hdl21's data model. A prominent example will be highlighted in Chapter (FIXME: the PnR chapter). However Hdl21 does not endeavor to reproduce the entirety of the EDA software field in terms of its data model. Many elements are more recent inventions, borrowed from other high-level hardware programming libraries, or invented anew in Hdl21 itself. Nor does Hdl21 have access to the internals of many invaluable EDA programs, most of which are commerical and closed-source, to translate its content into their own. To be useful, Hdl21's designer-centric data model must therefore be transformable into existing data formats supported by existing EDA tools. 
+Hdl21's primary goal is to provide the root-level concepts that circuit designers know and think in terms of, in the most accessible programming context available. This principally manifests as a user-facing *hdl data model*, comprised of the core hardware elements - `Module`, `Signal`, `Instance`, `Bundle`, and the like - plus their behaviors and interactions. Many programs will benefit from operating directly on Hdl21's data model. A prominent example will be highlighted in Chapter 10. However Hdl21 does not endeavor to reproduce the entirety of the EDA software field in terms of its data model. Many elements are more recent inventions, borrowed from other high-level hardware programming libraries, or invented anew in Hdl21 itself. Nor does Hdl21 have access to the internals of many invaluable EDA programs, most of which are commerical and closed-source, to translate its content into their own. To be useful, Hdl21's designer-centric data model must therefore be transformable into existing data formats supported by existing EDA tools. 
 
 These transformations occur in nested layers of several steps. A key component is the VLSIR data model and its surrounding software suite. The `vlsir.circuit` schema-package defines VLSIR's circuit data model. VLSIR's model is intentionally low-level, similar to that of structural Verilog. 
 
@@ -1346,7 +1346,6 @@ message Slice {
 }
 
 // Signal Concatenation
-// FIXME: documentation of ordering, MSB-LSB
 message Concat {
   repeated ConnectionTarget parts = 1;
 }
@@ -2140,7 +2139,7 @@ FIXME:
 1. Analog PnR
 2. Programmed-custom
 
-![fraunhofer_history](./fig/fraunhofer_history.png "Some History, 'Courtesy' LAYGEN II Paper, extended by Fraunhofer IIS. FIXME: replace ")
+![fraunhofer_history](./fig/fraunhofer_history.png "Some History (FIXME: cite LAYGEN II Paper), extended by Fraunhofer IIS.")
 
 
 
@@ -2180,7 +2179,7 @@ The genesis of the layout21 library was in fact to produce a similar set of circ
 
 - FIXME:
 - add some imagery from SRAM CIM 
-- cite SRAM22/ whatever that library's called now
+- cite SRAM22/ Substrate [@kumar2023]
 
 
 ## `Layout21`'s Layered Design
@@ -2243,6 +2242,52 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 ### Tetris Placement 
 
 FIXME: write up relative placement 
+
+Each relative placement consists of: 
+
+- A `to`-attribute, the referrent `Placeable` object to which the relative placement is made. This can be an `Instance`, `Array`, `Group`, or similar. 
+- The `Side` at which it is placed, relative to `to`. Sides are enumerated values including top, bottom, left, and right. 
+- Alignment, which can be any of (a) any of the values of `Side`, (b) center, or (c) a pair of port names. The latter is particularly valuable for streamlined routing of high-value signals. 
+- Separation in each of three dimensions. The x and y dimensions are specified in terms of either (a) a number of primitive pitches in the dimenion, (b) a physical distance, specified in the stack's units, or (c) the size of another cell. (Z dimension separation is used for routing, and is specified in terms of a number of layers.)
+
+A simplified version of tetris's relative placements:
+
+```rust 
+pub struct RelativePlace {
+    /// Placement is relative `to` this
+    pub to: Placeable,
+    /// Placed on this `side` of `to`
+    pub side: Side,
+    /// Aligned to this aspect of `to`
+    pub align: Align,
+    /// Separation between the placement and the `to`
+    pub sep: Separation,
+}
+
+pub struct Separation {
+    pub x: Option<SepBy>,
+    pub y: Option<SepBy>,
+    pub z: Option<isize>,
+}
+
+pub enum SepBy {
+    /// Separated by distance in x and y, and by layers in z
+    Dist(Dist),
+    /// Separated by the size of another Cell
+    SizeOf(Ptr<Cell>),
+}
+
+pub enum Align {
+    /// Side-to-side alignment
+    Side(Side),
+    /// Center-aligned
+    Center,
+    /// Port-to-port alignment
+    Ports(String, String),
+}
+```
+
+Each `RelativePlace` depends upon one of more other `Placeable` objects via its `to` field. Each `Placeable` may be placed either relative to another (via a `RelativePlace`) or in absolute coordinates, in terms of the primitive pitch grid (via an `AbsolutePlace`). The tetris placement resolver takes as input a series of `Placeable` objects and transforms each `RelativePlace` into a resolved `AbsolutePlace`. Its first step is ordering a dependency graph between placeables. This graph must be acyclical for placement to be valid. It must include at least one `AbsolutePlace` to serve as a "root" or "anchor" element. The resolver does not produce fully-relative placements, e.g. by assigning an arbitrary location (such as the origin) to one. Designer input must include at least one absolute placement.
 
 ### Tetris Blocks
 
@@ -2438,19 +2483,8 @@ BAG began with more or less this intent, to automate the entirety of this design
 
 ![](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
 
-# Applications
 
-## Neural Sensor ADC in Intel 16nm FinFET
-
-FIXME: write 
-
-![](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
-
-## USB PHY in Open-Source SkyWater 130nm
-
-FIXME: write
-
-## Machine Learners Learn Circuits 101
+# Machine Learners Learn Circuits 101
 
 
 ### State of the Art(?)
@@ -2687,8 +2721,20 @@ An ultimate boss-agent, or perhaps a "boss's boss agent", would include several 
 
 ![](./fig/ml-draftsman.png "Natural Language Draftsman")
 
+# Applications
 
-# Notes for Editing
+## Neural Sensor ADC in Intel 16nm FinFET
+
+FIXME: write 
+
+![](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
+
+## USB PHY in Open-Source SkyWater 130nm
+
+FIXME: write
+
+
+## Notes for Editing
 
 - H1 creates a chapter
 
@@ -2729,11 +2775,3 @@ How to cite:
 * MAGICAL [@chen2020magical]
 * ALIGN [@kunal2019align]
 * CHISEL [@chisel12]
-
-
-
-
-Inline code: `print("...")`  
-
-Link: [overleaf.com](https://www.overleaf.com)  
-
