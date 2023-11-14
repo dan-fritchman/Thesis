@@ -23,7 +23,9 @@
 
 \begin{document}
 
-% Declarations for Front Matter
+% # 
+% # Declarations for Front Matter
+% # 
 \title{An Analog Design Platform for Human, Computer, and ML Designers}
 \author{Dan Fritchman}
 \degreesemester{Fall}
@@ -38,46 +40,62 @@
 \maketitle
 \copyrightpage
 
+% # 
+% # Abstract
+% # 
 \begin{abstract}
-Something abstract. 
+\begin{markdown}
+\markdownInput{abstract.md}
+\end{markdown}
 \end{abstract}
-
 
 \begin{frontmatter}
 
+% # 
+% # Dedication
+% # 
 \begin{dedication}
 \null\vfil
 \begin{center}
-To... someone I guess?\\\vspace{12pt}
-Who TF wants this stuff dedicated to them? 
+\begin{markdown}
+\markdownInput{dedication.md}
+\end{markdown}
 \end{center}
 \vfil\null
 \end{dedication}
 
-% You can delete the \clearpage lines if you don't want these to start on
-% separate pages.
-
+% # 
+% # Contents
+% # 
 \tableofcontents
 \clearpage
 \listoffigures
 \clearpage
 \listoftables
 
+% # 
+% # Acknowledgements
+% # 
 \begin{acknowledgements}
-Acknowledging (some people)...
+\begin{markdown}
+\markdownInput{acknowledgements.md}
+\end{markdown}
 \end{acknowledgements}
 
 \end{frontmatter}
 
 \pagestyle{headings}
 
+% # 
+% # Content
+% # 
 \begin{markdown}
-
-% Our actual content:
-
 \markdownInput{content.md}
-
 \end{markdown}
 
+% # 
+% # Bibliography
+% # 
 \printbibliography
+
 \end{document}
