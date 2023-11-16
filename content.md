@@ -2133,7 +2133,7 @@ The most common and prominent example such metric is the synchronous clock frequ
 
 ## The Two Most Tried (and Failed) Models
 
-
+The two 
 FIXME: 
 
 1. Analog PnR
@@ -2178,6 +2178,7 @@ The most successful depolyments of programmed-custom layout have generally been 
 The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems implemented this marriage with analog signal processing, using physical device characeristics (e.g. programmable resistors) to perform multiplication, and more amenable quantities (e.g. current, charge) to perform addition. (We always thought this was a bad idea.)
 
 - FIXME:
+- [@fritchmancim2021]
 - add some imagery from SRAM CIM 
 - cite SRAM22/ Substrate [@kumar2023]
 
@@ -2444,11 +2445,18 @@ In short: fail across the board. Analog circuits have no "analog" to STA which a
 
 ## Semi-Related: PnR of Digital Logic "Standard Cells"
 
-FIXME: write 
+Analog PnR has a semi-analogous sister problem: creation of the *cell libraries* used by the digital PnR flow. The digital flow relies on the availability of a library of logic gates which can excute the core combinational logic functions (e.g. NAND, NOR, INV), sequential data storage (e.g. flip-flops and latches), and often more elaborate combinations thereof (e.g. and-or-invert operations or multi-bit storage cells). Common practice is to design these circuits, or at least their layouts, "the analog way", in graphical, polygon-by-polygon mode. 
 
-* NvCell for Standard Cell Libraries [@nvcell]
-* burns [@stdcell_routing_sat_burns]
-* bonncell [@bonncell]
+These cells are highly performance, power, and area constrained, and accordingly provide highly challenging design-rule optimization problems in designing their layouts. This effort is highly leveraged. Like the bit-cells of widely used SRAM, the most core standard logic cells will be reused billions, probably trillions of times over. 
+
+Modern standard cell libraries are large, often comprising thousands of cells. Modern designs also commonly require a variety of such libraries (or at least one even larger library) to make trade-offs between power, area, and performance. One set of cells may consistently choose a higher-performance, higher-power, higher-area design style, while another makes the opposite trade-off on all three. Mixing and matching of these library level trade-offs often cannot be done within a single design macro, or the output of a single PnR layout generation, as libraries making varying trade-offs often feature varying physical designs. The aforementioned low-area library may be designed to a regular pitch of X, while the high-performance library to a pitch of Y, where X / Y is not a rational number (or at least not a convenient value of one). There has therefore been a longstanding desire to produce standard cell layouts more automatically, i.e. leveraging PnR-like techniques. 
+
+This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex, difficult to (FIXME: the latin for "before") encode in a set of PnR rules. They also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in  [@stdcell_routing_sat_burns] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. More recently, machine learning techniques such as [@nvcell] have been proposed to further search for these optima. 
+
+Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each if often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case. 
+
+Morever, these circuits often lack such clear optimality goals. Perhaps more important, even if they do have such a goal - e.g. that for "perfect" symmetry - solutions which acheive these optima are often fairly evident to designers knowledgeable of the circuit. In other words, the effort of the optimizer - which tends to be _slow_, for all but the smallest circuits - tends to go to waste. Where a standard-cell placer can, or at least is more likely to, find counterintuitive solutions that can be proven superior. Analog PnR is much less likely to do so. Even when it does, it generally must meet another, highly inscrutable optimailty constraint: the opinion of its analog designer!
+
 
 
 ## `AlignHdl21`
