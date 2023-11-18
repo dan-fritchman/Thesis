@@ -175,33 +175,6 @@ An outline of a system-design software-suite realizing these ideas:
 - Generation/ compilation to those standard PCB stack-ups, and potentially to arbitrary others.
 
 
-## MixedYard
-
-Options and plans for integration of mixed-signal circuits. 
-
-
-
----
-
-
-
-### Goals
-
-Principally, to facilitate the creation of research-grade chips incorporating both novel digital and analog circuits, and substantial interaction between the two. Foreseeable examples would include: 
-
-* Advances in RISC-V micro-architecture, paired mixed-signal machine learning accelerators 
-* SoC-class research chips with integrated power and clock management, for sake of power-aware performance benchmarks 
-* IoT-class chips including both substantial digital (CPU, accelerators), analog, and RF content
-
-
-
-To facilitate these goals, this work proposes: 
-
-* A top-down, abstract-driven mixed-signal design methodology 
-* A digital-integration-focused mixed-signal physical design style 
-* Abstract versus implementation comparisons for behavioral, physical, and timing models 
-
-
 
 ---
 
@@ -352,51 +325,37 @@ The relative abstract-ability of this interface makes it a desirable point of se
 
 
 
-Proposals:
-
-* Rahman-style DCO digital PLL. Phase detector TBD. 
-* Reconcile any BAG layout *inside* the PLL IP. Allow Hammer to drive the PLL's overall layout and size. 
-* Design PLL circuits principally in SystemVerilog. Figure out how they plug into the Chisel.
-
-Open questions:
-
-* Where Chisel and SystemVerilog meet
-* What register/ config bus do we use? APB? 
-* Just how much BAG layout stuff to tear up 
-
-
-
-
-
-### ML Path 
-
-(To be continued)
-
 
 # IC Design Databases
 
 ## "Databases" (Ahem) 101
 
-IC design data is commonly represented in "design databases". These formats and their access software generally look much like the low layers of a relational database management system (RDMS). They include a binary format for storing and packing records, and a API for querying and writing those records. Their central goal is to enable efficient offloading between memory and disk, especially for designs too large to reasonably fit in memory. This goal is near entirely driven by one application: digital PnR layout compilation. For common digital circuits including millions of gates and associated metadata, the optimization makes sense. Optimal PnR, and even "good enough" PnR, remains an NP-complete problem which commonly requires industrial-scale resources and days of runtime. Without such optimizations, large compilations often fail to complete. 
+IC design data is commonly represented in "design databases". These systems are inspired by relational database management systems (RDBMS), ubiquitously used throughout modern server-side applications. IC DBs generally look much like the low layers of an RDBMS. They include a binary format for storing and packing records, and a API for querying and writing those records. Instead of a dedicated query _language_ and accompanying compiler and query-optimizier, they are typically embedded in a host programming language, and expose an API to manipulate design data in that language. 
 
-Analog circuits differ in several respects. First and perhaps most importantly: they are much smaller. Rarely if ever 
+FIXME: maybe a generic DB figure?
+
+IC DBs are optimized to enable efficient offloading of design data between memory and disk, especially for designs too large to reasonably fit in memory. This goal is near entirely driven by one application: digital PnR layout compilation. For common digital circuits including millions of gates and associated metadata, the optimization makes sense. Optimal PnR, and even "good enough" PnR, remains an NP-complete problem which commonly requires industrial-scale resources and days of runtime. Without such optimizations, large compilations often fail to complete. 
+
+Analog circuits differ in several respects. First and perhaps most importantly: they are much smaller. Rarely if ever do they contain millions of elements, and infrequently even thousands. 
 
 Second, analog circuits demand to be designed and laid out hierarchically for another reason: their verification is hierarchical. Their necessary mode of evaluation - the SPICE-class simulation - is far too slow, and scales far too poorly, to evaluate compound circuits in useful runtimes. Compound analog circuits such as RF transceivers, wireline SERDES transceivers, data converters, and PLLs are commonly comprised of subsystems whose simulation-based verification is far more tractable than that of the complete system. 
 
 ## ProtoBuf 101
 
-The 21st century advent of 
+The 21st century advent of widespread cloud computing and accompanying "hyper-scalar" cloud-service providers generated something of a renaissance in markup-style "data languages", and in demand for network-serializable data more generally. 
 
-These projects begin with the cloud-scale data center operators. such operations require hundreds of cooperating server-side programs cooperating and exchanging data. these programs are commonly designed by hundreds of disparate, largely independent teams, comprising thousands (or tens of thousands) of engineers. they have no chance at aligning a tall stack of libraries, versions, operating system requirments, and other dependencies which would be required to run on a single machine, in a single program. Moreover many of these "datacenter programs" subsystems have vastly different resources needs, and different prospects for *scaling* across usage. Some require specialty compute resources such as machine learning acceleration, either via graphics processors or special-purpose silicon. Others, e.g. for data caching, benefit from little compute but unusually large memory systems. Others "scale-out", requiring little compute, memory, or other resources per task, but needing tremendous numbers of copies of that task, benefitting from near-perfect scaling via hardware parallelism. These subcomponents are then broken into sub-programs, each of which executes on appropriate hardware, and in tailored execution environments. Communication between these components occurs via the datacenter network. 
+Their demands are entirety practical: projects of their scale require hundreds of cooperating server-side programs cooperating and exchanging data. These programs are commonly designed by hundreds of disparate, largely independent teams, comprising thousands (or tens of thousands) of individual engineers. They have no chance at aligning a tall stack of libraries, versions, operating system requirments, and other dependencies which would be required to run on a single machine, in a single program. 
 
-Protocol buffers were introduced first internally to google and then as open source software to meet these needs of communication between diverse programs exchanging rich structured data. The ProtoBuf system principally includes three components: 
+Moreover, many of these "datacenter programs" subsystems have vastly different resources needs, and different prospects for *scaling* across usage. Some require specialty compute resources such as machine learning acceleration, either via graphics processors or special-purpose silicon. Others, e.g. for data caching, benefit from little compute but unusually large memory systems. Others "scale-out", requiring little compute, memory, or other resources per task, but requiring tremendous numbers of copies of that task, benefitting from near-perfect scaling via hardware parallelism. These subcomponents are then broken into sub-programs, each of which executes on appropriate hardware, and in tailored execution environments. Communication between these components occurs via the datacenter network. 
+
+Protocol buffers [@Varda2008] were introduced first internally to google and then as open source software to meet these needs of communication between diverse programs exchanging rich structured data. The ProtoBuf system principally includes three components: 
 
 1. An efficient binary "wire format"
 2. A data schema description language (SDL), and 
 3. A paired binding code-compiler
 
 Several similar, generally related follow-on projects including CapnProto, FlatBuffers, and FlexBuffers each take similar high-level approaches. 
-Meta-programs using protobuf begin by "prgramming" datatypes in its SDL. This operates much like a programming language in which only struct-definitions are allowed. The core protobuf structure-type `message` indicates its intended usage in communication. The protobuf compiler then accepts this SDL as input, and transforms it into typed "bindings" in a diverse set of programming languages. 
+Meta-programs using protobuf begin by "programming" datatypes in its SDL. This operates much like a programming language in which only struct-definitions are allowed. The core protobuf structure-type `message` indicates its intended usage in communication. The protobuf compiler then accepts this SDL as input, and transforms it into typed "bindings" in a diverse set of programming languages, notably including Python, C++, Rust, JavaScript, and most other popular alternatives. An example protobuf SDL `message` definition:
 
 ```protobuf
 message Person {
@@ -406,7 +365,7 @@ message Person {
 }
 ```
 
-Maybe: 
+FIXME: Maybe: 
 
 * More on features?
 * Some kinda perf thing?
@@ -438,63 +397,36 @@ The schema format serves as a core exchange medium for a variety of programs and
 
 ## Design of the `VLSIR` Software System
 
-FIXME: write
+The broader VLSIR system is heavily inspired by the LLVM [@lattner2004] compiler platform, and by the FIRRTL system [@izraelevitz2017], [@li2016] developed shortly before by colleagues here at UC Berkeley. Like LLVM and FIRRTL, VLSIR defines a central design interchange format. VLSIR's is defined in the protocol buffer SDL. All three projects build this central data layer for the purposes of decoupling and reusing diverse *front and back ends*. 
 
----
+The roles of front-ends and back-ends differ somewhat between the three. In LLVM, a front-end is (more or less) a programming language. The compilers for Rust and C++, for example, differ principally in the front-end, which translates user-authored code into LLVM's core intermediate representions (IR). A back-end is (again, more or less) a target compiler platform. Examples generally include combinations of the target instruction set (x86, ARM, RISC-V, etc), and potentially the target OS. FIRRTL has a similar concept of a front-end, whereas its back-ends are hardware "elaboration targets", which might be ASIC synthesis, FPGAs, or cloud-scale distributed processing environments. 
 
-While we believe VLSIR's modular design enables both approaches, its applications to date have focused on approach (2). Like the overall framework, layout programming with VLSIR is both modular and layered. The lowest-abstraction, most-detailed layout-programming layer directly manipulates geometric objects and hierarchical instances thereof. This "raw" layer is the basis of open-source generators for SRAM and FPGAs. 
+VLSIR's front-ends are also user-facing programming tools. Generally we have eschewed designing altogether new languages (or "DSL"s) and focused on providing libraries in existing, popular languages. These front ends include libraries for circuit design (chapter 3), layout design (chapter 5), and several dedicated libraries targeting specific circuit families. VLSIR's back-ends are generally its interface to existing EDA software and data formats. For example, a widely used back end focuses on executing SPICE-class simulation, parsing and providing its results in schema-defined data structures. 
+
+The choice of ProtoBuf affords for a rich diversity of front and back ends, implemented in a diversity of programming languages and featuring diverse needs for performance, portability, and designer productivity. 
+
 
 
 # The Analog Religion's Sacred Cow
 
-## The limitations of life in pictures
+## Limitations of life in pictures
 
-FIXME: Write
+The _lingua franca_ of analog and custom circuits, for aways longer than I've been around, has been the graphical schematic. 
+
 
 ## The `Hdl21` Analog Hardware Description Library
 
-FIXME: this short intro was from a conference talk; 
-The primary high-productivity interface to producing VLSIR circuits and simulations is the [Hdl21](https://github.com/dan-fritchman/Hdl21) hardware description library. Hdl21's central goal is enabling "circuit programming" by circuit designers with little programming experience. Hdl21 exposes the field's most familiar core concepts  - instances of circuit elements, modular combinations thereof, signals and ports, simulations and their results - as Python objects. The core circuit-reuse element `hdl21.Module`, analogous to the Verilog `module` or Spice `subckt`, is typically defined through a class-body full of element declarations. 
+The primary high-productivity interface to producing VLSIR circuits and simulations is the [Hdl21](https://github.com/dan-fritchman/Hdl21) hardware description library. 
 
-```python
-@h.module
-class MyModule:
-   """"# An example Module """
-   i = h.Input()
-   o = h.Output(width=8)
-   s = h.Signal()
-   a = AnotherModule(a=i, b=s, c=o)
-```
-
-Hdl21 *generators* are functions which return modules. 
-
-```python
-@h.generator
-def MyGen(params: MyParams) -> h.Module:
-   """"# An example generator """
-   m = h.Module()
-   m.i = h.Input(width=params.w)
-   if params.has_reset:
-       m.reset = h.Input()
-   return m
-```
-
-While Hdl21 includes features for common analog circuit use-cases such as differential pairs, arrays of instances, process technologies, and PVT corners, these two concepts - the module as a data structure, and generators as functions which create them - are sufficient for designers to produce powerful, parametric hardware. 
-
-
-## A (Somewhat) Brief Intro to `Hdl21`
-
-Hdl21 is a [hardware description library](https://en.wikipedia.org/wiki/Hardware_description_language) embedded in Python. It is targeted and optimized for analog and custom integrated circuits, and for maximum productivity with minimum fancy-programming skill.
-
-Hdl21 generates hardware databases in the [VLSIR](https://github.com/Vlsir/Vlsir) interchange formats, defined through [Google Protocol Buffers](https://developers.google.com/protocol-buffers/). Through [VLSIR's Python tools](https://pypi.org/project/vlsirtools/) Hdl21 also includes drivers for popular industry-standard data formats and popular spice-class simulation engines.
+Hdl21 is implemented in Python. It is targeted and optimized for analog and custom integrated circuits, and for maximum productivity with minimum fancy-programming skill. Hdl21 exposes the root-level concepts that circuit designers know and think in terms of, in the most accessible programming context available. Hdl21 also includes drivers for popular industry-standard data formats and popular spice-class simulation engines.
 
 ### Modules
 
-Hdl21's primary unit of hardware reuse is the `Module`. Think of it as Verilog's `module`, or VHDL's `entity`, or SPICE's `subckt`. Better yet if you are used to graphical schematics, think of it as the content of a schematic. Hdl21 `Modules` are containers of a handful of `hdl21` types. Think of them as including:
+Hdl21's primary unit of hardware reuse is the `Module`. It intentionally shares this name Verilog's `module` and CHISEL's `Module`, and also bears a strong resemblance to  VHDL's `entity` and SPICE's `subckt`. Hdl21 `Modules` are "chunks" of reusable, instantiable hardware. Inside they are containers of a handful of hardware types, including:
 
 - Instances of other `Modules`
 - Connections between them, defined by `Signals` and `Ports`
-- Fancy combinations thereof, covered later
+- Fancy combinations thereof
 
 An example `Module`:
 
@@ -521,27 +453,28 @@ class MyModule:
     a = AnotherModule()
 ```
 
-This class-based syntax produces identical results to the procedural code-block above. Its declarative style can be much more natural and expressive in many contexts, especially for designers familiar with popular HDLs.
+This class-based syntax produces is a pattern in Hdl21 usage. The `Bundle` and `Sim` objects covered in subsequent sections also make use of it. The two `Module` definitions above produce identical results. The declarative style can be much more natural and expressive in many contexts, especially for designers familiar with popular HDLs.
 
-Creation of `Module` signal-attributes is generally performed by the built-in `Signal`, `Port`, `Input`, and `Output` constructors. Each comes with a "plural version" (`Input*s*` etc.) which creates several identical objects at once:
+### Signals
+
+Hdl21's primary connection type is its `Signal`. Hdl21 signals are similar to Verilog's `wire`. Each `Signal` has an integer-valued bus `width` field and serves as a multi-bit "bus". The content of Hdl21 signals is not typed; each single-bit slice of a `Signal` essentially represents an electrical wire. 
+
+A subset of `Signals` are exposed outside their parent `Module`. These externally-connectable signals are referred to as `Ports`. Hdl21 provides four port constructors: `Input`, `Output`, `Inout`, and `Port`. The last creates a directionless (or direction unspecified) port akin to those of common spice-level languages.
+
+Creation of `Module` signal-attributes is generally performed by the built-in `Signal`, `Port`, `Input`, and `Output` "constructor functions". All of these produce the same `Signal` type as output. Signals have additional metadata that indicates their port visibility, direction, and usage intent. The "alternate constructors" serve as convenient shorthands for dictating this metadata, again often more comfortable for designers coming from popular HDLs. 
+
 
 ```python
 import hdl21 as h
 
 @h.module
 class MyModule:
-    a, b = h.Inputs(2)
+    a, b = 2 * h.Input()
     c, d, e = h.Outputs(3, width=16)
-    z, y, x, w = h.Signals(4)
+    z, y, x, w = 4 * h.Signal()
 ```
 
-### Signals
-
-Hdl21's primary connection type is `Signal`. Think of it as Verilog's `wire`, or a node in that schematic. Each `Signal` has an integer-valued bus `width` field, and can be connected to any other equal-width `Port`.
-
-A subset of `Signals` are exposed outside their parent `Module`. These externally-connectable signals are referred to as `Ports`. Hdl21 provides four port constructors: `Input`, `Output`, `Inout`, and `Port`. The last creates a directionless (or direction unspecified) port akin to those of common spice-level languages.
-
-### Connections
+### Connection Semantics
 
 Popular HDLs generally feature one of two forms of connection semantics. Verilog, VHDL, and most dedicated HDLs use "connect by call" semantics, in which signal-objects are first declared, then passed as function-call-style arguments to instances of other modules.
 
@@ -567,7 +500,7 @@ class MyModule extends Module {
 }
 ```
 
-Each can be more concise and expressive depending on context. Hdl21 `Modules` support **both** connect-by-call and connect-by-assignment forms.
+Each can be more concise and expressive depending on context. Hdl21 `Modules` support both connect-by-call and connect-by-assignment forms.
 
 Connections by assignment are performed by assigning either a `Signal` or another instance's `Port` to an attribute of a Module-Instance.
 
@@ -584,7 +517,7 @@ m.i1.b = m.b
 m.i1.c = m.c
 ```
 
-This also works without the parent-module `Signals`:
+Instances of Hdl21 Modules provide by-name dot-access to their port objects. This allows for connect-by-assignment without creating parent-module `Signals`:
 
 ```python
 # Create a module
@@ -598,7 +531,7 @@ m.i1.b = m.i2.b
 m.i1.c = m.i2.c
 ```
 
-Instances can instead be connected by call:
+As in Verilog and VHDL, the semantics of _calling_ an Hdl21 module-instance is to provide it with connections. 
 
 ```python
 # Create a module
@@ -619,6 +552,20 @@ m = h.Module()
 m.i1 = AnotherModule()
 # Create another Instance `i2`, and connect to `i1`
 m.i2 = AnotherModule(a=m.i1.a, b=m.i1.b, c=m.i1.c)
+```
+
+Unlike in many dedicated HDLs, connection-calls can be made "in pieces", and can be "overridden" by further connection-calls. 
+
+```python
+# Same as above
+m = h.Module()
+m.i1 = AnotherModule()
+# Now only connect part of `i2`
+m.i2 = AnotherModule(a=m.i1.a)
+# Connect some more
+m.i2(b=m.i1.b, c=m.i1.c)
+# And change our mind about one
+m.i2(c=m.i1.a)
 ```
 
 ### Generators
@@ -1269,10 +1216,12 @@ There are lots of other very cool hardware-description projects out there which 
 
 - [SpinalHDL](https://github.com/SpinalHDL/SpinalHDL)
 - [MyHDL](http://www.myhdl.org/)
-- [Migen](https://github.com/m-labs/migen) / [nMigen](https://github.com/m-labs/nmigen)
-- [Magma](https://github.com/phanrahan/magma)
-- [PyMtl](https://github.com/cornell-brg/pymtl) / [PyMtl3](https://github.com/pymtl/pymtl3)
-- [Clash](https://clash-lang.org/)
+- [Migen](https://github.com/m-labs/migen) 
+- [nMigen](https://github.com/m-labs/nmigen)
+- Magma [@truong2019golden]
+- PyMtl [@lockhart2014pymtl]
+- PyMtl3 [@jiang2020pymtl3]
+- Clash [@baaij2010]
 
 ## How Hdl21 Works
 
@@ -2175,15 +2124,22 @@ Several popular programming libraries
 
 The most successful depolyments of programmed-custom layout have generally been _circuit family_ specific. E.g. while a layout-program at minimum produces a single circuit, these best-use-cases find families of similar circuits over which to find a set of meta-parameters, enabling the production of a small family. SRAM arrays have probably been the most successful example. SRAM serves as the primary high-density memory solution for nearly all of the digital flow, comprising most cache, register files, and configuration of most large digital SOCs. SRAM is therefore extremely area-sensitive, especially at its lowest and most detailed design layers. A common workflow uses the custom graphical methods to produce these "bit-cells" and similarly detailed layers, which using "SRAM compiler" programs to aggregate bits into usable IP blocks. An SRAM compiler is a programmed-custom layout program. It leverages the fact that large swathes of popular SRAM usage has a consistent set of parameters: size in bits, word width, numbers of read and write ports, and the like. The compiler (or what we might call "generator") programs generalize over this space and produce a family of memory IPs. 
 
-The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems have implemented this marriage with analog signal processing. Typically  using physical device characeristics (e.g. programmable resistors) to perform multiplication, and more amenable quantities (e.g. current, charge) to perform addition. (We always thought this was a bad idea.)
+The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems have implemented this marriage with analog signal processing, typically using physical device characeristics (e.g. programmable resistors) to perform multiplication, and more amenable quantities (e.g. current, charge) to perform addition. (We always thought this was a bad idea.)
 
-![](fig/cim-column.png "Compute in Memory Column")
+Reference [@fritchmancim2021] illustrates many of the difficulties in using such analog signal processing techniques. Particularly, while the analog-domain mathematical operations can often be performed highly effectively, they ultimately must produce digital data to participate in broader digital systems. These data conversion steps can serve as bottlenecks to both  power and area. (FIXME: ref) provided a lower bound on this "conversion cost", based on applying observed state of the art data converter metrics. But these bounds are likely far too permissive. Such machine learning acceleration systems rarely feature the trade-offs required for state of the art data conversion, which often requires highly complex calibration and area unto itself. 
+
+It instead proposes an all digital compute in memory macro, in which each "atom" is comprised of a _write only_ SRAM bit cell, plus a single bit "multiplier" implemented with a minimum-sized NOR2 gate. Figure~\ref{fig:cim-concept} through figure~\ref{fig:cim-macro} depict the compute in memory macro's atomic bit-cell and critical building blocks. 
+
 ![](fig/cim-concept.png "Compute in Memory Concept")
+![](fig/cim-bitcell.png "Compute in Memory Atom/ Bit-Cell")
+![](fig/cim-column.png "Compute in Memory Column")
 ![](fig/cim-macro.png "Compute in Memory Macro")
 
+Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory. 
+
+This example of [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else. 
+
 - FIXME:
-- [@fritchmancim2021]
-- add some imagery from SRAM CIM 
 - cite SRAM22/ Substrate [@kumar2023]
 
 
@@ -2231,7 +2187,7 @@ pub enum Shape {
 
 In the `layout21::raw` model, a layout is comprised of two kinds of entities: (1) layered geometric elements, and (2) located, oriented instances of other `Layout`s. This "geometry plus hierarchy" model largely tracks that of GDSII and of VLSIR's layout schema. Layout21's in-memory format is designed to be straightforwardly translatable to `vlsir.layout`, and therefore straightforwardly exchangeable between programs and languages. 
 
-Layout21's design incorporates a second, seemingly easy to miss fact about layout (even custom layout): it gets big, fast. Perhaps most significant among its principal design decisions, Layout21 is implemented in the Rust [@matsakis_rustlang] language. Rust is a "systems programming" language, designed for applications commonly implemented in C or C++. It compiles to native machine code via an LLVM [@lattner_llvm] based pipeline similar to that used by the popular Clang C compiler. It endeavors to further enable parallel applications via the inclusion of its _ownership and borrowing_ system, which, among other benefits, produces multi-threaded code which is provably race-free at compile time. Layout21 does not, as of this writing, capitalize on these parallelism opportunities. But many aspects of its design, notably including the implementation language from which it begins, are compatible with readily doing so. More impactfully on Layout21's usefulness, its host language's provable _memory safety_ removes large categories of (often fatal) program errors, generally resulting in program-killing segmentation faults. 
+Layout21's design incorporates a second, seemingly easy to miss fact about layout (even custom layout): it gets big, fast. Perhaps most significant among its principal design decisions, Layout21 is implemented in the Rust [@matsakis_rustlang] language. Rust is a "systems programming" language, designed for applications commonly implemented in C or C++. It compiles to native machine code via an LLVM [@lattner2004] based pipeline similar to that used by the popular Clang C compiler. It endeavors to further enable parallel applications via the inclusion of its _ownership and borrowing_ system, which, among other benefits, produces multi-threaded code which is provably race-free at compile time. Layout21 does not, as of this writing, capitalize on these parallelism opportunities. But many aspects of its design, notably including the implementation language from which it begins, are compatible with readily doing so. More impactfully on Layout21's usefulness, its host language's provable _memory safety_ removes large categories of (often fatal) program errors, generally resulting in program-killing segmentation faults. 
 
 Rust's safety guarantees are nice, and Layout21 benefits (some) from them. But they are not why Layout21 uses Rust. Moreso it has two attributes unavailable elsewhere: (1) its speed, and (2) its suite of modern development niceties. Package management, documentation, unit testing, sharing, and the like - all the semi-technical facets that actually _get code shared_ - come built in. It also helps that Rust features high "embedability", into both low-level languages such as C, and "slow languages" such as Python and JavaScript. There is a time-honored tradition of layout libraries beginning in such scripting languages, initially to great productivity gains. Then, slowly at first, and quickly later, layouts get bigger. Programs get slower, then much slower, then useless. Then the low-level "extension languages" - generally C or C++ - come in. This story played out both in the history of `BAG`, and of `gdspy` (renamed `gdstk` to commemorate the change). Layout21 made this realization upfront. 
 
@@ -2245,8 +2201,6 @@ A more abstract "tetris" layer operates on rectilinear blocks in regular grid. P
 ![](fig/tetris_routing.png "Tetris Concept")
 
 ### Tetris Placement 
-
-FIXME: write up relative placement 
 
 Each relative placement consists of: 
 
@@ -2465,7 +2419,7 @@ Morever, these circuits often lack such clear optimality goals. Perhaps more imp
 
 ## `AlignHdl21`
 
-Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solves. Emphasis on the BAG project and its programmed-custom model has been the primary artifact. 
+Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solvers. Emphasis on the BAG project and its programmed-custom model has been the primary artifact. 
 
 - Hdl21 is a great place to store all that metadata
 - 
