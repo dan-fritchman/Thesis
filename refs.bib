@@ -16,6 +16,18 @@
   pages={1012-1022},
   doi={10.1109/TCSI.2020.3046524}}
 
+@mastersthesis{werblun2019,
+    Author = {Werblun, Nicholas},
+    Editor = {Stojanovic, Vladimir},
+    Title = {Closing the Analog Design Loop with the Berkeley Analog Generator},
+    School = {EECS Department, University of California, Berkeley},
+    Year = {2019},
+    Month = {May},
+    URL = {http://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-23.html},
+    Number = {UCB/EECS-2019-23},
+    Abstract = {Analog and mixed signal IC design is notoriously difficult and slow due in large part to the layout. Modern integrated circuit fabrication with such small devices can have significant interconnect parasitics that can drastically aﬀect the behavior of a circuit’s design. The implication is that simulations of circuit’s behavior are unreliable until after the interconnect parasitics are extracted from the layout and included in the simulation. The Berkeley Analog Generator (BAG) is a Python-based tool that interfaces with the Cadence Virtuoso software [3] that aims to solve the above problem. BAG allows the user to write parametrizable generator scripts that will automatically generate the entire layout and schematic, as well as run the layout-versus-schematic (LVS) and post-layout extraction (PEX) tools and export the results in a time that ranges from seconds to minutes based on circuit complexity. Designers who have decided on a certain topology can write a layout and schematic generator script in a high level programming language with class based hierarchy once, and then any changes in the circuit simply require changing the corresponding parameters ﬁle containing the circuit specifications. Additionally, BAG allows the automation of simulation and post-processing of simulation data as well as implementation of higher-level design scripts that encapsulate designer insights and methodology, as well as opens the doors for automated optimizer-driven circuit design. This report shows examples of many common circuit blocks and their BAG implementation in an advanced process node, as well as an example of how BAG can be used to speed up the design process. Although the generator scripting oﬀers the implementation in a higher-level language, certain implementation strategies and methodologies work better than others, and this report aims at presenting a systematic generator writing methodology and illustrates it on a set of typical analog-mixed signal blocks found in a high-speed link front-end. In three months, a library of generators ranging from small basic circuits to entire receiver chains were written; then in roughly two weeks, an LVS/PEX verified design for a 25Gbps optical communication link receiver in a 14nm FinFET process was created using BAG cells and test benches. Further possibilities and uses of BAG are also discussed.}
+}
+
 @inproceedings{chang2018bag2,
   title={BAG2: A process-portable framework for generator-based AMS circuit design},
   author={Chang, Eric and Han, Jaeduk and Bae, Woorham and Wang, Zhongkai and Narevsky, Nathan and NikoliC, Borivoje and Alon, Elad},
@@ -334,3 +346,89 @@ month={Nov},
   year={2019},
   organization={Schloss Dagstuhl-Leibniz-Zentrum fuer Informatik}
 }
+
+@INPROCEEDINGS{openfasoc,
+  author={Hammoud, Ali and Shankar, Vijay and Mains, Robert and Ansell, Tim and Matres, Joaquin and Saligane, Mehdi},
+  booktitle={2023 International Symposium on Devices, Circuits and Systems (ISDCS)}, 
+  title={OpenFASOC: An Open Platform Towards Analog and Mixed-Signal Automation and Acceleration of Chip Design}, 
+  year={2023},
+  volume={1},
+  number={},
+  pages={01-04},
+  doi={10.1109/ISDCS58735.2023.10153547}}
+
+@inproceedings{ansell2020missing,
+  title={The missing pieces of open design enablement: A recent history of Google efforts},
+  author={Ansell, Tim and Saligane, Mehdi},
+  booktitle={Proceedings of the 39th International Conference on Computer-Aided Design},
+  pages={1--8},
+  year={2020}
+}
+
+@inproceedings{dikshit2023,
+author = {Amit Dikshit and Jin Wallner and M. Rakib Uddin and M. Jobayer Hossain and Javery Mann and Amir Begovic and Yukta Timalsina and Lewis G. Carpenter and Gerald Leake and Christopher Baiocco and Colin McDonough and Nicholas Fahrenkopf and Chandra C. Cotter and Christopher Striemer and David Harame},
+title = {{Design enablement methodology for silicon photonics-based photonic integrated design}},
+volume = {12424},
+booktitle = {Integrated Optics: Devices, Materials, and Technologies XXVII},
+editor = {Sonia M. Garc{\'i}a-Blanco and Pavel Cheben},
+organization = {International Society for Optics and Photonics},
+publisher = {SPIE},
+pages = {124240D},
+keywords = {Silicon Photonics, Design Enablement, Photonic Integrated Circuit Design, Process Design Kits, Photonic Simulations},
+year = {2023},
+doi = {10.1117/12.2651445},
+URL = {https://doi.org/10.1117/12.2651445}
+}
+
+@article{McCaughan2021PHIDL,
+    author  = {McCaughan, Adam N. and Tait, Alexander N. and Buckley, Sonia M. and Oh, Dylan M. and Chiles, Jeffrey T. and Shainline, Jeffrey M. and Nam, Sae Woo},
+    title   = {PHIDL: Python-based layout and geometry creation for nanolithography},
+    journal = {Journal of Vacuum Science \& Technology B},
+    volume  = {39},
+    number  = {6},
+    pages   = {062601},
+    year    = {2021},
+    doi     = {10.1116/6.0001203},
+    URL     = {https://doi.org/10.1116/6.0001203}
+}
+
+@INPROCEEDINGS{rekhi2019,
+  author={Rekhi, Angad S. and Zimmer, Brian and Nedovic, Nikola and Liu, Ningxi and Venkatesan, Rangharajan and Wang, Miaorong and Khailany, Brucek and Dally, William J. and Gray, C. Thomas},
+  booktitle={2019 56th ACM/IEEE Design Automation Conference (DAC)}, 
+  title={Analog/Mixed-Signal Hardware Error Modeling for Deep Learning Inference}, 
+  year={2019},
+  volume={},
+  number={},
+  pages={1-6},
+  doi={}}
+
+@INPROCEEDINGS{xue2021,
+  author={Xue, Cheng-Xin and Hung, Je-Min and Kao, Hui-Yao and Huang, Yen-Hsiang and Huang, Sheng-Po and Chang, Fu-Chun and Chen, Peng and Liu, Ta-Wei and Jhang, Chuan-Jia and Su, Chin-I and Khwa, Win-San and Lo, Chung-Chuan and Liu, Ren-Shuo and Hsieh, Chih-Cheng and Tang, Kea-Tiong and Chih, Yu-Der and Chang, Tsung-Yung Jonathan and Chang, Meng-Fan},
+  booktitle={2021 IEEE International Solid- State Circuits Conference (ISSCC)}, 
+  title={16.1 A 22nm 4Mb 8b-Precision ReRAM Computing-in-Memory Macro with 11.91 to 195.7TOPS/W for Tiny AI Edge Devices}, 
+  year={2021},
+  volume={64},
+  number={},
+  pages={245-247},
+  doi={10.1109/ISSCC42613.2021.9365769}}
+
+@INPROCEEDINGS{yoon2021,
+  author={Yoon, Jong-Hyeok and Chang, Muya and Khwa, Win-San and Chih, Yu-Der and Chang, Meng-Fan and Raychowdhury, Arijit},
+  booktitle={2021 IEEE International Solid- State Circuits Conference (ISSCC)}, 
+  title={29.1 A 40nm 64Kb 56.67TOPS/W Read-Disturb-Tolerant Compute-in-Memory/Digital RRAM Macro with Active-Feedback-Based Read and In-Situ Write Verification}, 
+  year={2021},
+  volume={64},
+  number={},
+  pages={404-406},
+  doi={10.1109/ISSCC42613.2021.9365926}}
+
+@INPROCEEDINGS{chen2021,
+  author={Chen, Zhengyu and Chen, Xi and Gu, Jie},
+  booktitle={2021 IEEE International Solid- State Circuits Conference (ISSCC)}, 
+  title={15.3 A 65nm 3T Dynamic Analog RAM-Based Computing-in-Memory Macro and CNN Accelerator with Retention Enhancement, Adaptive Analog Sparsity and 44TOPS/W System Energy Efficiency}, 
+  year={2021},
+  volume={64},
+  number={},
+  pages={240-242},
+  doi={10.1109/ISSCC42613.2021.9366045}}
+

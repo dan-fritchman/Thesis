@@ -528,17 +528,81 @@ m.i2(c=m.i1.a)
 
 ### How `Module` Works
 
-FIXME: write
+Many or most Hdl21 `Module`s are written such that they look like class definitions. They are not. In truth all modules share the same (Python) type - `Module` itself. `Module` is a "final" type; it is defined to explicitly disallow subtyping: 
 
-- They look like classes, but arent
-- Inner data model/ structure/ namespace
-- add / get API
-- accessors to signals etc
-- name accessors to named attributes
+```python
+class Module:
+    # ...
+    def __init_subclass__(cls, *_, **__):
+        """Sub-Classing Disable-ization"""
+        msg = f"Error attempting to create {cls.__name__}. Sub-Typing {cls} is not supported."
+        raise RuntimeError(msg)
+```
+
+Aside: as a design philosophy, Hdl21 generally eschews object-oriented practices in its user-facing interfaces. Several of its central types including `Module` and `Bundle` make this ban explicit. Hdl21 does make use of OOP techniques _internally_, and some at the "power user" (e.g. PDK package developer) level, primarily for defining its many hierarchy-traversing data model visitors. 
+
+Instead Hdl21 makes heavy use of the decorator pattern, particularly applying decorators to class definitions of related objects. The `module` (lower-case) decorator function applied to so many `class` bodies does something like: 
+
+```python
+def module(cls: type) -> Module:
+    # Create the Module object
+    module = Module(name=cls.__name__)
+
+    # Take a lap through the class body, type-check everything and assign relevant attributes to the bundle
+    for item in cls:
+        module.add(item)
+
+    # And return the Module
+    return module
+```
+
+Note the input `cls` is a `type`. Python classes are runtime objects which can be manipulated like any other. E.g. they can serve as the argument to functions (as in `module`) and can serve as the return value from functions (as done by many `Generator`s). The `module` function takes one, trolls through all of its contents, and passes them along to `Module.add`. Type checking and schema organization, covered in upcoming sections, and implemented by `add`. When used as a class decorator, the type `cls` only exists during the execution of the `module` function body, and is then quickly dropped. 
+
+The Python language class-definition semantics have a number of helpful properties in defining typical hardware content, particularly linked modular sets of data we generally refer to as "modules". The language defines the class body to be an execution namespace which runs from top to bottom. Assignments in this class-level namespace are immediately available both as raw identifiers, and in a "class dictionary", a string to value mapping of all the class-object's attributes. For example:
+
+```python
+class C:
+  a = 1
+  b = a + 2
+
+print(C.__dict__)
+# {'a': 1, 'b': 3, ...}
+```
+
+The capacity to refer to attributes once they are defined proves particularly handy. Hardware modules are comprised of a linked, named set of hardware attributes. It is common to conceptualize this set as a graph, or as various kinds of graphs depending on context. In both Python's language-level class body definitions and in Hdl21 modules, the edges between these graph nodes are the language's native "pointers" (references). 
+
+It is possible, and even commonplace in comparable pieces of software, to define these edges otherwise. Common tactics including using name-based string "references", paired with a central repository mapping all available names to their referents. That works (we guess). But it removes much of the fluidity of programs using the referents (notably, one must always have a reference available to the central repository!). And it erodes much of the value provided by the language's (somewhat) recently adopted gradual typing, generally borne of IDE aids, linters, and similar type-system-based programmer aids. 
+
+The class-body is a convenient mechanism for defining what `Module` is at bottom: a structured collection of these hardware attributes. Each `Module`'s core data is a nested namespace of name-value mappings, one per each primary child HDL type, plus one overall namespace including their intersection. Conceptually `Module` is:
+
+```python
+@dataclass
+class Module:
+    ports: Dict[str, Signal] 
+    signals: Dict[str, Signal] 
+    instances: Dict[str, Instance] 
+    instarrays: Dict[str, InstanceArray] 
+    instbundles: Dict[str, InstanceBundle] 
+    bundles: Dict[str, BundleInstance] 
+    namespace: Dict[str, ModuleAttr]   # Combination of all these
+```
+
+Where each `Dict[str, X]` is a mapping from a string `name` which is also an attribute of `X`. As such, `Module` doesn't really _do_ all that much. (I.e. it doesn't have many methods, and is *almost* "plain old data".) `Module` includes only two API methods: `add` and `get`. Both operate on its namespace of HDL attributes. Addition places attributes into their associated type-based container, after checking them for valid types and naming. `Module.get` simply retrieves them by name. This structured arrangement of `Module` is nonetheless a central facet of the Hdl21 data model. Most code which processes it lies elsewhere, in hierarchical traversals performend by Hdl21's elaborators, PDK compilers, and other visitors. 
+
+`Module` has one more central feature, directly attributable to its host language's capability: its by-name dot-access assignments and references. Python allows types to define override methods for setting and getting attributes (`__setattr__` and `__getattr__`) which Hdl21 uses extensively. These by and large route to `Module.add` and `Module.get` respectively. Their inclusion is nonetheless a central facet of what makes Hdl21 feel like a native, dedicated language. Designers accustomed to dedicated HDLs are generally familiar with making dot-access references, e.g. to hierarchical design objects. Hdl21 makes this a central part of the process of designing and constructing them. This is also a central motivation for why the `Module` API is so minimal. The intent is that module dot-accesses usually refer to *HDL objects*, i.e. they are named references to the signals, ports, instances, etc. that the module-designer has already added. 
+
+```python
+m = h.Module()
+m.inp = h.Input() # __setattr__
+m.add(h.Output(name="out")) # `m.add` refers to a method
+print(m.get("out").width) # As does `m.get`
+print(m.inp.width) # Most other `m.x`'s refer to its HDL objects 
+```
+
 
 ### Generators
 
-Hdl21 `Modules` are "plain old data". They require no runtime or execution environment. They can be (and are!) fully represented in markup languages such as ProtoBuf, JSON, and YAML. The power of embedding `Modules` in a general-purpose programming language lies in allowing code to create and manipulate them. Hdl21's `Generators` are functions which produce `Modules`, and have a number of built-in features to aid embedding in a hierarchical hardware tree.
+As described above, Hdl21 `Module`s are (almost) "plain old data". The power of embedding `Module`s in a general-purpose programming language lies in allowing code to create and manipulate them. Hdl21's `Generators` are functions which produce `Modules`, and have a number of built-in features to aid embedding in a hierarchical hardware tree.
 
 In other words:
 
@@ -1610,7 +1674,7 @@ Schematics are, at bottom, graphical representations of circuits. They include b
 - 1. A Circuit
 - 2. A Picture
 
-Typical software manifestations operate by designing a circuit-picture data format, which includes a combination of HDL-style circuit info with graphical visualization content. Notably, as in IC layout, these graphical representations are generally two-dimensional. Schematics consist of a set of 2D shapes and paths, generally annotated by purposes such as "part of an instance", "defines a wire", "annotation only", and the like. Unlike layout, they lack physical meaning of the third "half" dimension. Popular schematic data-formats make use of exactly the very same data structures and models used for layout, with the z-axis layer annotations repurposed to denote those schematic-centric purposes. Hierarchy is represented through instances of _schematic symbols_, which serve as references to other schematics or of primitive devices.
+Typical software manifestations operate by designing a circuit-picture data format, which includes a combination of HDL-style circuit info with graphical visualization content. Notably, as in IC layout, these graphical representations are generally two-dimensional. Schematics consist of a set of 2D shapes and paths, generally annotated by purposes such as "part of an instance", "defines a wire", "annotation only", and the like. Unlike layout, they lack physical meaning of the third ("2.5th") dimension. Popular schematic data-formats make use of exactly the very same data structures and models used for layout, with the z-axis layer annotations repurposed to denote those schematic-centric purposes. Hierarchy is represented through instances of _schematic symbols_, which serve as references to other schematics or of primitive devices.
 
 Such a dedicated format then generally requires at least one custom program, dedicated to (a) rendering the schematics as pictures, and often to (b) directly editing them in an interactive GUI. Some visualization-centric programs, e.g. those aiding in debug of post-synthesis or post-layout netlists, focus on (a).
 
@@ -2167,39 +2231,63 @@ FIXME:
 
 ![fraunhofer_history](./fig/fraunhofer_history.png "Some History (FIXME: cite LAYGEN II Paper), extended by Fraunhofer IIS.")
 
+
 # Programmed Custom Layout
 
-FIXME:
+The dominant paradigm for producing analog and custom layout has been "the analog way" - drawing essentially free-form shapes in a graphical environment - more or less since such GUIs have been available. Plenty of systems, primarily from research, have nonetheless recognized the utility of producing these layouts through code instead. These systems can be thought of as conceptually replacing the GUI with an elaborate layout API. Each prospective action or change to be made by clicking or dragging is replaced with an API call. An "add rectangle" selection-box might directly translate into an `addRectangle()` method. 
 
-- Use code, not GUI
-- Replace all those GUI clicks with API calls
-- Maybe build up some conceptual hierarchy above that
+Such systems, particularly those in which designers write programs which manipulate _layout content itself_, we refer to as "programmed custom". (Chapter 10 will cover systems which differ in injecting an intervening _layout solver_, the input to which is the principal object of designer-programs.) 
 
-As illustrated in Figure~\ref{fig:layout_quadrants}, most GUI-drawn custom layout does include programmed-custom components, for its lowest-level primitives. These low-level layouts are commonly called \_parametric cells* or _p-cells_ for short. Typical instances produce a single transistor or passive element, parameterized by its physical dimensions, segmentation, and potentially by more elaborate criteria such as demands for redundant contacts. These low-level p-cells perform the highly invaluable task of producing DRC-compliant designs for the lowest, often most detailed and complicated layers of a technology-stack.
+Being based in code has advantages in and of itself. Text-based code has proven immeasurably more effective for sharing, distribution, review and feedback than the typical binary/ graphical data that it replaces. Parameterization in the graphical environment is particularly challenging. Few (if any) environments provide a rich graphical programming mechanism to turn parameters into parametric layout content. Often if they do, it's by escaping into code form.
 
-The programmed custom approach applies a similar methodology to module-level circuits. Rather than manipulate a GUI, designers invoke a layout API to add and manipulate content. Think of "the analog way", but replacing each GUI click with an API call.
+Code has also proven vastly more amenable to conceptual layering. Programs and libraries can write and expose layers of functions and abstractions, enabling an array of trade-offs between across levels of detail and control, generally traded off with a requirement for more detail. Moreover, programs can (often) readily jump between these abstraction layers, deploying the most detailed and verbose where warranted, and the most efficient everywhere else. Such layering is also common in programming abstractions for layout. The lowest such layer generally manipulates 2.5D geometry directly, creating and manipulating common shapes (rectangles, polygons, fixed-width paths) annotated with z-axis "layer" designations. E.g.:
 
-Being based in code has advantages in and of itself. Text-based code has proven immeasurably more effective for sharing, distribution, review and feedback than the typical binary/ graphical data that it replaces. Parameterization in the graphical environment is particularly challenging; few (if any) environments provide a rich graphical programming mechanism to turn parameters into parametric layout content. Often if they do, it's by escaping into code form.
+```python
+layout = create_a_layout()
+layout.add_a_rect((1, 2), (3, 4), layer=5)
+layout.add_a_polygon([(5, 6), (7, 8), (9, 10),], layer=11)
+layout.add_a_path(
+  [(11, 12), (13, 14), (15, 16),],
+  width=30,
+  layer=12)
+layout.add_an_instance(
+  of=some_other_layout,
+  loc=(11, 12),
+)
+```
 
-Several popular programming libraries
+This simple example includes the next most likely and most common abstraction: hierarchy. Layout "modules" - which, for whatever reason, have failed to find a culturally consistent name - are relocatable sets of theses shapes, and instances of other layouts. Each can then be replicated at varying locations in a larger-scale layout. Many such systems include capabilities for layout instances to mirror and/ or rotate, either in coarse or fine increments. 
 
-- BAG [@chang2018bag2]
-- TED [@ye2023_ted_analog]
-- LAYGO [@laygo]
+```python
+inst = layout.add_an_instance(
+  of=some_other_layout,
+  # Transformation properties from `some_other_layout`, to this instance
+  loc=[11, 12],
+  reflect=False,
+  rotation=90,
+)
+```
 
-## State of the Art(?)
+From here, concepts can stack up in a variety of directions. *Arrays* of repeated elements, whether instances, shapes, or combinations thereof, are a common addition. GDSII includes such two-dimensional arrays in the lowest-level, most popular format for design data. 
 
-- Direct libs: gdstk, gdsfactory
-- "P-cells" for low-level devices
-- BAG programming model
+A popular abstraction for higher-level layout injects the notions of _tracks_ and an underlying _grid_. These techniques resemble the conceptual layout-space used by digital PnR. All connections are driven onto a regular set of available wiring tracks. Typically each connection layer runs in a single direction, and often these directions are systemically demanded to alternate layer-by-layer. E.g. if metal layer 5 runs horizontally, this implies that metal layers 4 and 6 (or whatever the adjacent ones are called) run vertically. 
+
+This gridding concept can be highly valuable for streamlining the connection-programming process. Especially so for layout-programs which desire _portability_, whether between widely divergent parameters, or most impactfully, across implementation technologies. With grids, connections no longer need to be programmed in "raw" geometric coordinates. They instead refer to indices or other keys into the grid to make reference to desired metal locations.
+
+Several popular programming libraries and frameworks epitomize the programmed-custom model. Open source libraries such as [gdstk](https://github.com/heitzmann/gdstk) and its predecessor [gdspy](https://github.com/heitzmann/gdspy) are canonical examples. While both place some emphasis on the GDSII data and file format (even in their names), both expose Python APIs to add, manipulate, and query the content of custom layouts. [Gdsfactory](https://gdsfactory.github.io/) and PHIDL [@McCaughan2021PHIDL] expose similar low-level APIs, with higher-level functionality and emphasis tailored to _photonic_ chips and circuits. (Photonics may be a domain more amenable to the programmed-custom model overall than highly integrated CMOS, as indicated by the survey in [@dikshit2023].)
+
+The most relevant here at UC Berkeley is the Berkeley Analog Generator, BAG ([@chang2018bag2], [@werblun2019]), and related projects such as LAYGO [@laygo]. BAG means different things to different people. One (perhaps founding) view was that BAG codifies the _design process_ which designers tend to very loosely keep collected in memory. This (at least conceptually) includes selecting circuit architectures, applying sizing decisions, and ultimately producing layout. In practice, aways more time, energy, and attention has been dedicated to its efforts to program custom layout. BAG endeavors to enable process-portable layout-programs in which a _circuit_ is codified in a program, and its underlying implementation technology is essentially a _parameter_. That technology parameter is quite complex, generally expressed as a large pile of YAML markup. The portability goals are central to BAG's usage of such a gridded layout abstraction. The verbosity of BAG's programming model, particularly that for routing, was nonetheless cited as a primary shortcoming by [@ye2023_ted_analog]. This work introduces TED, a framework heavily focused on streamlining much of this programmer interface, at the seeming cost of some levels of control. 
+
+We also note that "the analog way" makes its own use of programmed-custom layout. As illustrated in Figure~\ref{fig:layout_quadrants}, most GUI-drawn custom layout does include programmed-custom components, for its lowest-level primitives. These low-level layouts are commonly called _parametric cells_ or _p-cells_ for short. Typical instances produce a single transistor or passive element, parameterized by its physical dimensions, segmentation, and potentially by more elaborate criteria such as demands for redundant contacts. These low-level p-cells perform the highly invaluable task of producing DRC-compliant designs for the lowest, often most detailed and complicated layers of a technology-stack.
+
 
 ## Programmed Custom Success Stories (Mostly SRAM Compilers)
 
 The most successful depolyments of programmed-custom layout have generally been _circuit family_ specific. E.g. while a layout-program at minimum produces a single circuit, these best-use-cases find families of similar circuits over which to find a set of meta-parameters, enabling the production of a small family. SRAM arrays have probably been the most successful example. SRAM serves as the primary high-density memory solution for nearly all of the digital flow, comprising most cache, register files, and configuration of most large digital SOCs. SRAM is therefore extremely area-sensitive, especially at its lowest and most detailed design layers. A common workflow uses the custom graphical methods to produce these "bit-cells" and similarly detailed layers, which using "SRAM compiler" programs to aggregate bits into usable IP blocks. An SRAM compiler is a programmed-custom layout program. It leverages the fact that large swathes of popular SRAM usage has a consistent set of parameters: size in bits, word width, numbers of read and write ports, and the like. The compiler (or what we might call "generator") programs generalize over this space and produce a family of memory IPs.
 
-The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems have implemented this marriage with analog signal processing, typically using physical device characeristics (e.g. programmable resistors) to perform multiplication, and more amenable quantities (e.g. current, charge) to perform addition. (We always thought this was a bad idea.)
+The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems have implemented this marriage with analog signal processing, typically performing multiplication via a physical device characteristic, e.g. transistor voltage-current transfer [@chen2021], or that of an advanced memory cell such as RRAM[@yoon2021] or ReRAM [@xue2021]. Addition and accumulation are most commonly performed either on charge or current, the two analog quantities which tend to sum most straightforwardly. 
 
-Reference [@fritchmancim2021] illustrates many of the difficulties in using such analog signal processing techniques. Particularly, while the analog-domain mathematical operations can often be performed highly effectively, they ultimately must produce digital data to participate in broader digital systems. These data conversion steps can serve as bottlenecks to both power and area. (FIXME: ref) provided a lower bound on this "conversion cost", based on applying observed state of the art data converter metrics. But these bounds are likely far too permissive. Such machine learning acceleration systems rarely feature the trade-offs required for state of the art data conversion, which often requires highly complex calibration and area unto itself.
+Reference [@fritchmancim2021] illustrates many of the difficulties in using such analog signal processing techniques. Particularly, while the analog-domain mathematical operations can often be performed highly effectively, they ultimately must produce digital data to participate in broader digital systems. These data conversion steps can serve as bottlenecks to both power and area. While [@rekhi2019] provided a lower bound on this "conversion cost", based on applying observed state of the art data converter metrics. But these bounds are likely far too permissive. Such machine learning acceleration systems rarely feature the trade-offs required for state of the art data conversion, which often requires highly complex calibration and area unto itself.
 
 It instead proposes an all digital compute in memory macro, in which each "atom" is comprised of a _write only_ SRAM bit cell, plus a single bit "multiplier" implemented with a minimum-sized NOR2 gate. Figure~\ref{fig:cim-concept} through figure~\ref{fig:cim-macro} depict the compute in memory macro's atomic bit-cell and critical building blocks.
 
@@ -2208,9 +2296,7 @@ It instead proposes an all digital compute in memory macro, in which each "atom"
 ![](fig/cim-column.png "Compute in Memory Column")
 ![](fig/cim-macro.png "Compute in Memory Macro")
 
-Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory.
-
-This example of [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else.
+Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory. This example from [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else.
 
 - FIXME:
 - cite SRAM22/ Substrate [@kumar2023]
@@ -2802,4 +2888,8 @@ How to cite:
 
 - MAGICAL [@chen2020magical]
 - ALIGN [@kunal2019align]
-- CHISEL [@chisel12]
+- OpenFaSOC [@openfasoc]
+- Ansell [@ansell2020missing]
+- Photonic layout stuff survey [@dikshit2023]
+- PHIDL [@McCaughan2021PHIDL]
+- 
