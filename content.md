@@ -1,3 +1,4 @@
+
 \setkeys{Gin}{width=.75\linewidth}
 
 # Introduction
@@ -11,6 +12,10 @@ Sub-outline:
   - Like with some end of Moore's Law stuff
 - Particularly the analog parts
 - The whole conceptual layer-cake on which they get designed
+- [@guo2023osci]
+- [@burnett2018]
+- Add a section on role of open-source
+- Open source for education: [@alam2022]
 
 ## The IC Design Process
 
@@ -291,6 +296,10 @@ The behavioral interface of such PLLs can be broken into three elements:
 The relative abstract-ability of this interface makes it a desirable point of separation between the PLL and the rest-of-chip. Ideally this interface can be designed sufficiently abstractly to fit future PLL IPs of different design implementation and target specs.
 
 # IC Design Databases
+
+- FIXME:
+- OpenDb [@spyrou2019opendb]
+- OpenAccess [@guiney2006oa]
 
 ## "Databases" (Ahem) 101
 
@@ -2347,7 +2356,119 @@ In the `layout21::raw` model, a layout is comprised of two kinds of entities: (1
 
 Layout21's design incorporates a second, seemingly easy to miss fact about layout (even custom layout): it gets big, fast. Perhaps most significant among its principal design decisions, Layout21 is implemented in the Rust [@matsakis_rustlang] language. Rust is a "systems programming" language, designed for applications commonly implemented in C or C++. It compiles to native machine code via an LLVM [@lattner2004] based pipeline similar to that used by the popular Clang C compiler. It endeavors to further enable parallel applications via the inclusion of its _ownership and borrowing_ system, which, among other benefits, produces multi-threaded code which is provably race-free at compile time. Layout21 does not, as of this writing, capitalize on these parallelism opportunities. But many aspects of its design, notably including the implementation language from which it begins, are compatible with readily doing so. More impactfully on Layout21's usefulness, its host language's provable _memory safety_ removes large categories of (often fatal) program errors, generally resulting in program-killing segmentation faults.
 
-Rust's safety guarantees are nice, and Layout21 benefits (some) from them. But they are not why Layout21 uses Rust. Moreso it has two attributes unavailable elsewhere: (1) its speed, and (2) its suite of modern development niceties. Package management, documentation, unit testing, sharing, and the like - all the semi-technical facets that actually _get code shared_ - come built in. It also helps that Rust features high "embedability", into both low-level languages such as C, and "slow languages" such as Python and JavaScript. There is a time-honored tradition of layout libraries beginning in such scripting languages, initially to great productivity gains. Then, slowly at first, and quickly later, layouts get bigger. Programs get slower, then much slower, then useless. Then the low-level "extension languages" - generally C or C++ - come in. This story played out both in the history of `BAG`, and of `gdspy` (renamed `gdstk` to commemorate the change). Layout21 made this realization upfront.
+Rust's safety guarantees are nice, and Layout21 benefits (some) from them. But they are not why Layout21 uses Rust. Moreso it has two attributes unavailable elsewhere: (1) its speed, and (2) its suite of modern development niceties. Package management, documentation, unit testing, sharing, and the like - all the semi-technical facets that actually _get code shared_ - come built in. It also helps that Rust features high "embedability", into both low-level languages such as C, and "slow languages" such as Python and JavaScript. 
+
+There seems to be a time-honored tradition of layout libraries which goes something like: 
+
+- Start in a scripting languages. Python, Perl, whatever.
+- Designers love it. It's what they know, and now the can use it for layout. Productivity maxes out.
+- Then, slowly at first, and quickly later, layouts get bigger. Programs get slower.
+- Then much slower.
+- Then useless.
+- Then the low-level "extension languages" - generally C or C++ - come in.
+
+This story played out both in the history of `BAG`, and of `gdspy` (renamed `gdstk` to commemorate the change). Layout21 incorporated this lesson upfront.
+
+Layout21's approach differs from comparable libraries in a few material respects. 
+
+First, Layout21's in-memory data model is...
+
+- FIXME!
+- independent of any serialization, binary, or other file format. Its data model contents strongly resemble those of GDSII and `vlsir.layout`. Important differences appear at the margins. Part
+
+Second, layout21 treats _layout abstracts_ as first class concepts. Abstracts serve an analogous role to layout _implementations_ that _header definitions_ serve to implementations, in programming languages which explicitly separate the two (e.g. C, C++). A programming function abstract (header) generally specifies:
+
+- (a) An identifier by which to get a handle to the function, generally a name;
+- (b) Specifications for the functions arguments. This may include ordering, naming, and/ or type constraints depending on the language.
+- (c) Information about what the function will return. This primarily takes the form of a type, in languages with typing annotations.
+- (d) Any "special behaviors". E.g. the possibility of throwing an exception (or a promise to never do so). 
+
+Most vitally: these abstract views are all that _callers_, i.e. users, of the function ever need. The remaining implementation - i.e. all the lines of code that do the actual work - instead serve as its inner implementation. 
+
+Layouts and their abstracts have analogous roles. System-level designers, i.e. those combining packaged chips and PCBs into systems, are deeply familiar with one form of abstract layout: the _datasheet_. Each IC datasheet includes 
+
+- (a) A descriptive port list, indicating each IC pin's function. E.g. "analog supply", "reference clock", or "primary output".
+- (b) A physical diagram, indicating the shape and size of each pin.
+
+![datasheet_abstract_layout](fig/datasheet_abstract_layout.png "Abstract Layout, in the Form of a Packaged IC Datasheet")
+
+The abstract view of IC layouts is most popularly expressed in Library Exchange Format (LEF). LEF is an ascii text format which specifies a combination of layout-abstract libraries, and technology parameters which support them. (The latter subset is often denoted "tech-LEF".) LEF calls its layout-abstract the `MACRO`. Each `MACRO` includes: 
+
+- An identifier for the macro/ module
+- Its physical outline
+- A list of (logical) pins and (physical) ports. Each pin may have one or more physical ports, which are presumed "strongly" connected within. Each port is specified with a list of 2.5D shapes similar to those used in layout implementations (rectangles, polygons, etc.).
+- A list of obstructions. This is formed as another list of 2.5D shapes which are annotated as "implementation space". LEF intent is that higher-level users of the layout abstract will not interfere with or contact these areas. 
+- A variety of metadata about the macro (e.g. its usage intent), as well as each pin (e.g. its direction and intended usage).
+
+Example LEF format content: 
+
+```
+MACRO MyCircuit # MACRO (module)
+ CLASS BLOCK ;
+ ORIGIN 0 0 ;
+ SIZE 123.936 BY 125.536 ;
+ PIN clock
+   DIRECTION OUTPUT ;
+   USE SIGNAL ;
+   PORT
+     LAYER M4 ;
+       RECT 122 0.384 123 0.768 ;
+   END
+ END clock
+# ...
+# ...
+ OBS # obs(tructions), or blockages
+   LAYER M1 ;
+     RECT 1.2 0.0 122.736 121.536 ;
+   LAYER M2 ;
+     RECT 1.2 0.0 122.736 121.536 ;
+   LAYER M3 ;
+     RECT 1.2 0.0 122.736 121.536 ;
+ END
+END MyCircuit
+END LIBRARY
+```
+
+Layout21's "raw" data model includes a set of types to define layout `Abstract`. Each is similar to the analogous concepts in LEF, and to the more general conceptual task of defining "layout headers". Simplified versions of the `Abstract` data model, which uses several core types from previous excerpts:
+
+```rust
+pub struct Abstract {
+    /// Cell Name
+    pub name: String,
+    /// Outline
+    pub outline: Polygon,
+    /// Ports
+    pub ports: Vec<AbstractPort>,
+    /// Blockages
+    pub blockages: HashMap<Layer, Vec<Shape>>,
+}
+pub struct AbstractPort {
+    /// Net Name
+    pub net: String,
+    /// Shapes, with paired [Layer] keys
+    pub shapes: HashMap<Layer, Vec<Shape>>,
+}
+```
+
+Notably layout21's _instances_ are not of either layout implementations or their abstracts, but of an association between the two named `Cell`. Each `Cell` is a paired set of representations (or "views") of the same underlying physical circuit. 
+
+In an unfortunately common practice, layout implementations tend to _precede_ their abstracts. This understandable in a bottom-up design flow, in which layouts are initially built at primitive device levels, followed by successively higher levels of design hierarchy. In such practice, one generally does not know where the pins, ports, or blockages will be - much less where they _should_ desirably be for adjacent circuits - until those circuits are complete. Which, by definition, is not until roughly when their peers are complete. Plus, specifying layout abstracts is tedious. Certainly much moreso than our analogy to function headers in programming languages. Layouts (a) tend to have an order or two of magnitude more IO (e.g. 10s to 100s of pins, as compared to 1s to 10s of function arguments), and (b) specifying it can be tedious, requiring exact physical coordinates. 
+
+So in the bottom-up design flow, abstracts are (a) a huge pain to produce, and (b) not especially helpful. Understandably, they aren't often generated. Common practice is instead to produce layout implementations first, and let "abstract generation" programs essentially summarize the implementation. 
+
+The fault here is not with the utility of the abstract view _per se_, but with its clashes against the bottom-up flow. A central downside of the bottom-up flow is that there is no practical way to parallelize design effort across hierarchical layers. Layer N of hierarchy can only reasonably begin with layers (N-1) and down are complete. Parallelization at _the same_ level of hierarchy is of course possible, presuming independence between peer-blocks. But more importantly, in a large design team and project, there are only so many equal-layered sub-designs to parallelize. Moreover the skillsets, background, and interests of designers varies widely across layers of hierarchy. There is sub-specialization even within custom layout, especially where it reaches its common boundaries with automatically placed-and-routed digital layout. 
+
+The abstract is the tool that enables parallelizing effort across these hierarchical layers. Software projects often refer to this practice as _interface first_ or _interface-driven_ development. In this style, key system blocks and (notably) their _interactions_ are identified first. In the case of a web-scale system this might include the roles of and data exchanged between client, server, and any other independent executing entities. In the case of custom layout, these interfaces are physical abstracts. Notably in contrast to "bottom-up", this design flow might errantly be called "top-down". It is not. Its entire point is parallelizing effort (and synchronizing expectations) _across_ levels of hierarchy. Layers both above and below the initially-defined abstracts then proceed in parallel. 
+
+Layout21's emphasis on abstract layout does not include a generation mechanism from layout implementations. (I have been asked many times, and kindly declined.) As of this writing, it also lacks a much more desirable component: an _abstract versus implementation_ verification tool. In comparison to the ubiquitous layout versus schematic (LVS) comparison, such a check might be called _layout versus abstract_ (LVA). This would accept the combination of a layout abstract and implementation (or `Cell` linking the two) as input, and produce a boolean result indicating: does the implementation actually implement the abstract? E.g.
+
+- Are the outlines equal?
+- Are all pins and ports included?
+- Does all port geometry align?
+- Does all pin metadata align?
+- Are all implementation shapes constrained to be within blockage/ obstruction areas?
+
+Such a tool, potentially in concert with more efficient abstract-specification methods, would greatly enhance the (rare, but we think better) abstract-driven design flow. 
 
 ## `Tetris` Placement \& Routing
 
@@ -2493,6 +2614,10 @@ In a co-designed circuit style, all unit MOS devices are of a single geometry. P
 ![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
 
 # Compiled (Analog) Layout
+
+![align_not_best_placement](./fig/align_not_best_placement.png "Unconstrained Placement Result. 100 unit resistors, arranged in 10 parallel strands of 10 in series.")
+![align_res_alignment](./fig/align_res_alignment.png "FIXME")
+![align_res_terms](./fig/align_res_terms.png "FIXME")
 
 Attempts to compile analog and otherwise "custom" circuit layout are not new.
 
@@ -2840,7 +2965,8 @@ An ultimate boss-agent, or perhaps a "boss's boss agent", would include several 
 
 ## Neural Sensor ADC in Intel 16nm FinFET
 
-FIXME: write
+- FIXME: write
+- ADC ref: [@nguyen2018adc]
 
 ![](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
 
