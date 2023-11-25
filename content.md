@@ -1664,30 +1664,53 @@ Customizing the elaboration process generally involves (a) defining new `ElabPas
 - FIXME: write more here
 - In IC design they the _lingua franca_ for analog circuits, and also commonly used for transistor-level digital circuits.
 
-Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. We nonetheless find for a small subset of schematics - the ones containing elements that any designer would recognize - the pictorial schematic remains the most intuitive mode.
+Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. Based on personal experience as a researcher and industry practitioner, designing systems and integrated circuits - my experience is that most schematics are worth less than zero. Not that they shouldn't exist; most of the bad ones don't have much of a choice. but that the limitations of their form do net harm to the underlying design task they exist to support. 
 
-![](./fig/high-quality-schematic.png "A High Quality Schematic")
+But there's still some magic in the good ones. 
+
+I call this a dinner party test. The setup: you're at a dinner party. The other people there are smart - but not _your kind_ of smart. They might be from different fields or backgrounds. The test: given some technical artifact of your field, how well can you explain it to them? How well can you explain it to them in a way that they can understand, and that they can appreciate the value of? Better yet, how well can you explain it to, say, your mom?
+
+An example prompt for such a test: 
+
+```python
+print("Hello World!")
+print("Hello Again")
+
+if something:
+   print("Something is true")
+
+a_number = 5
+while a_number > 3:
+   print(a_number)
+   a_number = get_a_random_number()
+```
+
+My own explanation: this is a sequence of "instructions" for your computer to run. (Although not the term of art "instruction" as in ISA.) Like a recipe or a novel, it generally flows from top to bottom, executing in order. There are a few execeptional cases like the `if` and `while` clauses which alter _control flow_ - i.e. which part of the program runs next. They work more like a "choose your adventure" book, in which the values of variables in the program determine whether it jumps to, say, page 53 or page 87 next.
+
+A second example:
+
+![sky-stdcell-layout](./fig/sky-stdcell-layout.jpg "Test 2")
+
+This is several things on several different levels: a flip-flop, a standard logic cell, a layout, a piece of the open-source SkyWater PDK. The dinner-party version should be clear to readers of Chapter 1: this is a blueprint. It's a set of instructions for what to build on a silicon die. The x and y axes are dimensions across the die surface. The colors represent different z-axis "layers", which can be various layers of metal, places to shoot ion doping infusions, polysilicon, and a handful of other pieces of the transistor-making stack. This coupled with some annotations for which color/ layer means what are the necessary instructions for a fabricator to build this circuit. 
+
+Now, a much harder third example: 
+
+![high-quality-schematic](./fig/high-quality-schematic.png "A High Quality Schematic")
+
+_We_ know this is a schematic. But counterintuitively, despite being over a decade into a career largely made out of such pictures, on some deep level I do not know what makes them work. I.e. _why_ that pictorial form resonates as such a clear representation of the underlying circuit it represents, where others (e.g. the code) fail. It just does. 
+
 
 ## What's a schematic really?
-
-FIXME: outline -
-
-- circuit and a picture
-- some structured data which captures the circuit content
-- some image data which produces the visual
-- usually, some paired software to render and/or interpret it
-- reverse order of "picture" and "circuit"
 
 Schematics are, at bottom, graphical representations of circuits. They include both the circuit-stuff required to populate a netlist or HDL code, as well as visual information about how the circuit should be rendered. In short: a schematic is two things -
 
 - 1. A Circuit
 - 2. A Picture
 
-Typical software manifestations operate by designing a circuit-picture data format, which includes a combination of HDL-style circuit info with graphical visualization content. Notably, as in IC layout, these graphical representations are generally two-dimensional. Schematics consist of a set of 2D shapes and paths, generally annotated by purposes such as "part of an instance", "defines a wire", "annotation only", and the like. Unlike layout, they lack physical meaning of the third ("2.5th") dimension. Popular schematic data-formats make use of exactly the very same data structures and models used for layout, with the z-axis layer annotations repurposed to denote those schematic-centric purposes. Hierarchy is represented through instances of _schematic symbols_, which serve as references to other schematics or of primitive devices.
+The "picture part" generally consists of a set of two dimensional shapes and paths, generally annotated by purposes such as "part of an instance", "defines a wire", "annotation only", and the like. In this sense the content of schematics mirrors that of IC layout. Unlike layout, schematics lack physical meaning of the third ("2.5th") dimension. Popular schematic data-formats make use of exactly the very same data structures and models used for layout, with the z-axis layer annotations repurposed to denote those schematic-centric purposes. Hierarchy is represented through instances of _schematic symbols_, which serve as references to other schematics or of primitive devices.
 
-Such a dedicated format then generally requires at least one custom program, dedicated to (a) rendering the schematics as pictures, and often to (b) directly editing them in an interactive GUI. Some visualization-centric programs, e.g. those aiding in debug of post-synthesis or post-layout netlists, focus on (a).
+Typical software manifestations operate by designing a circuit-picture data format, which includes a combination of HDL-style circuit info with graphical visualization content. This generally requires at least one associated program, dedicated to (a) rendering the schematics as pictures, and often to (b) directly editing them in an interactive GUI. 
 
-- FIXME: "schematics are good if you draw them, and if not just write code"
 
 ## SVG 101
 
@@ -1737,36 +1760,21 @@ Nodes and groups each include a rich set of transformation capabilities, setting
 
 ## Hdl21 Schematics
 
-- FIXME: hdl21 schematics are designed to get the good parts, make the good schematics easy, make the bad ones hard.
+That combination of observations drives the primary goals for Hdl21's paired schematic system:
 
-Hdl21 includes a [paired schematic system](https://github.com/vlsir/Hdl21Schematics) in which each schematic is both a web-native SVG image and is directly executable as an Hdl21 Python generator.
+- Get into & out of code as quickly & seamlessly as possible.
+- Make making the good schematics easy, and make making the bad schematics hard. 
+- Make _reading_ schematics as easy as possible.
 
-Each Hdl21 schematic is accordingly a single SVG file, requiring no external dependencies to be read. Linking with implementation technologies occur in code, upon execution of the schematic as an Hdl21 generator. Hdl21 schematics capitalize on the extension capabilities of Hdl21's embedded language, Python, which include custom expansion of its module-importing mechanisms, to include schematics solely with the language's built-in `import` keyword.
+### Schematics are SVG Images
+
+Each Hdl21 schematic is an SVG image, and is commonly stored in a `.svg` suffix file. An example schematic is pictured in Figure~\ref{fig:dvbe}.
 
 ![dvbe](fig/dvbe.jpg "Example SVG Schematic")
 
-### Hdl21 Schematics are SVG Images
+SVG's capacity for semi-custom structure and metadata allows for a natural place to embed each schematic's cicuit content. Perhaps more important, embedding within a widely supported general-purpose image format means that schematics are readable (as pictures) by essentially any modern web browser or operating system. Popular sharing and development platforms such as GitHub and GitLab render SVG natively, and therefore display Hdl21 schematics natively in their web interfaces.
 
-Hdl21 schematics are not _like_ SVGs.  
-They are not _exportable to_ or _convertable to_ SVGs.  
-They **are** SVGs.  
-So:
-
-- Each schematic is a _single file_. No dependencies, no linked "database".
-- Anyone can read them.
-- GitHub can read them.
-- GitLab can read them.
-- Grandma's copy of Internet Explorer can read them.
-
----
-
-- FIXME: these SVGs screw up in Overleaf's PDF generator!!!
-- This inverter is a valid schematic:
-- And the same inverter with [OpenMoji's mind-blown emoji](https://openmoji.org/library/emoji-1F92F/) is also a valid schematic:
-
----
-
-This is the first, probably biggest, difference between Hdl21 schematics and any other you've likely encountered. Instead of defining a custom schematic format and needing custom software to read it, Hdl21 schematics are general-purpose images. Any remotely modern web browser or OS can read them.
+FIXME: add GH/ GL images
 
 Embedding in SVG also allows for rich, arbitrary annotations and metadata, such as:
 
@@ -1779,16 +1787,42 @@ In other words, Hdl21 schematics reverse the order of what a schematic is, to be
 1. A Picture
 2. A Circuit
 
-SVG is an XML-based schema and allows for semi-custom strucutre and metadata.
-This structure and metadata, detailed [later in this document](#the-svg-schematic-schema), is what makes an SVG a schematic.
+The schematic-schema of structure and metadata, detailed [later in this document](#the-svg-schematic-schema), is what makes an SVG a schematic.
 
-While _reading_ schematics just requires any old computer, _writing_ them is best done with custom software. The primary Hdl21 schematics graphical editor runs in three primary contexts:
 
-- As a standalone desktop application
-- As a VsCode Extension
-- Coming soon: on the web
+### Schematics are Graphical Python Modules
+
+Each Hdl21 schematic is specified in its entirety by a single `.svg` file, and requires no external dependencies to be read. A paired `hdl21schematicimporter` Python package is designed to seamlessly integrate them into Hdl21-based programs as "graphical modules".
+
+
+Hdl21 schematics capitalize on the extension capabilities of Hdl21's embedded language, Python, which include custom expansion of its module-importing mechanisms, to include schematics solely with the language's built-in `import` keyword.
+
+Given a colocated schematic file named `schematic.sch.svg`, the module `uses_schematic` below will import the schematic as a Python module, and make its content available as the `schematic` variable.
+
+```python
+# Let's call this code `uses_schematic.py`
+# Import the importer-module to activate its magic
+import hdl21schematicimporter
+
+# Given a schematic file `schematic.sch.svg`, this "just works":
+from . import schematic # <= This is the schematic
+```
+
+Linking with implementation technologies then occurs in code, upon execution of the schematic as an Hdl21 generator. 
+
+
+### The Associated Editor Stack
+
+_Reading_ schematics (as pictures) requires any old computer. _Writing_ them can in principal be done with general-purpose image editing software (e.g. Inkscape), or even as raw text. But maintaining their structural validity as schematics, and making them nicer to interact with _as circuits_ is generally done best in a dedicated editor application. 
+
+The Hdl21 schematic system accordingly includes a web-stack graphical editor. It runs in three primary contexts (1) as a standalone desktop application, (2) as an extension to the popular IDE VsCode, and (3) as a web application. The latter two are pictured in Figure~\ref{fig:editor}.
+
+FIXME: images of each platform
+
+Some schematic programs are "visualization-centric" - i.e. those which primarily aid in debug of post-synthesis or post-layout netlists. A related task is _schematic inference_ - the process of determining the most descriptive picture for a given circuit. While this is worthwhile for such debugging tasks, Hdl21 schematics focuses on primary design entry of schematics. We think that schematics are good when drawn, and tend to be bad, or at least afterthoughts, when inferred. 
 
 SVG schematics by convention have a sub-file-extension of `.sch.svg`. The editor application and VsCode Extension use this convention to identify schematics and automatically launch in schematic-edit mode.
+
 
 ## The Element Library
 
@@ -1813,7 +1847,7 @@ Each instance includes two string-valued fields: `name` and `of`.
 
 The `name` string sets the instance name. This is a per-instance unique identifier, directly analogous to those in Verilog, SPICE, Virtuoso, and most other hardware description formats. It must be of nonzero length, and for successful Python import it must be a valid Python-language identifier.
 
-The `of` string determines the type of device. In Python, the `of` field is executed as code. It will often contain parameter values and expressions thereof.
+The `of` string determines the type of device. This is essentially the sole parameter for each `Element`. It is of type `string`, or more specifically "python code". The `of` field is executed directly in when the schematic is interpreted as an Hdl21 generator. It will often contain parameter values and expressions thereof.
 
 Examples of valid `of`-strings for the NMOS symbol:
 
@@ -1830,16 +1864,14 @@ from asap7 import nmos as my_asap7_nmos
 my_asap7_nmos(l=7e-9, w=1e-6)
 ```
 
-This is probably the second biggest difference between Hdl21 schematics and most other schematic systems. There is no backing "database", no "links" to out-of-source libraries. The types of all devices are dictated by code-strings, interpreted by programs ingesting the schematic.
+Hdl21 schematics include no backing "database" and no "links" to out-of-source libraries. The types of all devices are dictated by code-strings, interpreted by programs which execute the schematic as code.
 
 For a schematic to produce a valid Hdl21 generator, the result of evaluating each instance's `of` field must be:
 
 - An Hdl21 `Instantiable`, and
 - Include the same ports as the symbol
 
-## Schematics as Circuits, particularly Hdl21 Generators
-
-[Hdl21](https://github.com/dan-fritchman/Hdl21) is a high-productivity analog hardware description library (HDL) embedded in Python. Hdl21's `Generator`s are Python functions which produce circuit `Module`s. Hdl21 schematics are designed to seamlessly import into Hdl21-based Python programs, as a kind of "graphical Python module".
+FIXME: inverter image 
 
 The inverter pictured above (with or without the emoji) roughly translates to the following Python code:
 
@@ -1856,6 +1888,8 @@ def inverter(params: Params) -> h.Module:
 # Both "..."s are where connections, not covered yet, will go.
 ```
 
+### Code Prelude
+
 Each schematic includes a _code prelude_: a text section which precedes the schematic content. Typically this code-block imports anything the schematic is to use. The prelude is stored in text form as a (non-rendered) SVG element.
 
 An example prelude:
@@ -1869,7 +1903,15 @@ This minimal prelude imports the `Nmos` and `Pmos` devices from the Hdl21 primit
 
 Schematic code-preludes are executed as Python code. All of the language's semantics are available, and any module-imports available in the executing environment are available.
 
-The call signature for an Hdl21 generator function is `def <name>(params: Params) -> h.Module:`. To link their code-sections and picture-sections together, Hdl21 schematics require special treatment for each of this signature's identifiers: `name`, `params`, `Params`, and `h`.
+### Naming Conventions
+
+The call signature for an Hdl21 generator function is: 
+
+```python
+def {{ name }}(params: Params) -> h.Module:
+```
+  
+To link their code-sections and picture-sections together, Hdl21 schematics require special treatment for each of this signature's identifiers: `name`, `params`, `Params`, and `h`.
 
 - The argument type is named `Params` with a capital `P`.
   - If the identifier `Params` is not defined in the code prelude, the generator will default to having no parameters.
@@ -1896,18 +1938,9 @@ class Params:
   l = h.Param(dtype=int, desc="Length")
 ```
 
-### Importing into Python
+### Importing 
 
-Hdl21 schematics are designed to seamlessly integrate into Python programs using Hdl21. They are essentially "graphical Python modules". The `hdl21schematicimporter` Python package makes this as simple as:
-
-```python
-import hdl21schematicimporter
-
-# Given a schematic file `schematic.sch.svg`, this "just works":
-from . import schematic # <= This is the schematic
-```
-
-Schematics with `.sch.svg` extensions can be `import`ed like any other Python module. The `hdl21schematicimporter` package uses Python's [importlib override machinery](https://docs.python.org/3/library/importlib.html) to load their content.
+Schematics with `.sch.svg` file extensions can be `import`ed like any other Python module. The `hdl21schematicimporter` package uses Python's [importlib override machinery](https://docs.python.org/3/library/importlib.html) to load their content.
 
 An example use-case, given a schematic named `inverter.sch.svg`:
 
@@ -1934,27 +1967,16 @@ Both `import_schematic` and the `import` keyword override return a standard-libr
 
 ---
 
-### On Hierarchy
-
-The experienced schematic-author may by now be wondering: how does one make _hierarchical_ Hdl21 schematics, with custom subcircuit cells and symbols?
-
-The answer is simple: you don't.  
-**Write HDL code instead.**
-
-There are no custom symbols. On purpose. **And there never will be.**
-
----
-
 ## The SVG Schematic Schema
 
 SVG schematics are commonly interpreted by two categories of programs:
 
 - (1) General-purpose image viewer/ editors such as Google Chrome, Firefox, and InkScape, which comprehend schematics _as pictures_.
-- (2) Special-purpose programs which comprehend schematics _as circuits_. This category notably includes the primary Python importer.
-
-This section serves as the specification for (2). The schema which dictates the content of _schematic circuits_ is dictated through SVG structure and element attributes. While some of this schema also dictates how schematics appear _as pictures_, overlap between the two use-cases is incomplete. Valid schematic importers must adhere to the schema defined herein and no more.
+- (2) Special-purpose programs which comprehend schematics _as circuits_. This category notably includes the primary `hdl21schematicimporter` Python importer.
 
 Note the graphical schematic _editor_ is a special case which combines _both_ use-cases. It simultaneously renders schematics as pictures while being drawn and dictates their content as circuits. The graphical editor holds a number of additional pieces of non-schema information about schematics and how they are intended to be rendered as pictures, including their style attributes, design of the element symbols, and locations of text annotations. This information _is not_ part of the schematic schema. Any valid SVG value for these attributes is to be treated as valid by schematic importers.
+
+This section describes the schematic-schema as interpreted for use case (2), as a circuit. 
 
 ### `Schematic`
 
@@ -1975,13 +1997,16 @@ These XML preludes _are not_ part of the schematic schema, but _are_ included by
 
 #### Size
 
-Schematics are always rectangular. Each schematic's size is dictated by its `svg` element's `width` and `height` attributes. If either the width or height are not provided or invalid, the schematic shall be interpreted as having the default size of 1600x800.
+Schematics are always rectangular. Each schematic's size is dictated by its `svg` element's `width` and `height` attributes. If either the width or height are not provided or invalid, the schematic is interpreted as having the default size of 1600x800 pixels.
 
 #### Schematic and Non-Schematic SVG Elements
 
 SVG schematics allow for inclusion of arbitrary _non-schematic_ SVG elements. These might include annotations describing design intent, links to related documents, logos and other graphical documentation, or any other vector graphics content.
 
-These elements _are not_ part of the schematic content. Circuit importers must (a) categorize each element as being either schematic or not, and (b) ignore all elements which are non-schematic content.
+These elements _are not_ part of the schematic content. Circuit importers are required to 
+
+- (a) categorize each element as being either schematic or not, and 
+- (b) ignore all elements which are non-schematic content
 
 #### Header Content
 
@@ -1996,11 +2021,13 @@ SVG schematics include a number of header elements which aid in their rendering 
 
 SVG schematics use the SVG and web standards for their coordinate system. The origin is at the top-left corner of the schematic, with the x-axis increasing to the right and the y-axis increasing downward.
 
-All schematic coordinates are stored in SVG pixel values. Schematics elements are placed on a coarse grid of 10x10 pixels. All locations of each element within a schematic must be placed on this grid. Any element placed off-grid shall be interpreted as a `SchematicError`.
+FIXME: coordinate system figure 
+
+All schematic coordinates are stored in SVG pixel values. Schematics elements are placed on a coarse grid of 10x10 pixels. All locations of each element within a schematic must be placed on this grid. Any element placed off-grid violates the schema.
 
 #### Orientation
 
-All schematic elements operate on a "Manhattan style" orthogonal grid. Orient-able elements such as `Instance`s and `Port`s are similarly allowed rotation solely in 90 degree increments. Such elements may thus be oriented in a total of _eight_ distinct orientations: four 90 degree rotations, with an optional vertical reflection. Reflection and rotation of these elements are both applied about their origin locations. Note rotation and reflection are not commutative. If both a reflection and a nonzero rotation are applied to an element, the reflection is applied first.
+All schematic elements operate on a "Manhattan style" orthogonal grid. Orient-able elements such as `Instance`s and `Port`s are allowed rotation solely in 90 degree increments. Such elements may thus be oriented in a total of _eight_ distinct orientations: four 90 degree rotations, with an optional vertical reflection. Reflection and rotation of these elements are both applied about their origin locations. Note rotation and reflection are not commutative. If both a reflection and a nonzero rotation are applied to an element, the reflection is applied first.
 
 These orientations are translated to and from SVG `transform` attributes. SVG schematics use the `matrix` transform to capture the combination of orientation and location. SVG `matrix` transforms are [specified in six values](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform#matrix) defining a 3x3 matrix. Transforming by `matrix(a,b,c,d,e,f)` is equivalent to multiplying a vector `(x, y, 1)` by the matrix:
 
@@ -2030,7 +2057,7 @@ In the schematic Manhattan coordinate system, the vector-location `(e,f)` may be
 | -1  | 0   | 0   | 1   | 180°     | Yes        |
 | 0   | -1  | -1  | 0   | 270°     | Yes        |
 
-Any schematic element with an SVG `matrix` with `(a,b,c,d)` values from outside this set shall generate a `SchematicError`.
+Any schematic element with an SVG `matrix` with `(a,b,c,d)` values from outside this set is invalid.
 
 #### Schematic Content
 
@@ -2075,11 +2102,11 @@ An example `Instance`:
 </g>
 ```
 
-The three child elements are required to be stored in the order (symbol, name, of). The lack of valid values for any of the three child elements shall generate a `SchematicError`. The presence of any additional children shall also generate a `SchematicError`.
+The three child elements are required to be stored in the order (symbol, name, of). The lack of valid values for any of the three child elements renders the instance invalid. The presence of any additional children shall also renders the instance invalid.
 
 ### Circuit Elements
 
-SVG schematics instantiate circuit elements from a library of pre-defined symbols. A schematic importer must be aware of this libray's contents, as it dictates much of the schematic's connectivity.
+SVG schematics instantiate circuit elements from a library of pre-defined symbols. Any paired schematic importer must be aware of this libray's contents, as it dictates much of the schematic's connectivity.
 
 The `kind` field of each `Instance` serves as a reference to a `Element` type. Each `Element` consists of:
 
@@ -2158,13 +2185,13 @@ An example `Port`:
 </g>
 ```
 
-Valid port names must be non-zero length. All wires connected to a port shall be assigned a net-name equal to the port's name. Any such connected wire with a conflicting net-name shall generate a `SchematicError`. Any wire or connected combination of wires which are connected to more than on port shall generate a `SchematicError`.
+Valid port names must be non-zero length. All wires connected to a port shall be assigned a net-name equal to the port's name. Any connected wire with a conflicting net-name renders the schematic invalid. Any wire or connected combination of wires which are connected to more than one port - even if the ports are identically named - also renders the schematic invalid.
 
 ### Connection `Dot`
 
 Schematic dots indicate connectivity between wires and ports where connections might otherwise be ambiguous. The inclusion of a `Dot` at any location in a schematic implies that all `Wire`s passing through that point are connected. The lack of a `Dot` at an intersection between wires conversely implies that the two _are not_ connected, and instead "fly" over one another.
 
-`Dot`s are represented in SVG by `<circle>` elements centered at the dot location. Dot locations must land on the 10x10 pixel schematic grid. Dot-circles are identified by their use of the `hdl21-dot` SVG class.
+`Dot`s are represented in SVG by `<circle>` elements centered at the dot location. Dot centers must land on the 10x10 pixel schematic grid. Dot-circles are identified by their use of the `hdl21-dot` SVG class.
 
 An example `Dot`:
 
@@ -2182,11 +2209,31 @@ The primary editor application infers `Dot`s at load time, and uses those stored
 - Comparing the inferred dot locations with those stored in the SVG
 - If the two differ, reporting a warning to the user
 
-Differences between the inferred and stored dot locations are logged and reported. They _shall not_ generate a `SchematicError`.
+Differences between the inferred and stored dot locations are logged and reported. The inferred locations are used whether they match or differ. 
 
----
 
-Note: SVG includes a definitions (`<defs>`) section, which in principle can serve as a place to hold the element symbol definitions. Doing so would save space in the hypertext content. But we have very quickly found that popular platforms we'd like to have render schematics (ahem, GitHub) do not support the `<defs>` and corresponsing `<use>` elements.
+## Possible Directions
+
+The "right" way to draw schematics is a popular topic among practitioners. (Engineers also love to argue about "right ways" to write software, draw layout, eat ice cream, etc; this one is no different.) Hdl21 schematics have an opinionated author whose opinions are, to some extent, embedded in their design. Some of those opinions are more popular than others. 
+
+The schematic-system's central premise - designing schematics into a general-purpose image format, renderable on platforms such as GitHub - has proven uncontroversial. Other design decisions have generated more contention. 
+
+The first is the system's level of pairing with Hdl21. (This extends all the way to their name.) The goal of making schematics "graphical code modules", designed to be easily imported into an otherwise code-forward design flow, is not necessarily limited to Hdl21. Obvious alternatives would include connectivity to popular HDLs such as Verilog, or to more mature modern HDLs such as Chisel. 
+
+Both are future possibilities. For the case of Verilog, or any other HDL that lacks a dedicated execution environment, some other program would need to translate SVG schematic content into something comprehensible by consumers of the HDL-schematic combination. Among other tasks, this program would require that all schematic parameters be representable in Verilog's (more limited) set of types. 
+
+Complications arise in that the desirable forms of this output likely differ between use-cases. Use cases for a "code forward" analog design environment - i.e. one in which all but the lowest level circuits are authored in Verilog, and those instantiating primitives may be drawn in schematics - would likely desire the schematic contents. Others in mixed-signal design, where much of the Verilog-driven design components are intended to be fed through logic synthesis, likely desire only the schematic-based circuit's external interfaces.
+
+Interfaces to modern HDLs such as Chisel are generally a cleaner fit. These libraries are embedded in general-purpose programming languages which feature a paired execution environment, suited to interpreting schematic-content as part of a larger program. Whether they could be quite as streamlined as the Python override-driven "just say `import`" semantics remains to be seen. Interfaces only slightly heavier-weight certainly would work. 
+
+The second (and more contentious) topic of contention is Hdl21 schematics' refusal to allow externally-defined symbols. All elements instantiated in Hdl21 schematics are defined in its built-in element library. Hierarchy is instead the domain of Hdl21 (code). 
+
+This was an intentional choice, in furtherance of the goal to "make making the good schematics easy, and make making the bad schematics hard". Schematics tend to be worth more than the paper they're printed on when typical practitioners (other than their authors) understand their contents. A necessary condition is recognizing the symbols. There are relatively few elements which have both (a) pictorial symbols widely understood by the field, and (b) an uncontroversial set of ports. They are the elements of the Hdl21 schematic library. A wider set of elements - op-amps, oscillators, flip-flops, and the like - meet criteria (a), but have a wide diversity of IO interfaces. In Hdl21 schematics (as in all other schematic-systems of which we are aware), symbols dictate instance port-lists. 
+
+Disallowing symbol-based hierarchy has a side benefit: it's much more straightforward to confine a schematic to a single SVG file. This single-file property is a large part of what makes schematics renderable by existing platforms such as GitHub. But we _could_ make it work, I guess. Each schematic would be required to include the symbol-picture of every symbol that it instantiates, as they currently do for any primitive elements they instantiate. And the graphical editor would need to be, or at least desirably would be, edited to comprehend the links between schematics and symbols representing the same circuits. Just where this linkage would lie - within SVG content, or as separate "database metadata" - would remain to be seen. Comprehending schematics as circuits, as by importer programs, would desirably find this structure as straightfowardly as possible. 
+
+Note: the SVG specification includes a paired definitions (`<defs>`) section and `<use>` element, intended for instantiation of repeated content. In principle this would be a desirable place to hold Hdl21 schematics' element symbol definitions. Doing so would save space in the hypertext content. Sadly we (very quickly) found that popular platforms we'd like to have render schematics (ahem, GitHub) do not support the `<defs>` and corresponsing `<use>` elements.
+
 
 # Programming Models for IC Layout
 
@@ -2238,7 +2285,7 @@ FIXME:
 1. Analog PnR
 2. Programmed-custom
 
-![fraunhofer_history](./fig/fraunhofer_history.png "Some History (FIXME: cite LAYGEN II Paper), extended by Fraunhofer IIS.")
+![fraunhofer_history](./fig/fraunhofer_history.png "History of analog automation from [@laygen_ii], extended by Fraunhofer IIS.")
 
 
 # Programmed Custom Layout
@@ -3016,6 +3063,4 @@ How to cite:
 - ALIGN [@kunal2019align]
 - OpenFaSOC [@openfasoc]
 - Ansell [@ansell2020missing]
-- Photonic layout stuff survey [@dikshit2023]
-- PHIDL [@McCaughan2021PHIDL]
-- 
+- MAGIC [@ousterhout1985magic]
