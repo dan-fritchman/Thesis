@@ -3,31 +3,56 @@
 
 # Introduction
 
-FIXME: for the outline for now.
+This is a thesis about integrated circuits, and more specifically about how we design them. The first and likely most important question is _who cares_. ICs were invented in 1959, roughly 65 years before this writing. The whole field may seem old, or may seem fairly combed-over for novel research topics. On Fisher and Pry's "simple model" [@fisher1971simple], now more commonly known as the s-curve, one might reasonably believe we are more or less at the top right. 
 
-Sub-outline:
+![s-curve](./fig/s-curve.png "Fisher and Pry's S-Curve of Technological Change")
 
-- This is about integrated circuits
-- A section on the importance of making more
-  - Like with some end of Moore's Law stuff
-- Particularly the analog parts
-- The whole conceptual layer-cake on which they get designed
-- [@guo2023osci]
-- [@burnett2018]
-- Add a section on role of open-source
-- Open source for education: [@alam2022]
+In truth, the field stands to become far more important - and far more ripe for design-level breakthroughts - in the next 65 years than it was in its first 65. 
+
+Why? To date, the primary manifestation of our semiconductor-based information age is the enablement of software to "eat" countless fields of endeavor. Over the course of the 20th century, silicon and CMOS proved the ideal forum for building general-purpose computation machines. Their general-purposeness was their true killer app: it enabled a conceptually new layer, shortly thereafter named _software_, by which they could be redirected to a seemingly endless variey of tasks. 
+
+Moreover, these machines _kept getting better_, year after year. In 1965's _Cramming More Components onto Integrated Circuits_ [@moore1998cramming], Gordon Moore introduced the now-famous "law" setting the field on an exponential rate of progress for the foreseeable future. But the phrase _Moore’s Law_ has always been off. The inclusion of the term _law_, coupled with the fact that it concerns a complicated scientific-seeming topic, leads people to believe it is some law of nature, like Newton’s laws of motion or the second law of thermodynamics. Or perhaps more like Ahmdal’s law, which sets a theoretical limit on a category of abstract quantities (computer programs). 
+
+What Gordon Moore made in truth was a _prediction about people_. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. 
+
+Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an _end_ failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
+
+Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before this manuscript was written in 2023, the "Moore Era" ended. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson & Hennessy's seminal computer architecture text. 
+
+![patterson_moore](./fig/patterson_moore.png "Patterson and Hennessy's Depiction of the End of Moore's Law")
+
+The end of the Moore Era coincided with large swaths of human activity just catching on to just how useful all this computation could be. And perhaps more impactfully, other swathes realized that incredibly computation-intensive methods (i.e. those of machine learning) proved aways more suitable to a variety of tasks than prior, "expert" programmed methods. 
+
+The combination means one thing: there will be much more need for much more specialized, task-centric computing hardware. Where software "ate" the prior era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. As designers, this time it's on us. 
+
+## The Role of Open Source
+
+The period during which this manuscript's work was completed corresponded to something of a renaissance in activity around using _open source_ distribution in the silicon field. Ironically IC EDA (and particularly its outpost here at Berkeley) were pioneers in open-source distribution, particularly that for industrial-grade applications and industrial use-cases. SPICE [@vladimirescu1980simulation] serves as a prime example. The many branches of SPICE's family tree have since largely been absorped into various commercial and in-house products dotting the IC industry. Open-source then slowly disappeared from the IC field's common set of practices. 
+
+We note that three related, relevant quantities can in principal be distributed in open-source form: 
+
+- 1. Open-source _design content_, i.e. HDL code, circuits, and/or layouts,
+- 2. Open-source _EDA software_, the programs required to produce these circuits,
+- 3. Open-source _process technology_, i.e. the underlying fabrication steps, or the designer "API" to these technologies, commonly called a Process Design Kit (PDK).
+
+The three are separable in principle, but tightly tied in practice.
+
+The relationship between (2) EDA and (3) fab is particularly tangled. Particularly, most process-portable EDA software requires an elaborate "technology setup" set of input - the details of the technology required by the tool. For digital PnR this often comes in the form of tech-LEF, for physical verification (LVS, DRC) it includes countless design rules and detailed specifications of the process. More important, this fab input is (a) highly laborious (and crucial) to get right, and (b) generally tightly tied to the EDA tool it feeds, and (c) often authored in a language or format which is _proprietary to those EDA tools_. While fabs author their "EDA input", they are often not at liberty to publish it. Fabricators understandably focus on the most popular such tools (buoyed by relationships with the most popular EDA software providers). Supporting a new suite of EDA software is no small ask. 
+
+Design content is, in principal, the easiest of the three to open-source. Digital design in HDL (or modern HDLs such as Chisel) are especially amenable. Many research processor designs - and even a few industrial ones - are accordingly available in open-source distribution. Analog circuits are much more dependent on their implementation technologies, and accordingly have seen much less success in open source. 
+
+Open source EDA, especially that for digital design, is the subject of a great deal of academic research. But in every category known to the author, available academic/ open-source EDA lags commercial offerings, often substantially and in metrics directly relevant to designers (quality of results, execution time, etc.). More importantly, technology-dependent open-source EDA suffers from the problems of _access to_ process technologies described a few paragraphs back. 
+
+The tight tying of fab and EDA would seem to drive a desire for open-source process technology. Suc efforts, particularly those of [@ansell2020missing], have produced open-source process design kits from SkyWater Technologies, GlobalFoundries, and IHP Microlectronics. These efforts have often been by third parties and/or communities rather than the fabs themselves. Paired (and often free) multi-project shuttles have enabled a wide variety of projects which would not otherwise have been possible. 
+
+Despite these laudable efforts, I do not hold much hope for open-source distribution of silicon process technologies, or even of "just" their PDKs. Before the open-source release of SkyWater's 130nm technology, open-source was clearly highly counter-cultural to the entire fab industry. The other fabs have clearly seen the efforts of the early open-sourcers, especially SkyWater. And they have hopefully noticed the amount of additional attention driven to a roughly two-decades-old technology. But they have simultaneously observed a more concerning shift: one in world public policy. A number of nations, notably including the US and China, have made semiconductor technologies a central focus of new policy initiatives. The primary impact on the distribution of technology information has been to make it _more constrained_. Open-source is essentially the _least_ constrained form of such distribution. Even if it has not been explicitly banned or prohibitied, I expect most fabs have gotten a clear message to stay away.
+
+I do believe that open-source process technologies will have a helpful role in IC _education_. Berkeley's curriculum includes an unusually great deal of  exposure to realistic, modern implementation technologies, culminating in the "tape-out course" series detailed in [@burnett2018] and [@guo2023osci]. These experiences have proven much more difficult for many peer institutions to provide. Access to these technologies is tightly guarded and costly to maintain. The emergence of (at least a few) open-source technologies allows for a broader suite of educational opportunities in realistic implementation technologies, as described in [@alam2022].
+
 
 ## The IC Design Process
 
-FIXME: write
-
-## The Need for More
-
-FIXME: write
-
 Integrated circuits are "integrated" in the sense that more than one - and often in current practice, more than ten orders of magnitude more than one - circuit component is integrated in a single silicon die.
-
-![patterson_moore](./fig/patterson_moore.png "Patterson and Hennessy's Depiction of the End of Moore's Law")
 
 The most detailed representation of these circuits, and the sole representation sufficiently detailed for fabrication, is commonly called _layout_. IC layout is a chip's physical blueprint. The nature of silicon manufacturing allows for representing these blueprints in "2.5D" terms. Each silicon wafer is extremely uniform in one of its three axes. This axis extends into and out of the plane of the die surface, and is commonly referred to as the z-axis. This z-axis is typically split into a discrete number of _layers_. These layers refer to a variety of physical features, such as metal connections, insulators there-between, ion injections which form transistor junctions, etc. The IC "x" and "y" dimensions, in constast, span the surface of the die, and are much more free-form to be specified by the IC designer. These two axes typically allow for nearly free-form closed 2D polygons. An IC blueprint is therefore comprised of a list of such polygons, each affixed with a z-axis layer annotation. Figures ~\ref{fig:layout2d} and ~\ref{fig:layout3d} depicts a typical IC layout visualization and the three-dimensional structure that it represents.
 
@@ -37,28 +62,22 @@ The most detailed representation of these circuits, and the sole representation 
 
 While layout is the sole language comprehensible for IC fabrication, it is generally far too detailed for much of IC design. The silicon design and closely related electronic design automation (EDA) fields have, over time, produced a substantial stack of software, concepts, and practices which allow for IC-design at far more abstract levels than that of physical layout. Different subsets of the IC field have proven more and less amenable to these things.
 
-- Something about how verification works, ie. logic sim vs spice
-- Netlists/ schematics as the "assembly"
-- RTL/ HDL code as the "C"
-- Whatever we wanna say about "high level" stuff
-- Table of that stuff
+This stack's second-lowest layer is often called the _circuit_ level. In circuit terms, chips are made of combinations of primitive components such as MOS transistors and resistors, and connections there-between. 
+Each circuit component or element generally has a short-form conceptual and mathematical description (such as "V = IR"). Their realizations are technology and implementation specific, often requiring elaborate combinations of the 2.5D layout geometry. For example MOS transistors include their core conceptual terminal diffusions and gate material, but often also include countless performance and yield-enhancing features, especially at advanced geometries. Linear resistors might similarly be built of any of a number of materials. It is the inclusion of more than one of these conceptual components that makes silicon circuits "integrated"; their "integration" refers to a prior era, in which each circuit component would need be a separate element on a circuit board. 
 
-FIXME: table
+In a loose analogy to software, layout is akin to machine code, It is the sole format understood by the underlying implementation technology (in software, the hardware; in silicon, the fab). Circuits are then analogous to the assembly language. Each circuit (and assembly) is specific to its underlying implementation. 
 
-One of two paradigms produce essentially all modern IC "blueprints". These two models ....
+For decades both software and hardware have searched for more productive, higher levels of abstraction. These efforts have proven more and less successful in different sub-stripes of IC design. The next key layer, popularized in the 1980s, maps roughly to "C-level" languages popular for low-level and "systems" software. Popular hardware description languages (HDLs) introduced around this time include Verilog and VHDL. Each allow for technology-independent descriptions of digital circuits. This paradigm also introduces the _logical_ (rather than the circuit) level as the primary one of simulation and verification. Discrete-event simulation further enhances the efficiency of this verification paradigm. 
 
-In the first model, commonly paired with digital circuits, an optimizing "layout compiler" produces an ultimate blueprint from a combination of an RTL-level circuit design and a set of physical constraints and/or goals. These two designer-inputs are fed to a compilation pipeline, generally comprising a combination of logic synthesis which translates RTL to gate-level netlists, and "place and route" (PnR) layout compilation. We refer to this paradigm as "the digital model" or "the compiled model".
+In addition to enhancing the efficacy of verification, the digital HDLs provided a dramatic improvement in workflow to produce layout. In the typical _digital back-end flow_, HDL code is transformed into layout by way of an optimizing "layout compiler". Designers provide a combination of register-transfer level (RTL) HDL code, plus a set of physical constraints and/or goals. These two primary inputs are fed to a compilation pipeline, generally comprising a combination of _logic synthesis_ which translates RTL to gate-level netlists, and "place and route" (PnR) layout compilation. 
 
-In the second model, there is no compiler. The designer directly dictates the IC's physical blueprint, generally through graphical means. This approach is generally paired with analog circuits, for which many of the successful methods used in digital layout compilers tend to break down. We refer to this paradigm as "the analog model" or "the custom model".
+Notably, the benefits afforded by the 80s-era HDLs accrue to digital circuits, but largely fail to aid analog ones. Analog circuits escape the logical verification paradigm, and instead rely on the circuit-level concepts such as the solutions to Kirchoff's laws for verification. Moreover, analog circuits have escaped the productivity gains of the automatic layout-compilation pipeline, for reasons covered in detail in future sections of this manuscript. 
 
-Analog and custom circuits such as memory have long been acknowledged as a bottleneck in the IC design process. In the author's anecdotal experience, analog efforts tend to produce transistor-counts per effort (e.g. designer-months) on the order of 100-1000x lower than their digital peers.
+Analog and custom circuits have accordingly long been acknowledged as a bottleneck in the IC design process. In the author's anecdotal experience, analog efforts tend to produce transistor-counts per effort (e.g. designer-months) on the order of 100-1000x lower than their digital peers.
+While many other research efforts endeavor to further raise the productivity and abstraction-level of the digital flow, this work focuses on analog and custom circuits. 
 
-Several recent research efforts including ALIGN [@kunal2019align], MAGICAL [@chen2020magical], and BAG [@chang2018bag2] have taken a variety of approaches to improve the state of the field. These and similar research efforts can be grouped into two large categories:
 
-- 1. _Constraint-based_ systems, which expose an API or language for setting constraints and/ or goals for a _layout solver_. In essence these systems map the digital layout-compilation pipeline onto analog circuits.
-- 2. _Programmed custom_ systems, notably including BAG, which instead expose an elaborate API to directly manipulate _layout content_. The essence of such systems is to replace the conventionally graphical interations - adding a polygon to a layout, setting a parameter, invoking a simulation - with API calls.
-
-None of these projects nor their underlying methods have broken through to widespread adoption.
+### Section Title?
 
 This thesis doesn't have the answer. It catalogues what I believe are valuable contributions to the technology of producing circuits, particularly custom and analog ones, including their physical layouts. And it attempts to point out a number of what I believe have been dead ends. One sub-thesis is that many such projects suffer from insisting on attempting to reinvent the entirety of our industry, each and every time over. I fear this work has not entirely avoided this trap. One virtue, as defined by its author, is the underlying work's modularity. While I am deeply grateful for all of this work's collaborators both inside and outside of UC Berkeley, the sheer effort involved pales in comparison to the 75 year history of the IC and EDA industries, or even their analog sub-fields. This modularity goal has proven valuable for the several research, corporate, and start-up users who bravely enjoined their fate to this work, while it was still on the runway. Many have picked up this effort's pieces; to my knowledge, no two have adopted the same set.
 
@@ -72,18 +91,9 @@ A further sub-thesis: making the next rounds of progress will require taking a f
 
 ## Lessons of the “Generator Era”
 
-Or, rambling thoughts on:
+The past decade's work at Berkeley (as well as many peer institutions) has included a renewed commitment to the _design productivity_ of IC designers. In addition to producing advances in computer architecture and circuit design, research programs have included substantial software development efforts towards making chips easier to design and build, with substantially less design effort, in a wider variety of semiconductor process technologies. 
 
-- (a) Sharing of design content, and
-- (b) Amenability to automatic design-generation
-
-in three related domains:
-
-- Software
-- Integrated circuits (ICs)
-- System-level hardware, i.e. that comprised of printed circuit boards (PCBs) and combinations thereof
-
-I often remark that of all the software, tools, and practices prevalent in hardware design, at least 99% were in place by around 1990. Much of this treatment is framed in terms of the changes in the software space over the roughly 30 year span since.
+A central facet of this work has been the emphasis on _hardware generators_ The generator concept (while perhaps under-defined) 
 
 ### Software
 
@@ -161,20 +171,6 @@ System-level circuit-sharing generally lacks these commercial and legal hurdles.
 While these system and IC contexts generate different hurdles, they also have several in common. Designers are (rationally) predisposed to circuits which have been real-world verified (no matter how relevant that verification is to their use-case). "Tape-out proven" is a common such description of silicon IP. System-level circuits derive similar confidence from having been fabricated and tested. Lacking technical tools for tracking and automatically verifying that such real-world testing has occurred, the next-best substitute would seem to be a community/ reputation-based model, in which designers and users and verifiers are encouraged to share test data and experiences.
 
 Lastly, each of these fields lacks the re-use power of the package manager abstraction commonly deployed throughout popular open-source programming languages. The package concept primarily requires the two components described in our software-section, namely the published database and coherent user-side tooling which comprehends its content.
-
-### Where To Go
-
-An outline of a system-design software-suite realizing these ideas:
-
-- A design platform connected to:
-  - (a) A central component database, and
-  - (b) A design-package manager similar to those prominent for popular open-source software languages (PyPI, NPM, Cargo, etc), and,
-  - (c) An execution environment for system-hardware design-generators
-  - (Think a web-app for simple design, and connected dedicated app or IDE plug-in for more complicated ones.)
-- Formats and software for system-level sub-design abstraction, particularly including physical design (layout).
-- Best-practices from IC design generators (e.g. programmatic design elaboration, structured hierarchical connections), designed for construction of system-level circuits.
-- A standard set of commonly-used PCB stack-ups.
-- Generation/ compilation to those standard PCB stack-ups, and potentially to arbitrary others.
 
 ---
 
@@ -257,43 +253,6 @@ Many tools have been written to aid in (a), at least when targeted at a particul
 
 Any existing tools for facet (b), comparison, remain unknown to the author. Automated _abstract as contract_ methodology would require authoring such comparison programs, initially for the physical and timing disciplines. Both would appear to be tractable and valuable contributions to the field. As noted in our prior example, parametric-abstract comparison essentially happens all the time, in the form of simulation measurements and their comparisons against target metrics. (Automation of these tasks can of course improve.) Behavioral _contracts_ might take on a number of forms, including (a) vectored simulation, exercising each system-desired behavior, and/or (b) formal-verification methods.
 
----
-
-### Paths Forward
-
-The eventual generation of efficient mixed-signal research-chips will require a number of steps on several axes. While prior sections largely focus on a desired eventual end-state, this section covers immediate-term steps to get started.
-
-In assessing future IP candidates, we can break down each blocks integration-difficulty by its _behavioral_ and _physical_ elements. Behavioral integration complexity is increased with features such as:
-
-- Substantial mixed-signal behavioral interactions with digital blocks and/or software, e.g. for power or clock management
-- High-bandwidth data attempting to make its way into a compute system, as from a memory or serial interface
-- Internal power generation and/or non-standard supplies, such as those from integrated voltage regulators
-
-Physical integration complexity, in contrast, is driven by features such as:
-
-- Multiple supplies, or complex relationships between supplies
-- Use of bumps, redistribution layers, and other chip-level resources
-- Use of large custom or non-standard analog-centric layout elements, such as integrated transformers or MIM caps
-- Constraints on coupling between these elements
-
-We can view each category of likely mixed-signal IP in light of these complications. Mixed-signal ML accelerators have low behavioral complexity, and require essentially only physical integration. Fully- and largely-digital PLLs add a low level of behavioral complexity, so long as they are not embedded in larger chip-level power-management schemes. These two use-cases serve as most desirable pilot cases. Wireline serial links, wireless transceivers, and memory interfaces each add sufficient behavioral and physical complexity to warrant waiting for later.
-
-Two candidate IP blocks appear most likely:
-
-- A mixed-signal machine learning accelerator, perhaps dropping into the interface of the existing Gemmini for sake of performance and energy-efficiency comparisons
-- A largely-digital PLL such as those designed by (Huang, Rahman), largely configured and controlled by software-accessible interfaces (rather than hardened power-management logic).
-
-### PLL Path
-
-Digital PLLs such as (Huang, Rahman) serve as viable candidates, as they are largely designed using digital-style tools and flows, e.g. SystemVerilog HDL and the Hammer back-end. Typically one or more internal sub-blocks, such as an oscillator, phase detector, regulator or bias network, will require (semi) custom design and layout, either in a framework such as BAG or in more conventional analog design environments. Reported "fully synthesizable" PLLs have avoided these custom-designed blocks altogether, through a combination of architectural choices (injection locking, centralized oscillator control), and detailed control of back-end tools.
-
-The behavioral interface of such PLLs can be broken into three elements:
-
-- (a) A _configuration interface_ for setting the values of internal parameters, likely via an addressable and software-accessible bus such as APB,
-- (b) A _control interface_ for performing changes to the PLL state, such as frequency changes, undergoing internal calibrations, or entering low-power states, and
-- (c) The _functional interface_, primarily including the reference and generated clocks, along with any low-latency status flags (e.g. lock and error indicators)
-
-The relative abstract-ability of this interface makes it a desirable point of separation between the PLL and the rest-of-chip. Ideally this interface can be designed sufficiently abstractly to fit future PLL IPs of different design implementation and target specs.
 
 # IC Design Databases
 
@@ -1660,10 +1619,6 @@ Customizing the elaboration process generally involves (a) defining new `ElabPas
 
 ## OK, not _all_ of those schematics are bad
 
-- FIXME: do we include the whole "dinner party test" bit?
-- FIXME: write more here
-- In IC design they the _lingua franca_ for analog circuits, and also commonly used for transistor-level digital circuits.
-
 Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. Based on personal experience as a researcher and industry practitioner, designing systems and integrated circuits - my experience is that most schematics are worth less than zero. Not that they shouldn't exist; most of the bad ones don't have much of a choice. but that the limitations of their form do net harm to the underlying design task they exist to support. 
 
 But there's still some magic in the good ones. 
@@ -1768,13 +1723,13 @@ That combination of observations drives the primary goals for Hdl21's paired sch
 
 ### Schematics are SVG Images
 
-Each Hdl21 schematic is an SVG image, and is commonly stored in a `.svg` suffix file. An example schematic is pictured in Figure~\ref{fig:dvbe}.
+Each Hdl21 schematic is an SVG image, and is commonly stored in a `.svg` suffix file. Example schematics are pictured in Figure~\ref{fig:schematic-dvbe} and Figure~\ref{fig:schematic-inverter}
 
-![dvbe](fig/dvbe.jpg "Example SVG Schematic")
+![schematic-dvbe](./fig/schematic-dvbe.jpg "Example SVG Schematic")
 
 SVG's capacity for semi-custom structure and metadata allows for a natural place to embed each schematic's cicuit content. Perhaps more important, embedding within a widely supported general-purpose image format means that schematics are readable (as pictures) by essentially any modern web browser or operating system. Popular sharing and development platforms such as GitHub and GitLab render SVG natively, and therefore display Hdl21 schematics natively in their web interfaces.
 
-FIXME: add GH/ GL images
+![schematic-github](./fig/schematic-github.png "SVG Schematic Rendered by the Web Interface of Popular Software Sharing Platform github.com")
 
 Embedding in SVG also allows for rich, arbitrary annotations and metadata, such as:
 
@@ -1817,7 +1772,7 @@ _Reading_ schematics (as pictures) requires any old computer. _Writing_ them can
 
 The Hdl21 schematic system accordingly includes a web-stack graphical editor. It runs in three primary contexts (1) as a standalone desktop application, (2) as an extension to the popular IDE VsCode, and (3) as a web application. The latter two are pictured in Figure~\ref{fig:editor}.
 
-FIXME: images of each platform
+![schematic-vscode](./fig/schematic-vscode.png "Schematic Editor, Running in the VsCode IDE Platform")
 
 Some schematic programs are "visualization-centric" - i.e. those which primarily aid in debug of post-synthesis or post-layout netlists. A related task is _schematic inference_ - the process of determining the most descriptive picture for a given circuit. While this is worthwhile for such debugging tasks, Hdl21 schematics focuses on primary design entry of schematics. We think that schematics are good when drawn, and tend to be bad, or at least afterthoughts, when inferred. 
 
@@ -1834,9 +1789,15 @@ Schematics consist of:
 
 The element-library holds similar content to that of SPICE: transistors, resistors, capacitors, voltage sources, and the like. It is designed in concert with Hdl21's [primitive element library](https://github.com/dan-fritchman/Hdl21#primitives-and-external-modules).
 
-- FIXME: SVG sadly don't play nice with their PDFs
-- FIXME: probably make this a table?
-- The complete element library:
+The complete element library:
+
+\begin{figure}[schematic-symbols]
+  \centering
+  \def\svgwidth{\columnwidth} 
+  \includesvg{./fig/schematic-symbols.sch.svg}
+  \caption{The SVG Schematic Element Library}
+\end{figure}
+
 
 Symbols are technology agnostic. They do not correspond to a particular device from a particular PDK. Nor to a particular device-name in an eventual netlist. Symbols solely dictate:
 
@@ -1871,9 +1832,15 @@ For a schematic to produce a valid Hdl21 generator, the result of evaluating eac
 - An Hdl21 `Instantiable`, and
 - Include the same ports as the symbol
 
-FIXME: inverter image 
 
-The inverter pictured above (with or without the emoji) roughly translates to the following Python code:
+\begin{figure}[schematic-inverter]
+  \centering
+  \def\svgwidth{\columnwidth} 
+  \includesvg{./fig/schematic-inverter.sch.svg}
+  \caption{Example SVG Schematic}
+\end{figure}
+
+The inverter pictured above roughly translates to the following Python code:
 
 ```python
 # A code-prelude, covered shortly, executes here.
@@ -2239,9 +2206,9 @@ Note: the SVG specification includes a paired definitions (`<defs>`) section and
 
 ![](./fig/two-successful-models.png "The Two Successful Models for Producing IC Layout")
 
-In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history/?key=13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's roughly 75 year history, it has shipped rough 13 sextillion (1.3e22) total transistors. (This total has certainly risen, likely dramatically, in the few years since.) Essentially all of them have been designed by one of two methods:
+In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history/?key=13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's 60+ year history, it has shipped roughly 13 sextillion (1.3e22) total transistors. This total has certainly risen, likely dramatically, in the few years since. Essentially all of them have been designed by one of two methods:
 
-1. "The digital way", using a combination of logic synthesis and automatically placed and routed layout.
+1. "The digital way", using a combination of HDL code, logic synthesis, and automatically placed and routed layout.
 2. "The analog way", using a graphical interface to produce essentially free-form layout shapes.
 
 ## The Digital Way
@@ -2264,7 +2231,32 @@ Why? In short: in modern technologies, the lowest levels are the hardest - both 
 
 ![layout_quadrants](fig/layout_quadrants.png "Relationship Between Custom and Programmed Layout Generation in the Digital and Analog Design Flows")
 
----
+
+## The Two Most Tried (and Mostly Failed) Models
+
+Analog and custom circuits have long been identified as a bottleneck in the IC design process. Research has accordingly long attempted to improve "the analog way" of producing layout. 
+
+These attempts have included 
+
+FIXME: give the like 1 clause each on these:
+
+- EDP Expert Design Plan [@expert_design_plan]
+- SWARM/ Parasitic Aware [@swarm_parasitic_aware]
+- AIDA [@aida]
+- Approaches to Analog Synthesis 89 [@approaches_analog_synthesis89]
+- Laygen II [@laygen_ii]
+- LDS Layout Description Script [@lds_layout_description_script]
+- Habal Constraint Based [@habal_constraint_based]
+
+![fraunhofer_history](./fig/fraunhofer_history.png "History of analog automation from [@laygen_ii], extended by Fraunhofer IIS.")
+
+None have broken through to widespread adoption. 
+
+These research efforts largely fall into one of two large families:
+
+- The first, which we name the _programmed custom_ style, conceptually replaces the layout GUI with an elaborate layout API. Designers then manipulate the content of layout through writing programs against this interface. The programmed custom style is covered in depth in chapter 6.
+- The second conceptually attempts to map "the digital way" onto analog circuits. Centrally, automatic place-and-route is used to produce layout content from netlists or similar circuit-level content. Rather than directly manipulate layout content, designers author circuit-level content (e.g. HDL code, schematics) and a set of contraints and goals for the analog PnR solver. Such methods are detailed in chapter 7.
+
 
 ### Aside on digital layout "compilation"
 
@@ -2276,17 +2268,6 @@ In this sense the anaogy between the digital layout pipeline and the typical pro
 The most common and prominent example such metric is the synchronous clock frequency. PnR users commonly specify such a frequency or period as their sole input constraint. The process is analogous to a C-language compiler with user inputs dictating its maximum instruction count or memory usage. While such efforts may exist in research or in specialty contexts, they are not the model deployed by commercially successful "optimizing compilers" (e.g. gcc, LLVM/ clang). While the term "optimizing" is commonly used to describe these projects; it would more accurately be saved for digital PnR, in which compilation is explicitly wrapped in an optimizing layer rich with goals and constraints.
 
 ---
-
-## The Two Most Tried (and Failed) Models
-
-The two
-FIXME:
-
-1. Analog PnR
-2. Programmed-custom
-
-![fraunhofer_history](./fig/fraunhofer_history.png "History of analog automation from [@laygen_ii], extended by Fraunhofer IIS.")
-
 
 # Programmed Custom Layout
 
@@ -2352,18 +2333,9 @@ It instead proposes an all digital compute in memory macro, in which each "atom"
 ![](fig/cim-column.png "Compute in Memory Column")
 ![](fig/cim-macro.png "Compute in Memory Macro")
 
-Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory. This example from [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else.
-
-- FIXME:
-- cite SRAM22/ Substrate [@kumar2023]
+Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory. This example from [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else. Contemporary work including [@kumar2023] further extended layout21 and [@fritchmancim2021] to produce an SRAM compiler framework in SkyWater's 130nm open-source technology.
 
 ## `Layout21`'s Layered Design
-
-FIXME: write
-
-- general approach
-- rust
-- raw/ direct mode
 
 This work's primary tool for programmed custom layout design is the [layout21](https://github.com/dan-fritchman/layout21) library. Layout21 is designed to be layered and modular, and to support a modular and diverse set of layout programming applications. Each conceptual layer general is comprised of (a) an associated layout data model, and (b) code for manipulating its contents. Its lowest "raw" layer directly manipulates geometric layout content in a programming model similar to that of `gdstk` or `gdsfactory`.
 
@@ -2416,14 +2388,7 @@ There seems to be a time-honored tradition of layout libraries which goes someth
 
 This story played out both in the history of `BAG`, and of `gdspy` (renamed `gdstk` to commemorate the change). Layout21 incorporated this lesson upfront.
 
-Layout21's approach differs from comparable libraries in a few material respects. 
-
-First, Layout21's in-memory data model is...
-
-- FIXME!
-- independent of any serialization, binary, or other file format. Its data model contents strongly resemble those of GDSII and `vlsir.layout`. Important differences appear at the margins. Part
-
-Second, layout21 treats _layout abstracts_ as first class concepts. Abstracts serve an analogous role to layout _implementations_ that _header definitions_ serve to implementations, in programming languages which explicitly separate the two (e.g. C, C++). A programming function abstract (header) generally specifies:
+Layout21's approach differs from comparable libraries in a few material respects. Perhaps most significantly, layout21 treats _layout abstracts_ as first class concepts. Abstracts serve an analogous role to layout _implementations_ that _header definitions_ serve to implementations, in programming languages which explicitly separate the two (e.g. C, C++). A programming function abstract (header) generally specifies:
 
 - (a) An identifier by which to get a handle to the function, generally a name;
 - (b) Specifications for the functions arguments. This may include ordering, naming, and/ or type constraints depending on the language.
@@ -2517,63 +2482,13 @@ Layout21's emphasis on abstract layout does not include a generation mechanism f
 
 Such a tool, potentially in concert with more efficient abstract-specification methods, would greatly enhance the (rare, but we think better) abstract-driven design flow. 
 
-## `Tetris` Placement \& Routing
+## `Tetris` Layer
 
-FIXME: write
-
-A more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells.
+Layout21's more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells.
 
 ![](fig/tetris_routing.png "Tetris Concept")
 
-### Tetris Placement
-
-Each relative placement consists of:
-
-- A `to`-attribute, the referrent `Placeable` object to which the relative placement is made. This can be an `Instance`, `Array`, `Group`, or similar.
-- The `Side` at which it is placed, relative to `to`. Sides are enumerated values including top, bottom, left, and right.
-- Alignment, which can be any of (a) any of the values of `Side`, (b) center, or (c) a pair of port names. The latter is particularly valuable for streamlined routing of high-value signals.
-- Separation in each of three dimensions. The x and y dimensions are specified in terms of either (a) a number of primitive pitches in the dimenion, (b) a physical distance, specified in the stack's units, or (c) the size of another cell. (Z dimension separation is used for routing, and is specified in terms of a number of layers.)
-
-A simplified version of tetris's relative placements:
-
-```rust
-pub struct RelativePlace {
-    /// Placement is relative `to` this
-    pub to: Placeable,
-    /// Placed on this `side` of `to`
-    pub side: Side,
-    /// Aligned to this aspect of `to`
-    pub align: Align,
-    /// Separation between the placement and the `to`
-    pub sep: Separation,
-}
-
-pub struct Separation {
-    pub x: Option<SepBy>,
-    pub y: Option<SepBy>,
-    pub z: Option<isize>,
-}
-
-pub enum SepBy {
-    /// Separated by distance in x and y, and by layers in z
-    Dist(Dist),
-    /// Separated by the size of another Cell
-    SizeOf(Ptr<Cell>),
-}
-
-pub enum Align {
-    /// Side-to-side alignment
-    Side(Side),
-    /// Center-aligned
-    Center,
-    /// Port-to-port alignment
-    Ports(String, String),
-}
-```
-
-Each `RelativePlace` depends upon one of more other `Placeable` objects via its `to` field. Each `Placeable` may be placed either relative to another (via a `RelativePlace`) or in absolute coordinates, in terms of the primitive pitch grid (via an `AbsolutePlace`). The tetris placement resolver takes as input a series of `Placeable` objects and transforms each `RelativePlace` into a resolved `AbsolutePlace`. Its first step is ordering a dependency graph between placeables. This graph must be acyclical for placement to be valid. It must include at least one `AbsolutePlace` to serve as a "root" or "anchor" element. The resolver does not produce fully-relative placements, e.g. by assigning an arbitrary location (such as the origin) to one. Designer input must include at least one absolute placement.
-
-### Tetris Blocks
+### `Tetris` Blocks
 
 "Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. These allowable block-shapes are designed in concert with Tetris's connection model and semantics. All Tetris layout instances are of _abstract_ layouts, not their implementations. In addition to being of constrained rectilinear shapes, each Tetris layout includes implicit "blockage" throughout its x-y outline area, and from its topmost z-axis layer down. Each block therefore owns the entirety of its internal volume; no "route-through" is permitted.
 
@@ -2644,13 +2559,55 @@ pub struct Layout {
 }
 ```
 
-### Tetris Routing
-
-FIXME: write more
-
-### Tetris Compilation
-
 A compilation step transforms these comparatively terse tetris-block objects into the discrete geometric shapes of layout21's `raw` data model.
+
+### Tetris Placement
+
+Each relative placement consists of:
+
+- A `to`-attribute, the referrent `Placeable` object to which the relative placement is made. This can be an `Instance`, `Array`, `Group`, or similar.
+- The `Side` at which it is placed, relative to `to`. Sides are enumerated values including top, bottom, left, and right.
+- Alignment, which can be any of (a) any of the values of `Side`, (b) center, or (c) a pair of port names. The latter is particularly valuable for streamlined routing of high-value signals.
+- Separation in each of three dimensions. The x and y dimensions are specified in terms of either (a) a number of primitive pitches in the dimenion, (b) a physical distance, specified in the stack's units, or (c) the size of another cell. (Z dimension separation is used for routing, and is specified in terms of a number of layers.)
+
+A simplified version of tetris's relative placements:
+
+```rust
+pub struct RelativePlace {
+    /// Placement is relative `to` this
+    pub to: Placeable,
+    /// Placed on this `side` of `to`
+    pub side: Side,
+    /// Aligned to this aspect of `to`
+    pub align: Align,
+    /// Separation between the placement and the `to`
+    pub sep: Separation,
+}
+
+pub struct Separation {
+    pub x: Option<SepBy>,
+    pub y: Option<SepBy>,
+    pub z: Option<isize>,
+}
+
+pub enum SepBy {
+    /// Separated by distance in x and y, and by layers in z
+    Dist(Dist),
+    /// Separated by the size of another Cell
+    SizeOf(Ptr<Cell>),
+}
+
+pub enum Align {
+    /// Side-to-side alignment
+    Side(Side),
+    /// Center-aligned
+    Center,
+    /// Port-to-port alignment
+    Ports(String, String),
+}
+```
+
+Each `RelativePlace` depends upon one of more other `Placeable` objects via its `to` field. Each `Placeable` may be placed either relative to another (via a `RelativePlace`) or in absolute coordinates, in terms of the primitive pitch grid (via an `AbsolutePlace`). The tetris placement resolver takes as input a series of `Placeable` objects and transforms each `RelativePlace` into a resolved `AbsolutePlace`. Its first step is ordering a dependency graph between placeables. This graph must be acyclical for placement to be valid. It must include at least one `AbsolutePlace` to serve as a "root" or "anchor" element. The resolver does not produce fully-relative placements, e.g. by assigning an arbitrary location (such as the origin) to one. Designer input must include at least one absolute placement.
 
 ### Tetris-Mos Gate Array Circuit Style
 
@@ -2660,23 +2617,14 @@ In a co-designed circuit style, all unit MOS devices are of a single geometry. P
 
 ![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
 
+
 # Compiled (Analog) Layout
 
 ![align_not_best_placement](./fig/align_not_best_placement.png "Unconstrained Placement Result. 100 unit resistors, arranged in 10 parallel strands of 10 in series.")
-![align_res_alignment](./fig/align_res_alignment.png "FIXME")
-![align_res_terms](./fig/align_res_terms.png "FIXME")
+![align_res_alignment](./fig/align_res_alignment.png "Errant resistor alignment")
+![align_res_terms](./fig/align_res_terms.png "Better resistor placement")
 
 Attempts to compile analog and otherwise "custom" circuit layout are not new.
-
-FIXME: give the like 1 clause each on these:
-
-- EDP Expert Design Plan [@expert_design_plan]
-- SWARM/ Parasitic Aware [@swarm_parasitic_aware]
-- AIDA [@aida]
-- Approaches to Analog Synthesis 89 [@approaches_analog_synthesis89]
-- Laygen II [@laygen_ii]
-- LDS Layout Description Script [@lds_layout_description_script]
-- Habal Constraint Based [@habal_constraint_based]
 
 * Primitives - generally programmed-custom "p-cells"
 * Placement - generally formulated in optimization terms
@@ -2733,7 +2681,7 @@ These cells are highly performance, power, and area constrained, and accordingly
 
 Modern standard cell libraries are large, often comprising thousands of cells. Modern designs also commonly require a variety of such libraries (or at least one even larger library) to make trade-offs between power, area, and performance. One set of cells may consistently choose a higher-performance, higher-power, higher-area design style, while another makes the opposite trade-off on all three. Mixing and matching of these library level trade-offs often cannot be done within a single design macro, or the output of a single PnR layout generation, as libraries making varying trade-offs often feature varying physical designs. The aforementioned low-area library may be designed to a regular pitch of X, while the high-performance library to a pitch of Y, where X / Y is not a rational number (or at least not a convenient value of one). There has therefore been a longstanding desire to produce standard cell layouts more automatically, i.e. leveraging PnR-like techniques.
 
-This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex, difficult to (FIXME: the latin for "before") encode in a set of PnR rules. They also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@stdcell_routing_sat_burns] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. More recently, machine learning techniques such as [@nvcell] have been proposed to further search for these optima.
+This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex, difficult to a priori encode in a set of PnR rules. They also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@stdcell_routing_sat_burns] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. More recently, machine learning techniques such as [@nvcell] have been proposed to further search for these optima.
 
 Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each if often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case.
 
@@ -3062,5 +3010,4 @@ How to cite:
 - MAGICAL [@chen2020magical]
 - ALIGN [@kunal2019align]
 - OpenFaSOC [@openfasoc]
-- Ansell [@ansell2020missing]
 - MAGIC [@ousterhout1985magic]
