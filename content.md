@@ -1009,7 +1009,6 @@ The leaf-nodes of each hierarchical Hdl21 circuit are generally defined in one o
 
 Drawing an analogy to general-purpose programming languages, Hdl21's `Primitives` are its "built-in types". Figure~\ref{fig:hdl21-primitives} illustrates this comparison. In every typed programming language (or "system"), programmers define a data hierarchy of their target domain. Layers in this hierarchy are often called "structs" or "classes", and ideally map onto the reusable entities in the problem domain (e.g. `League`, `Player`). The system must ultimately supply the lowest-level types which fill these hierarchies. Numeric types, strings, and pointers are common examples. Hdl21's analogous hierarchy is of `Module` definitions, each of which is a "struct-ful" of hardware content. And it similarly must bring the lowest-level atomic types to the party. 
 
-
 ![hdl21-primitives](./fig/hdl21-primitives.png "Primitives in a Typical Programming Language, and in Hdl21")
 
 These atomic elements are Hdl21's `Primitive` types, provided in its `primitives` library. The content of the Hdl21 primitives library strongly resembles that of a typical SPICE simulation program - MOS and bipolar transistors, passives, ideal sources, and the like. Simulation-level behavior of these elements is typically defined by the internals of simulation tools and other EDA software. 
