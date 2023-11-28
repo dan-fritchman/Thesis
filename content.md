@@ -256,17 +256,11 @@ Any existing tools for facet (b), comparison, remain unknown to the author. Auto
 
 # IC Design Databases
 
-- FIXME:
-- OpenDb [@spyrou2019opendb]
-- OpenAccess [@guiney2006oa]
-
 ## "Databases" (Ahem) 101
 
-IC design data is commonly represented in "design databases". These systems are inspired by relational database management systems (RDBMS), ubiquitously used throughout modern server-side applications. IC DBs generally look much like the low layers of an RDBMS. They include a binary format for storing and packing records, and a API for querying and writing those records. Instead of a dedicated query _language_ and accompanying compiler and query-optimizier, they are typically embedded in a host programming language, and expose an API to manipulate design data in that language.
+IC design data is commonly represented in "design databases". These systems are inspired by relational database management systems (RDBMS), ubiquitously used throughout modern server-side applications. IC DBs generally look much like the low layers of an RDBMS. They include a binary format for storing and packing records, and a API for querying and writing those records. Instead of a dedicated query _language_ and accompanying compiler and query-optimizier, they are typically embedded in a host programming language, and expose an API to manipulate design data in that language. Perhaps the most prominent commercial example is [@guiney2006oa], originally authored by Cadence Design Systems. Perhaps the most prominent freely available database is [@spyrou2019opendb], notable for its centrality to the OpenROAD project [@kahng2021openroad].
 
-FIXME: maybe a generic DB figure?
-
-IC DBs are optimized to enable efficient offloading of design data between memory and disk, especially for designs too large to reasonably fit in memory. This goal is near entirely driven by one application: digital PnR layout compilation. For common digital circuits including millions of gates and associated metadata, the optimization makes sense. Optimal PnR, and even "good enough" PnR, remains an NP-complete problem which commonly requires industrial-scale resources and days of runtime. Without such optimizations, large compilations often fail to complete.
+These databases are optimized to enable efficient offloading of design data between memory and disk, especially for designs too large to reasonably fit in memory. This goal is near entirely driven by one application: digital PnR layout compilation. For common digital circuits including millions of gates and associated metadata, the optimization makes sense. Optimal PnR, and even "good enough" PnR, remains an NP-complete problem which commonly requires industrial-scale resources and days of runtime. Without such optimizations, large compilations often fail to complete.
 
 Analog circuits differ in several respects. First and perhaps most importantly: they are much smaller. Rarely if ever do they contain millions of elements, and infrequently even thousands.
 
@@ -296,13 +290,6 @@ message Person {
    optional string email = 3;
 }
 ```
-
-FIXME: Maybe:
-
-- More on features?
-- Some kinda perf thing?
-- Comparison to the alternatives, Capn in particular
-- JSON, YAML etc, the need for the binary-ness. Maybe in the next section
 
 ## The `VLSIR` Design Database Schema
 
@@ -336,8 +323,6 @@ VLSIR's front-ends are also user-facing programming tools. Generally we have esc
 The choice of ProtoBuf affords for a rich diversity of front and back ends, implemented in a diversity of programming languages and featuring diverse needs for performance, portability, and designer productivity.
 
 # The Analog Religion's Sacred Cow
-
-## Limitations of life in pictures
 
 The _lingua franca_ of analog and custom circuits, for aways longer than I've been around, has been the graphical schematic.
 
@@ -1017,16 +1002,23 @@ s.run()
 
 The leaf-nodes of each hierarchical Hdl21 circuit are generally defined in one of two places:
 
-- `Primitive` elements, defined in the `hdl21.primitives` package. These include transistors, resistors, capacitors, and other irreducible components. Simulation-level behavior of these elements is typically defined _inside of_ simulation tools and other EDA software.
-- `ExternalModules`, defined outside Hdl21. Such "module wrappers", which might alternately be called "black boxes", are common for including circuits from other HDLs.
+- Generic `Primitive` elements, defined by Hdl21. These include transistors, resistors, capacitors, and other irreducible components. 
+- `ExternalModules`, defined _outside_ Hdl21. Such "module wrappers", which might alternately be called "black boxes", are common for including circuits from other HDLs.
 
 ### `Primitives`
 
-Hdl21 `Primitives` come in _ideal_ and _physical_ flavors. The difference is most frequently relevant for passive elements, which can for example represent either (a) technology-specific passives, e.g. a MIM or MOS capacitor, or (b) an _ideal_ capacitor. Some element-types have solely physical implementations, some are solely ideal, and others include both.
+Drawing an analogy to general-purpose programming languages, Hdl21's `Primitives` are its "built-in types". Figure~\ref{fig:hdl21-primitives} illustrates this comparison. In every typed programming language (or "system"), programmers define a data hierarchy of their target domain. Layers in this hierarchy are often called "structs" or "classes", and ideally map onto the reusable entities in the problem domain (e.g. `League`, `Player`). The system must ultimately supply the lowest-level types which fill these hierarchies. Numeric types, strings, and pointers are common examples. Hdl21's analogous hierarchy is of `Module` definitions, each of which is a "struct-ful" of hardware content. And it similarly must bring the lowest-level atomic types to the party. 
 
-### The `hdl21.primitives` Library
 
-The `Primitive` type and all its valid values are defined by the `hdl21.primitives` package. A summary of the `hdl21.primitives` library content:
+![hdl21-primitives](./fig/hdl21-primitives.png "Primitives in a Typical Programming Language, and in Hdl21")
+
+These atomic elements are Hdl21's `Primitive` types, provided in its `primitives` library. The content of the Hdl21 primitives library strongly resembles that of a typical SPICE simulation program - MOS and bipolar transistors, passives, ideal sources, and the like. Simulation-level behavior of these elements is typically defined by the internals of simulation tools and other EDA software. 
+
+Hdl21 primitives come in _ideal_ and _physical_ flavors. The difference is most frequently relevant for passive elements, which can for example represent either (a) technology-specific passives, e.g. a MIM or MOS capacitor, or (b) an _ideal_ capacitor. Some element-types have solely physical implementations, some are solely ideal, and others include both.
+
+A summary of the `hdl21.primitives` library content:
+
+FIXME: this table runs way over
 
 | Name                           | Description                       | Type     | Aliases                               | Ports        |
 | ------------------------------ | --------------------------------- | -------- | ------------------------------------- | ------------ |
@@ -1051,14 +1043,7 @@ The `Primitive` type and all its valid values are defined by the `hdl21.primitiv
 | Bipolar                        | Bipolar Transistor                | PHYSICAL | Bjt, BJT                              | c, b, e      |
 | Diode                          | Diode                             | PHYSICAL | D                                     | p, n         |
 
-Each primitive is available in the `hdl21.primitives` namespace, either through its full name or any of its aliases. Most primitives have fairly verbose names (e.g. `VoltageControlledCurrentSource`, `IdealResistor`), but also expose short-form aliases (e.g. `Vcvs`, `R`). Each of the aliases in Table 1 above refer to _the same_ Python object, i.e.
-
-```python
-from hdl21.primitives import R, Res, IdealResistor
-
-R is Res            # evaluates to True
-R is IdealResistor  # also evaluates to True
-```
+Each primitive is available in the `hdl21.primitives` namespace, either through its full name or any of its aliases. Most primitives have fairly verbose names (e.g. `VoltageControlledCurrentSource`, `IdealResistor`), but also expose short-form aliases. The `IdealResistor` primitive, for example, is also exported as each of `R`, `Res`, `Resistor`, `IdealR`, and `IdealRes`.
 
 ### `ExternalModules`
 
@@ -1770,13 +1755,13 @@ Linking with implementation technologies then occurs in code, upon execution of 
 
 _Reading_ schematics (as pictures) requires any old computer. _Writing_ them can in principal be done with general-purpose image editing software (e.g. Inkscape), or even as raw text. But maintaining their structural validity as schematics, and making them nicer to interact with _as circuits_ is generally done best in a dedicated editor application. 
 
-The Hdl21 schematic system accordingly includes a web-stack graphical editor. It runs in three primary contexts (1) as a standalone desktop application, (2) as an extension to the popular IDE VsCode, and (3) as a web application. The latter two are pictured in Figure~\ref{fig:editor}.
+The Hdl21 schematic system accordingly includes a web-stack graphical editor. It runs in three primary contexts (1) as a standalone desktop application, (2) as an extension to the popular IDE VsCode, and (3) as a web application. Figure~\ref{fig:schematic-system} outlines the overall system. The IDE platform is pictured in Figure~\ref{fig:schematic-vscode}.
+
+![schematic-system](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
 
 ![schematic-vscode](./fig/schematic-vscode.png "Schematic Editor, Running in the VsCode IDE Platform")
 
 Some schematic programs are "visualization-centric" - i.e. those which primarily aid in debug of post-synthesis or post-layout netlists. A related task is _schematic inference_ - the process of determining the most descriptive picture for a given circuit. While this is worthwhile for such debugging tasks, Hdl21 schematics focuses on primary design entry of schematics. We think that schematics are good when drawn, and tend to be bad, or at least afterthoughts, when inferred. 
-
-SVG schematics by convention have a sub-file-extension of `.sch.svg`. The editor application and VsCode Extension use this convention to identify schematics and automatically launch in schematic-edit mode.
 
 
 ## The Element Library
@@ -1793,7 +1778,7 @@ The complete element library:
 
 \begin{figure}[schematic-symbols]
   \centering
-  \def\svgwidth{\columnwidth} 
+  \def\svgheigth{\columnheight} 
   \includesvg{./fig/schematic-symbols.sch.svg}
   \caption{The SVG Schematic Element Library}
 \end{figure}
@@ -1987,8 +1972,6 @@ SVG schematics include a number of header elements which aid in their rendering 
 #### Coordinates
 
 SVG schematics use the SVG and web standards for their coordinate system. The origin is at the top-left corner of the schematic, with the x-axis increasing to the right and the y-axis increasing downward.
-
-FIXME: coordinate system figure 
 
 All schematic coordinates are stored in SVG pixel values. Schematics elements are placed on a coarse grid of 10x10 pixels. All locations of each element within a schematic must be placed on this grid. Any element placed off-grid violates the schema.
 
@@ -2204,7 +2187,7 @@ Note: the SVG specification includes a paired definitions (`<defs>`) section and
 
 # Programming Models for IC Layout
 
-![](./fig/two-successful-models.png "The Two Successful Models for Producing IC Layout")
+![two-successful-models](./fig/two-successful-models.png "The Two Successful Models for Producing IC Layout")
 
 In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history/?key=13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's 60+ year history, it has shipped roughly 13 sextillion (1.3e22) total transistors. This total has certainly risen, likely dramatically, in the few years since. Essentially all of them have been designed by one of two methods:
 
@@ -2234,40 +2217,26 @@ Why? In short: in modern technologies, the lowest levels are the hardest - both 
 
 ## The Two Most Tried (and Mostly Failed) Models
 
-Analog and custom circuits have long been identified as a bottleneck in the IC design process. Research has accordingly long attempted to improve "the analog way" of producing layout. 
+Analog and custom circuits have long been identified as a bottleneck in the IC design process. Research has accordingly long attempted to improve "the analog way" of producing layout. Approaches have included:
 
-These attempts have included 
+- Circuit-level synthesis from high-level specifications ([@laygen_ii], [@aida])
+- Libraries for codifying high-level design procedures ([@chang2018bag2], [@werblun2019], [@expert_design_plan])
+- Dedicated domain-specific languages for high-level layout ([@lds_layout_description_script])
+- Sizing optimizers, parameterizable across circuit families ([@habal_constraint_based]
+- Automated place-and-route layout generation, from unannotated analog circuit netlists ([@chen2020magical] [@kunal2019align])
+- Novel attempts to make use of the digital place and route pipeline ([@weimurmann2021], [@openfasoc])
 
-FIXME: give the like 1 clause each on these:
-
-- EDP Expert Design Plan [@expert_design_plan]
-- SWARM/ Parasitic Aware [@swarm_parasitic_aware]
-- AIDA [@aida]
-- Approaches to Analog Synthesis 89 [@approaches_analog_synthesis89]
-- Laygen II [@laygen_ii]
-- LDS Layout Description Script [@lds_layout_description_script]
-- Habal Constraint Based [@habal_constraint_based]
+Surveys and summaries of these techniques such as [@approaches_analog_synthesis89] have now appeared for more than three decades. Figure~\ref{fig:fraunhofer_history}, originally published in [@laygen_ii] and later extended by Fraunhofer IIS, catalogs these efforts across time and several axes of their approach.
 
 ![fraunhofer_history](./fig/fraunhofer_history.png "History of analog automation from [@laygen_ii], extended by Fraunhofer IIS.")
-
-None have broken through to widespread adoption. 
 
 These research efforts largely fall into one of two large families:
 
 - The first, which we name the _programmed custom_ style, conceptually replaces the layout GUI with an elaborate layout API. Designers then manipulate the content of layout through writing programs against this interface. The programmed custom style is covered in depth in chapter 6.
 - The second conceptually attempts to map "the digital way" onto analog circuits. Centrally, automatic place-and-route is used to produce layout content from netlists or similar circuit-level content. Rather than directly manipulate layout content, designers author circuit-level content (e.g. HDL code, schematics) and a set of contraints and goals for the analog PnR solver. Such methods are detailed in chapter 7.
 
+While all have made novel research contributions, none have broken through to widespread adoption. The remainder of this thesis largely attempts to distill the core of each of the approaches, and introduces two new pieces of software, one pursuing each approach.
 
-### Aside on digital layout "compilation"
-
-In this sense the anaogy between the digital layout pipeline and the typical programming language compiler breaks down. Digital PnR does nore than compile a hardware circuit, and does more than the good faith optimization attempts afforded by most optimizing compilers. Instead it wraps this compilation in an optimization layer, in which the optimization objectives
-
-- (a) Are met by design, or the process is deemed unsuccessful, and
-- (b) Are, at least to an extent, user programmable.
-
-The most common and prominent example such metric is the synchronous clock frequency. PnR users commonly specify such a frequency or period as their sole input constraint. The process is analogous to a C-language compiler with user inputs dictating its maximum instruction count or memory usage. While such efforts may exist in research or in specialty contexts, they are not the model deployed by commercially successful "optimizing compilers" (e.g. gcc, LLVM/ clang). While the term "optimizing" is commonly used to describe these projects; it would more accurately be saved for digital PnR, in which compilation is explicitly wrapped in an optimizing layer rich with goals and constraints.
-
----
 
 # Programmed Custom Layout
 
@@ -2490,7 +2459,14 @@ Layout21's more abstract "tetris" layer operates on rectilinear blocks in regula
 
 ### `Tetris` Blocks
 
-"Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. These allowable block-shapes are designed in concert with Tetris's connection model and semantics. All Tetris layout instances are of _abstract_ layouts, not their implementations. In addition to being of constrained rectilinear shapes, each Tetris layout includes implicit "blockage" throughout its x-y outline area, and from its topmost z-axis layer down. Each block therefore owns the entirety of its internal volume; no "route-through" is permitted.
+"Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. Shapes with "holes" are disallowed, as are those with concave "inlets". Figure~\ref{fig:tetris-blocks} shows example valid and invalid tetris block shapes. 
+
+
+![tetris-blocks](./fig/tetris-blocks.png "Valid and Invalid Tetris Block Shapes")
+
+These allowable block-shapes are designed in concert with Tetris's connection model and semantics. Ports are placed on an integer-indexed track grid, on one of four edges (top, bottom, left, right). The rules for allowable block shapes ensure that the combination of an edge and an (in-range) track index always resolve to a unique and identifiable port location on the boundary of the cell.
+
+In addition to being of constrained rectilinear shapes, each Tetris layout includes implicit "blockage" throughout its x-y outline area, and from its topmost z-axis layer down. Each block therefore owns the entirety of its internal volume; no "route-through" is permitted.
 
 These rules reduce the space of allowable block-level shapes and outlines, to the benefit of a substantially streamlined connection model and set of semantics. Tetris layouts are built atop a background z-axis `Stack`, conceptually analogous to that of popular digital PnR tools, or to the content of popular technolog-LEF data. Each `Stack` principally defines a set of routing and via layers and rules there-between. Routing is always unidirectional per layer; all layers are annotated as either horizontal or vertical. Adjacent routing layers are always of orthogonal routing direction.
 
@@ -2713,15 +2689,12 @@ BAG began with more or less this intent, to automate the entirety of this design
 
 \setkeys{Gin}{width=.5\linewidth}
 
-![](./fig/hdl21-pnr.jpg "Hdl21 to Analog PnR Flow")
+![hdl21-pnr](./fig/hdl21-pnr.jpg "Hdl21 to Analog PnR Flow")
 
-![](./fig/hdl21-primitives.png "Primitives in a Typical Programming Language, and in Hdl21")
 
-![](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
+# Applications
 
-# Machine Learners Learn Circuits 101
-
-### State of the Art(?)
+## Machine Learners Learning Circuits 101
 
 FIXME: write
 
@@ -2731,9 +2704,14 @@ FIXME: write
 - Constructive angle
 - Draftsman/ LLM angle
 
-## The `CktGym` Distributed Framework
+### The `CktGym` Distributed Framework
 
-![](./fig/cktgym.png "CktGym Framework")
+A material challenge in pursuing ML-for-circuits research is 
+
+
+![cktgym-motivation](./fig/cktgym-motivation.jpg "ML and Circuit Research Silos")
+
+![cktgym](./fig/cktgym.png "CktGym Framework")
 
 FIXME: write plenty before this!
 
@@ -2741,7 +2719,7 @@ FIXME: write plenty before this!
 
 ![](./fig/folded_opamp.png "Rail to Rail Input Op-Amp")
 
-![](./fig/folded_opamp_sections.png "Op-Amp Separated by Dessciptive Sections")
+![](./fig/folded_opamp_sections.png "Op-Amp Separated by Descriptive Sections")
 
 ![](./fig/folded_opamp_better.png "Op-Amp in terms of independent devices and current densities")
 
@@ -2952,11 +2930,6 @@ Both the designer-agent and boss-agent run continuously in a server-style mode. 
 
 An ultimate boss-agent, or perhaps a "boss's boss agent", would include several further capabilities, notably including extrapolation of new constraints and goals. If a figure of merit is valuable subject to the constraint that, for example, power consumption does not exceed 2mW, then in all likelihood the same FOM subject to a 1mW constraint would be similarly valuable. Similarly, most figures of merit will comprise weighted combinations of several conflicting metrics, e.g. power versus bandwidth. If a particular weighting of these metrics is deemed valuable, then similar (or perhaps wildly different) ones are likely to be as well. This generation of new constraints and goals, and its weighing against continued attempts at human-provided goals, is left as future work.
 
-## The Natural Language "Draftsman"
-
-![](./fig/ml-draftsman.png "Natural Language Draftsman")
-
-# Applications
 
 ## Neural Sensor ADC in Intel 16nm FinFET
 
@@ -2971,43 +2944,13 @@ FIXME: write
 
 ## Notes for Editing
 
-- H1 creates a chapter
-
-## H2 creates a section
-
-Include a figure with a caption:
-
 ![homer](fig/homer.png "Homer's Reaction")
 
-Refer to that figure:
+HOW TO REFER IS RIGHT HERE AT THE END
+_REFER_HERE_
 
 Figure~\ref{fig:homer} shows (blah blah blah).
 
-## Another Sub-Section
+Citations to add:
 
-- Bullet
-- List
-- Without insane Latex nerdery
-
-A horizontal bar (not that we make those):
-
----
-
-Code:
-
-```verilog
-module WHY #( /* ... */ );
-  generate
-  for (k=0; k<WIDTH; k=k+1) begin
-    fa i_fa( /* ... */ );
-  end
-  endgenerate
-endmodule
-```
-
-How to cite:
-
-- MAGICAL [@chen2020magical]
-- ALIGN [@kunal2019align]
-- OpenFaSOC [@openfasoc]
 - MAGIC [@ousterhout1985magic]
