@@ -2462,7 +2462,7 @@ Layout21's more abstract "tetris" layer operates on rectilinear blocks in regula
 "Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. Shapes with "holes" are disallowed, as are those with concave "inlets". Figure~\ref{fig:tetris-blocks} shows example valid and invalid tetris block shapes. 
 
 
-![tetris-blocks](./fig/tetris-blocks.png "Valid and Invalid Tetris Block Shapes")
+![tetris-shapes](./fig/tetris-shapes.png "Valid and Invalid Tetris Block Shapes")
 
 These allowable block-shapes are designed in concert with Tetris's connection model and semantics. Ports are placed on an integer-indexed track grid, on one of four edges (top, bottom, left, right). The rules for allowable block shapes ensure that the combination of an edge and an (in-range) track index always resolve to a unique and identifiable port location on the boundary of the cell.
 
