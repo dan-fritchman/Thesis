@@ -2598,6 +2598,7 @@ In a co-designed circuit style, all unit MOS devices are of a single geometry. P
 ![align_not_best_placement](./fig/align_not_best_placement.png "Unconstrained Placement Result. 100 unit resistors, arranged in 10 parallel strands of 10 in series.")
 ![align_res_alignment](./fig/align_res_alignment.png "Errant resistor alignment")
 ![align_res_terms](./fig/align_res_terms.png "Better resistor placement")
+![align_grid_fail](./fig/align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
 
 Attempts to compile analog and otherwise "custom" circuit layout are not new.
 
