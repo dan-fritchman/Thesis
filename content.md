@@ -2774,50 +2774,63 @@ Figure~\ref{fig:alignhdl21-placement1} illustrates a conceptual placement. Each 
 
 Recent research, both here at Berkeley and elsewhere, has deployed machine learning techniques for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
 
-A central challenge throughout these courses of research has been identifying individuals or teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. 
-
-Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. Machine learning research has increased by leaps in bounds, both enabling and enabled by a proliferation of high productivity open-source frameworks such as PyTorch ([@NEURIPS2019_bdbca288]) and TensorFlow ([@abadi2016tensorflow]). 
-
-Perhaps more impactfully, IC research is both highly laborious to set up (complex toolchains with tons of specialty jargon), and worse still, highly access-controlled. Advanced process technology is the most tightly guarded ingredient. Recent years have increasingly made silicon PDKs (and lack of sharing them) a topic of worldwide public policy. Fabs have acted accordingly. 
+A central challenge throughout these courses of research has been identifying individuals or teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. 
 
 ![cktgym-motivation](./fig/cktgym-motivation.jpg "ML and Circuit Research Silos")
 
-Figure~\ref{fig:cktgym-motivation} also illustrates the motivation for the `CktGym` distributed framework, depicted in Figure~\ref{fig:cktgym}. CktGym makes use of VLSIR, Hdl21, and related circuit programming frameworks, coupled with its `Discovery` gateway libraries. This breaks the circuits-ML research infrastructure into three distinct components: 
+Machine learning research has increased by leaps in bounds, both enabling and enabled by a proliferation of high productivity open-source frameworks such as PyTorch ([@NEURIPS2019_bdbca288]) and TensorFlow ([@abadi2016tensorflow]). ML has also been demonstrated to be of great utility across a wide range of domains. Image recognition, text recognition, and large language model based natural language actors serve as prime examples. Machine learning researchers accordingly have a broad menu of domains towards which to direct their efforts. 
 
-- A _circuit server_ which (FIXME)
+Circuits are not the easiest such domain. Much of the requisite knowledge is confined to a comparatively small number of people. Perhaps more impactfully, IC research is both highly laborious to set up (complex toolchains with tons of specialty jargon), and worse still, highly access-controlled. Advanced process technology is the most tightly guarded ingredient. Recent years have increasingly made silicon PDKs (and lack of sharing them) a topic of worldwide public policy. Fabs have acted accordingly. 
+
+This combination of challenges, plus the opportunities afforded by VLSIR, motivated the design of the  `CktGym` distributed framework. CktGym and its core `Discovery` gateway libraries are schematically depicted in Figure~\ref{fig:cktgym}. CktGym breaks the circuits-ML research infrastructure into three distinct components: 
+
+- A _circuit server_, which defines a set of circuit generator program endpoints, and exposes them via HTTP, 
 - One or more _ML client_ programs. Each performs optimization on one or more of the circuit-server's generator endpoints. 
-- The intervening discovery libraries 
+- The intervening gateway library, used by both client and server, is provided by `Discovery`. Centrally this defines a remote procedure call (RPC) style interface between client and server, and streamlined mechanisms for defining self-consistent client and server conversions between client and server programs.
 
 ![cktgym](./fig/cktgym.png "CktGym Framework")
 
-Each use-case of the `Discovery` commonly breaks down into three related sub-libraries: 
+Each is designed as a Python library, easing integration with most (really, all) popular ML frameworks, and with circuit frameworks including VLSIR and BAG. 
 
-- One dedicated to run on the server. This services HTTP requests, translates them into circuit generation problems, and passes them along to the generator frameworks. These server libraries generally run on machines with access to the requisite silicon process technologies and EDA software, or on machines which can directly access others which do. 
-- One for the client. This includes the HTTP client for querying the circuit-server. It also commonly integrates its machine learning (or other optimization model) framework of choice. 
-- A shared package which defines the interactions between the two. This is generally a fairly small set of information, including the names and addresses of the server endpoints, and schema for the argument and return values of each endpoint. 
+On one level, CktGym's motivations mirror those of ProtoBuf and similar markup language projects. Circuits-ML programs are "too big", less in an overall complexity sense, and more in that of having two disparate sub-programs. CktGym decouples and distributes the two, defining an interface in serializable form, JSON over HTTP. 
 
+Each use-case of `CktGym` generally breaks down in three: 
+
+- One long-running program implements the server. This uses the `Discovery` libraries to service HTTP requests and translate them into native Python objects. Instance-specific code then translates them into circuit generation problems, and passes them along to the generator frameworks. These server libraries generally run on machines with access to the requisite silicon process technologies and EDA software, or on machines which can directly access others which do. 
+- A library enables client-side ML optimization. This uses `Discovery`'s RPC via HTTP client for querying the circuit-server. It also commonly integrates its machine learning (or other optimization model) framework of choice. 
+- A shared package commonly defines the interactions between the two. This is generally a fairly small set of information, including the names and addresses of the server endpoints, and schema for the argument and return values of each endpoint. 
+
+Like HTTP, the `CktGym` interface is stateless. Each server request is provided with a set of circuit-parameters, and returns a corresponding set of results or metrics. Commonly the former serves as the parameters to a circuit-generator program, i.e. specifying device sizes, and the latter indicates simulation-based metrics, i.e. summaries of SPICE simulation results. No other imposition is made upon the circuit-server endpoints, e.g. the level of detail of circuit they analyze (schematic vs layout based), the underlying tools they use, the underlying process technology, or anything else. 
+
+As of this writing, two such `CktGym` instances are in operation on UC Berkeley's research infrastructure. One is designed to be fully open-source, making use of the freely available NGSPICE (a continuation of the Berkeley SPICE project). This instance primarily recreates the reinforcement learning based methods of [@autockt], deploying them to a new and wider array of circuit optimizations. It uses an unfabricatable (fake) "PDK" similar to that used by the open-source version of AutoCkt. The second instance makes use of `AlignHdl21` to produce, extract, and simulate layout on-demand, in Intel's 16nm FinFET technology. 
 
 
 ### Example Power of Circuit "Expert Knowledge"
 
-![](./fig/folded_opamp.png "Rail to Rail Input Op-Amp")
+A common premise in ML-for-circuits research has been optimization of circuit _parameter vectors_, which commonly map directly onto the device parameters of a typical circuit netlist. Figure~\ref{fig:folded_opamp} shows an example such transistor-level circuit. This folded-cascode, "rail to rail" dual input op-amp consists of 26 transistors. A common approach would be to optimize this as a 26N variable problem, in which N parameters of each transistor are elements in the vector. In a common implementation N is equal to one, the width of each transistor, while all other device parameters are fixed. An ML-based optimizer operating directly on its device widths therefore needs to jointly optimize these 26 variables. Operating on more complex device sizes (e.g. including length or segmentation in addition to unit width) further multplies this space.
 
-![](./fig/folded_opamp_sections.png "Op-Amp Separated by Descriptive Sections")
+![folded_opamp](./fig/folded_opamp.png "Rail to Rail Input Op-Amp")
 
-![](./fig/folded_opamp_better.png "Op-Amp in terms of independent devices and current densities")
+A common and valuable view of this circuit for sake of understanding and learning its operation breaks it into descriptive, functional sub-sections. Figure~\ref{fig:folded_opamp_sections} illustrates a common such breakdown into four sections: one each for the two input stages, one for the output stage, and a peripheral, biasing stage. 
 
-An example folded cascode, "rail to rail" dual input op-amp. This circuit consists of 26 transistors. An ML-based optimizer operating directly on its device widths therefore needs to jointly optimize these 26 variables. Operating on more complex device sizes (e.g. including length or segmentation in addition to unit width) further multplies this space.
+![folded_opamp_sections](./fig/folded_opamp_sections.png "Op-Amp Separated by Descriptive Sections")
 
-Veteran designers of such circuits, in contrast, recognize they are not making 26 independent device sizing decisions. This circuit and most others in the classical analog genre operate based on device matching between pairs and groups of ostensibly identical transistors. This tactic pairs with both signaling schemes - primarily the prominence of differential signals in on-die contexts - and with surrounding needs such as replica-current biasing.
 
-The rail to rail op-amp in fact includes only six unique unit devices:
+
+While the view of figure~\ref{fig:folded_opamp_sections} is powerful for understanding, it is not as valuable for design. Veteran designers of such circuits recognize they are (a) not making 26 independent device sizing decisions, and (b) not designing four independent sub-sections. 
+
+This latter distinction largely hinges on the qualifier _independent_. This circuit and most others in the classical analog genre operate based on device matching between pairs and groups of ostensibly identical transistors. This tactic pairs with both signaling schemes - primarily the prominence of differential signals in on-die contexts - and with surrounding needs such as replica-current biasing. Figure~\ref{fig:folded_opamp_better} groups the op-amp's devices into these matched sub-groups.
+
+![folded_opamp_better](./fig/folded_opamp_better.png "Op-Amp in terms of independent devices and current densities")
+
+In total, the rail to rail op-amp in fact includes only six unique unit devices:
 
 - The input pair,
 - The bias curent sources, and
 - The cascodes
 - Each in NMOS and PMOS flavors
 
-These devices are then scaled by integer current ratios, for each input pair (herein referred to as `alpha` and `beta` respectively), and to the output stage (`gamma`). Figure XYZ depicts this circuit highlighting this reality. Several bias-current branches which do not directly dictate the circuit performance are fixed to the unit current `ibias`. The two input current souces are also fixed to identical current values equal to `ibias`.
+These devices are then scaled by integer current ratios, for each input pair (herein referred to as `alpha` and `beta` respectively), and to the output stage (`gamma`). Across each current branch, current _density_ across each group of devices is fixed; a branch with Nx the current also has Nx wider transistors. Several bias-current branches which do not directly dictate the circuit performance are fixed to the input unit current `ibias`. The two input current souces are also fixed to identical current values equal to `ibias`.
 
 These relationships are relevant for both human and ML designers. Embedding this "expert knowledge" reduces the parameter space from 26 (the number of devices) to 9: six to set unit device sizes, plus the three current ratios. If more detailed parameterization of the unit devices is desired (e.g. to set their length as well as width), this advantage grows similarly.
 
@@ -2874,6 +2887,9 @@ def Fcasc(params: FcascParams) -> h.Module:
         pin_casc = pbias(x=2 * beta)(g=pbiasg, s=pin_bias.d, b=VDD)
         pin = h.Pair(pinp(x=beta))(g=inp, d=nsd, s=pin_casc.d, b=VDD)
 ```
+
+It is possible, and in fact likely, that given sufficient effort machine learning agents will "learn" this domain knowledge for themselves. There are many such hard-won insights - the entire concept of differential signaling and matched devies; how these devices are identified by connection; the fact that each input pair should probably be of identical size. How much learning effort this will take, remains to be seen. 
+
 
 ## A Different Kinda Analog RL Thing
 
@@ -3025,15 +3041,13 @@ An ultimate boss-agent, or perhaps a "boss's boss agent", would include several 
 
 FIXME: write
 
+## Citations to add
+
+- MAGIC [@ousterhout1985magic]
+
 ## Notes for Editing
 
 ![homer](fig/homer.png "Homer's Reaction")
 
-HOW TO REFER IS RIGHT HERE AT THE END
-_REFER_HERE_
+Figure~\ref{fig:homer} 
 
-Figure~\ref{fig:homer} shows (blah blah blah).
-
-Citations to add:
-
-- MAGIC [@ousterhout1985magic]
