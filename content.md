@@ -2772,24 +2772,31 @@ Figure~\ref{fig:alignhdl21-placement1} illustrates a conceptual placement. Each 
 
 ## Machine Learners Learning Circuits 101
 
-FIXME: write
+Recent research, both here at Berkeley and elsewhere, has deployed machine learning techniques for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
 
-- AutoCkt [@autockt]
-- BagNET [@bagnet]
+A central challenge throughout these courses of research has been identifying individuals or teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. 
 
-- Constructive angle
-- Draftsman/ LLM angle
+Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. Machine learning research has increased by leaps in bounds, both enabling and enabled by a proliferation of high productivity open-source frameworks such as PyTorch ([@NEURIPS2019_bdbca288]) and TensorFlow ([@abadi2016tensorflow]). 
 
-### The `CktGym` Distributed Framework
-
-A material challenge in pursuing ML-for-circuits research is 
-
+Perhaps more impactfully, IC research is both highly laborious to set up (complex toolchains with tons of specialty jargon), and worse still, highly access-controlled. Advanced process technology is the most tightly guarded ingredient. Recent years have increasingly made silicon PDKs (and lack of sharing them) a topic of worldwide public policy. Fabs have acted accordingly. 
 
 ![cktgym-motivation](./fig/cktgym-motivation.jpg "ML and Circuit Research Silos")
 
+Figure~\ref{fig:cktgym-motivation} also illustrates the motivation for the `CktGym` distributed framework, depicted in Figure~\ref{fig:cktgym}. CktGym makes use of VLSIR, Hdl21, and related circuit programming frameworks, coupled with its `Discovery` gateway libraries. This breaks the circuits-ML research infrastructure into three distinct components: 
+
+- A _circuit server_ which (FIXME)
+- One or more _ML client_ programs. Each performs optimization on one or more of the circuit-server's generator endpoints. 
+- The intervening discovery libraries 
+
 ![cktgym](./fig/cktgym.png "CktGym Framework")
 
-FIXME: write plenty before this!
+Each use-case of the `Discovery` commonly breaks down into three related sub-libraries: 
+
+- One dedicated to run on the server. This services HTTP requests, translates them into circuit generation problems, and passes them along to the generator frameworks. These server libraries generally run on machines with access to the requisite silicon process technologies and EDA software, or on machines which can directly access others which do. 
+- One for the client. This includes the HTTP client for querying the circuit-server. It also commonly integrates its machine learning (or other optimization model) framework of choice. 
+- A shared package which defines the interactions between the two. This is generally a fairly small set of information, including the names and addresses of the server endpoints, and schema for the argument and return values of each endpoint. 
+
+
 
 ### Example Power of Circuit "Expert Knowledge"
 
