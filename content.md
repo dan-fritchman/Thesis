@@ -2772,7 +2772,9 @@ Figure~\ref{fig:alignhdl21-placement1} illustrates a conceptual placement. Each 
 
 ## Machine Learners Learning Circuits 101
 
-Recent research, both here at Berkeley and elsewhere, has deployed machine learning techniques for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
+Recent research and commercial EDA has begun to deploy machine learning techniques throughout the IC design process. Perhaps the most prominent such example is ([@mirhoseini2021graph]). (Although follow up research ([@cheng2023assessment]) and [news](https://www.nytimes.com/2022/05/02/technology/google-fires-ai-researchers.html) | [reporting](https://spectrum.ieee.org/chip-design-controversy) cast doubt upon some of its claims. I for one find the primary rebuttal article, which remains unpublished for... reasons, quite compelling.)
+
+These techniques are also a prominent research frontier for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
 
 A central challenge throughout these courses of research has been identifying individuals or teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. 
 
