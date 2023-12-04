@@ -11,43 +11,17 @@ In truth, the field stands to become far more important - and far more ripe for 
 
 Why? To date, the primary manifestation of our semiconductor-based information age is the enablement of software to "eat" countless fields of endeavor. Over the course of the 20th century, silicon and CMOS proved the ideal forum for building general-purpose computation machines. Their general-purposeness was their true killer app: it enabled a conceptually new layer, shortly thereafter named _software_, by which they could be redirected to a seemingly endless variey of tasks. 
 
-Moreover, these machines _kept getting better_, year after year. In 1965's _Cramming More Components onto Integrated Circuits_ [@moore1998cramming], Gordon Moore introduced the now-famous "law" setting the field on an exponential rate of progress for the foreseeable future. But the phrase _Moore’s Law_ has always been off. The inclusion of the term _law_, coupled with the fact that it concerns a complicated scientific-seeming topic, leads people to believe it is some law of nature, like Newton’s laws of motion or the second law of thermodynamics. Or perhaps more like Ahmdal’s law, which sets a theoretical limit on a category of abstract quantities (computer programs). 
+Moreover, these machines kept getting better, year after year. In 1965's _Cramming More Components onto Integrated Circuits_ [@moore1998cramming], Gordon Moore introduced the now-famous "law" setting the field on an exponential rate of progress for the foreseeable future. But the phrase _Moore’s Law_ has always been off. The inclusion of the term _law_, coupled with the fact that it concerns a complicated scientific-seeming topic, leads people to believe it is some law of nature, like Newton’s laws of motion or the second law of thermodynamics. Or perhaps more like Ahmdal’s law, which sets a theoretical limit on a category of abstract quantities (computer programs). 
 
-What Gordon Moore made in truth was a _prediction about people_. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. 
+What Gordon Moore made in truth was a prediction, and one  about people. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an end failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
 
-Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an _end_ failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
-
-Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before this manuscript was written in 2023, the "Moore Era" ended. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson & Hennessy's seminal computer architecture text. 
+Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before as the time of this manuscript, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson & Hennessy's seminal computer architecture text. 
 
 ![patterson_moore](./fig/patterson_moore.png "Patterson and Hennessy's Depiction of the End of Moore's Law")
 
 The end of the Moore Era coincided with large swaths of human activity just catching on to just how useful all this computation could be. And perhaps more impactfully, other swathes realized that incredibly computation-intensive methods (i.e. those of machine learning) proved aways more suitable to a variety of tasks than prior, "expert" programmed methods. 
 
-The combination means one thing: there will be much more need for much more specialized, task-centric computing hardware. Where software "ate" the prior era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. As designers, this time it's on us. 
-
-## The Role of Open Source
-
-The period during which this manuscript's work was completed corresponded to something of a renaissance in activity around using _open source_ distribution in the silicon field. Ironically IC EDA (and particularly its outpost here at Berkeley) were pioneers in open-source distribution, particularly that for industrial-grade applications and industrial use-cases. SPICE [@vladimirescu1980simulation] serves as a prime example. The many branches of SPICE's family tree have since largely been absorped into various commercial and in-house products dotting the IC industry. Open-source then slowly disappeared from the IC field's common set of practices. 
-
-We note that three related, relevant quantities can in principal be distributed in open-source form: 
-
-- 1. Open-source _design content_, i.e. HDL code, circuits, and/or layouts,
-- 2. Open-source _EDA software_, the programs required to produce these circuits,
-- 3. Open-source _process technology_, i.e. the underlying fabrication steps, or the designer "API" to these technologies, commonly called a Process Design Kit (PDK).
-
-The three are separable in principle, but tightly tied in practice.
-
-The relationship between (2) EDA and (3) fab is particularly tangled. Particularly, most process-portable EDA software requires an elaborate "technology setup" set of input - the details of the technology required by the tool. For digital PnR this often comes in the form of tech-LEF, for physical verification (LVS, DRC) it includes countless design rules and detailed specifications of the process. More important, this fab input is (a) highly laborious (and crucial) to get right, and (b) generally tightly tied to the EDA tool it feeds, and (c) often authored in a language or format which is _proprietary to those EDA tools_. While fabs author their "EDA input", they are often not at liberty to publish it. Fabricators understandably focus on the most popular such tools (buoyed by relationships with the most popular EDA software providers). Supporting a new suite of EDA software is no small ask. 
-
-Design content is, in principal, the easiest of the three to open-source. Digital design in HDL (or modern HDLs such as Chisel) are especially amenable. Many research processor designs - and even a few industrial ones - are accordingly available in open-source distribution. Analog circuits are much more dependent on their implementation technologies, and accordingly have seen much less success in open source. 
-
-Open source EDA, especially that for digital design, is the subject of a great deal of academic research. But in every category known to the author, available academic/ open-source EDA lags commercial offerings, often substantially and in metrics directly relevant to designers (quality of results, execution time, etc.). More importantly, technology-dependent open-source EDA suffers from the problems of _access to_ process technologies described a few paragraphs back. 
-
-The tight tying of fab and EDA would seem to drive a desire for open-source process technology. Suc efforts, particularly those of [@ansell2020missing], have produced open-source process design kits from SkyWater Technologies, GlobalFoundries, and IHP Microlectronics. These efforts have often been by third parties and/or communities rather than the fabs themselves. Paired (and often free) multi-project shuttles have enabled a wide variety of projects which would not otherwise have been possible. 
-
-Despite these laudable efforts, I do not hold much hope for open-source distribution of silicon process technologies, or even of "just" their PDKs. Before the open-source release of SkyWater's 130nm technology, open-source was clearly highly counter-cultural to the entire fab industry. The other fabs have clearly seen the efforts of the early open-sourcers, especially SkyWater. And they have hopefully noticed the amount of additional attention driven to a roughly two-decades-old technology. But they have simultaneously observed a more concerning shift: one in world public policy. A number of nations, notably including the US and China, have made semiconductor technologies a central focus of new policy initiatives. The primary impact on the distribution of technology information has been to make it _more constrained_. Open-source is essentially the _least_ constrained form of such distribution. Even if it has not been explicitly banned or prohibitied, I expect most fabs have gotten a clear message to stay away.
-
-I do believe that open-source process technologies will have a helpful role in IC _education_. Berkeley's curriculum includes an unusually great deal of  exposure to realistic, modern implementation technologies, culminating in the "tape-out course" series detailed in [@burnett2018] and [@guo2023osci]. These experiences have proven much more difficult for many peer institutions to provide. Access to these technologies is tightly guarded and costly to maintain. The emergence of (at least a few) open-source technologies allows for a broader suite of educational opportunities in realistic implementation technologies, as described in [@alam2022].
+The combination means one thing: there will be much more need for much more specialized, task-centric hardware. Where software "ate" the prior era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. 
 
 
 ## The IC Design Process
@@ -75,6 +49,31 @@ Notably, the benefits afforded by the 80s-era HDLs accrue to digital circuits, b
 
 Analog and custom circuits have accordingly long been acknowledged as a bottleneck in the IC design process. In the author's anecdotal experience, analog efforts tend to produce transistor-counts per effort (e.g. designer-months) on the order of 100-1000x lower than their digital peers.
 While many other research efforts endeavor to further raise the productivity and abstraction-level of the digital flow, this work focuses on analog and custom circuits. 
+
+
+## The Role of Open Source
+
+The period during which this manuscript's work was completed corresponded to something of a renaissance in activity around using _open source_ distribution in the silicon field. Ironically IC EDA (and particularly its outpost here at Berkeley) were pioneers in open-source distribution, particularly that for industrial-grade applications and industrial use-cases. SPICE [@vladimirescu1980simulation] serves as a prime example. The many branches of SPICE's family tree have since largely been absorped into various commercial and in-house products dotting the IC industry. Open-source then slowly disappeared from the IC field's common set of practices. 
+
+We note that three related, relevant quantities can in principal be distributed in open-source form: 
+
+- 1. Open-source _design content_, i.e. HDL code, circuits, and/or layouts,
+- 2. Open-source _EDA software_, the programs required to produce these circuits,
+- 3. Open-source _process technology_, i.e. the underlying fabrication steps, or the designer "API" to these technologies, commonly called a Process Design Kit (PDK).
+
+The three are separable in principle, but tightly tied in practice.
+
+The relationship between (2) EDA and (3) fab is particularly tangled. Particularly, most process-portable EDA software requires an elaborate "technology setup" set of input - the details of the technology required by the tool. For digital PnR this often comes in the form of tech-LEF, for physical verification (LVS, DRC) it includes countless design rules and detailed specifications of the process. More important, this fab input is (a) highly laborious (and crucial) to get right, and (b) generally tightly tied to the EDA tool it feeds, and (c) often authored in a language or format which is _proprietary to those EDA tools_. While fabs author their "EDA input", they are often not at liberty to publish it. Fabricators understandably focus on the most popular such tools (buoyed by relationships with the most popular EDA software providers). Supporting a new suite of EDA software is no small ask. 
+
+Design content is, in principal, the easiest of the three to open-source. Digital design in HDL (or modern HDLs such as Chisel) are especially amenable. Many research processor designs - and even a few industrial ones - are accordingly available in open-source distribution. Analog circuits are much more dependent on their implementation technologies, and accordingly have seen much less success in open source. 
+
+Open source EDA, especially that for digital design, is the subject of a great deal of academic research. But in every category known to the author, available academic/ open-source EDA lags commercial offerings, often substantially and in metrics directly relevant to designers (quality of results, execution time, etc.). More importantly, technology-dependent open-source EDA suffers from the problems of _access to_ process technologies described a few paragraphs back. 
+
+The tight tying of fab and EDA would seem to drive a desire for open-source process technology. Suc efforts, particularly those of [@ansell2020missing], have produced open-source process design kits from SkyWater Technologies, GlobalFoundries, and IHP Microlectronics. These efforts have often been by third parties and/or communities rather than the fabs themselves. Paired (and often free) multi-project shuttles have enabled a wide variety of projects which would not otherwise have been possible. 
+
+Despite these laudable efforts, I do not hold much hope for open-source distribution of silicon process technologies, or even of "just" their PDKs. Before the open-source release of SkyWater's 130nm technology, open-source was clearly highly counter-cultural to the entire fab industry. The other fabs have clearly seen the efforts of the early open-sourcers, especially SkyWater. And they have hopefully noticed the amount of additional attention driven to a roughly two-decades-old technology. But they have simultaneously observed a more concerning shift: one in world public policy. A number of nations, notably including the US and China, have made semiconductor technologies a central focus of new policy initiatives. The primary impact on the distribution of technology information has been to make it _more constrained_. Open-source is essentially the _least_ constrained form of such distribution. Even if it has not been explicitly banned or prohibitied, I expect most fabs have gotten a clear message to stay away.
+
+I do believe that open-source process technologies will have a helpful role in IC _education_. Berkeley's curriculum includes an unusually great deal of  exposure to realistic, modern implementation technologies, culminating in the "tape-out course" series detailed in [@burnett2018] and [@guo2023osci]. These experiences have proven much more difficult for many peer institutions to provide. Access to these technologies is tightly guarded and costly to maintain. The emergence of (at least a few) open-source technologies allows for a broader suite of educational opportunities in realistic implementation technologies, as described in [@alam2022].
 
 
 ### Section Title?
@@ -2507,7 +2506,9 @@ pub enum PortKind {
 }
 ```
 
-FIXME: add an illustration of what those look like
+Figure~\ref{fig:tetris_port_locs} schematically captures the valid locations, for a block with a vertical layer N and horizontal top layer N+1.
+
+![tetris_port_locs](fig/tetris_port_locs.png "Valid Tetris port locations in blue, for a vertical layer N and horizontal top layer N+1")
 
 Tetris routing is similarly performed through the specification of a series of integer track indices. Tetris layout implementations principally consist of:
 
