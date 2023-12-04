@@ -15,7 +15,7 @@ Moreover, these machines kept getting better, year after year. In 1965's _Crammi
 
 What Gordon Moore made in truth was a prediction, and one about people. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an end failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
 
-Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before as the time of this manuscript, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson & Hennessy's seminal computer architecture text. 
+Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before as the time of this manuscript, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson \& Hennessy's seminal computer architecture text. 
 
 ![patterson_moore](./fig/patterson_moore.png "Patterson and Hennessy's Depiction of the End of Moore's Law")
 
@@ -1574,13 +1574,15 @@ Typical software manifestations operate by designing a circuit-picture data form
 
 An SVG document is an XML document with a root `svg` element representing the entirety of an image. SVG makes use of XML namespaces (`xmlns`) to introduce element types. Once the `svg` namespace has been enabled, documents have access to elements which represent core two-dimensional graphical elements such as `rect`, `circle`, `path`, and `text`. [Example SVG content](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Getting_Started):
 
-```svg
+```xml
 <svg version="1.1"
      width="300" height="200"
      xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="red" />
   <circle cx="150" cy="100" r="80" fill="green" />
-  <text x="150" y="125" font-size="60" text-anchor="middle" fill="white">SVG</text>
+  <text x="150" y="125" font-size="60" text-anchor="middle" fill="white">
+    SVG Text
+  </text>
 </svg>
 ```
 
@@ -1588,7 +1590,7 @@ Each graphical element includes a variety of positioning, styling, and customiza
 
 SVG documents are hierarchical. Hierarchy is primary enabled through _groups_. The `g` element defines a group of sub-elements. Each group includes a similar set of transformation and styling attributes which are applied hierarchically to its children.
 
-```svg
+```xml
 <svg width="30" height="10">
   <g fill="red">
     <rect x="0" y="0" width="10" height="10" />
@@ -1599,7 +1601,7 @@ SVG documents are hierarchical. Hierarchy is primary enabled through _groups_. T
 
 Nodes and groups each include a rich set of transformation capabilities, setting position, rotation, reflection, skew, and the like. A general-purpose `matrix` operator allows for the combination of all of the above in a single statement and operation. These transformations nest across hierarchical groups. The net transformation of a leaf-level node in a hierarchical group is the product of the (matrix) transforms of its parents, applied top-down.
 
-```svg
+```xml
 <svg xmlns="http://www.w3.org/2000/svg">
     <g transform="rotate(-10 50 100)
         translate(-36 45.5)
@@ -1618,7 +1620,7 @@ Nodes and groups each include a rich set of transformation capabilities, setting
 
 That combination of observations drives the primary goals for Hdl21's paired schematic system:
 
-- Get into & out of code as quickly & seamlessly as possible.
+- Get into and out of code as quickly and seamlessly as possible.
 - Make making the good schematics easy, and make making the bad schematics hard. 
 - Make _reading_ schematics as easy as possible.
 
@@ -1694,10 +1696,11 @@ The complete element library is shown in Figure~\ref{fig:schematic-symbols}.
 
 (Figure~\ref{fig:schematic-symbols} is itself also a valid SVG schematic, rendered by popular authoring platform overleaf.com's Latex compilation pipeline.)
 
-\begin{figure}[schematic-symbols]
+\begin{figure}
   \centering
   \includesvg[width=200pt]{./fig/schematic-symbols.sch.svg}
   \caption{The SVG Schematic Element Library}
+  \label{fig:schematic-symbols}
 \end{figure}
 
 
@@ -1735,11 +1738,11 @@ For a schematic to produce a valid Hdl21 generator, the result of evaluating eac
 - Include the same ports as the symbol
 
 
-\begin{figure}[schematic-inverter]
+\begin{figure}
   \centering
-  \def\svgwidth{\columnwidth} 
-  \includesvg{./fig/schematic-inverter.sch.svg}
+  \includesvg[width=200pt]{./fig/schematic-inverter.sch.svg}
   \caption{Example SVG Schematic}
+  \label{fig:schematic-inverter}
 \end{figure}
 
 The inverter pictured above roughly translates to the following Python code:
@@ -1855,7 +1858,7 @@ Each `Schematic` is represented by an SVG element beginning with `<svg>` and end
 
 Many popular SVG renderers expect `?xml` prelude definitions and `xmlns` (XML namespace) attributes to properly render SVG. SVG schematics therefore begin and end with:
 
-```svg
+```xml
 <?xml version="1.0" encoding="utf-8"?>
 <svg width="1600" height="800" xmlns="http://www.w3.org/2000/svg">
   <!-- Content -->
@@ -1959,7 +1962,7 @@ Each instance-group holds three ordered child elements:
 
 An example `Instance`:
 
-```svg
+```xml
 <g class="hdl21-instance" transform="matrix(1 0 0 1 X Y)">
     <g class="hdl21-elements-nmos">
         <!-- Content of the symbol-picture -->
@@ -2008,7 +2011,7 @@ Schematic wires consist of orthogonal Manhattan paths. They are represented by S
 
 An example `Wire`:
 
-```svg
+```xml
 <g class="hdl21-wire">
     <path class="hdl21-wire" d="M 100 150 L 100 350 L 200 350" />
     <text class="hdl21-wire-name">net1</text>
@@ -2043,7 +2046,7 @@ Each port-group holds two ordered child elements:
 
 An example `Port`:
 
-```svg
+```xml
 <g class="hdl21-port" transform="matrix(1 0 0 1 X Y)">
     <g class="hdl21-ports-input">
         <!-- Content of the symbol -->
@@ -2062,7 +2065,7 @@ Schematic dots indicate connectivity between wires and ports where connections m
 
 An example `Dot`:
 
-```svg
+```xml
 <circle cx="-20" cy="40" class="hdl21-dot" />
 ```
 
@@ -2125,28 +2128,28 @@ The combination of logic synthesis and PnR layout serves as a powerful "hardware
 
 The analog way, in contrast, shares little between circuits. No "compiler" is invoked to produce layout from a more abstract description. Instead designers are free to produce essentially any combination of 2.5 dimensional shapes in a custom graphical environment. Only an infinitesimally small fraction of possible combinations will conform to a given technology's design rules. This is a major part of the effort. Designers are free to produce device sizing, placement, and routing essentially as they see fit - at the primary cost of needing to produce it.
 
-Notably, code remains a material part of the analog method; it merely occupies a very different place in the design hierarchy. Figure~\ref{fig:layout_quadrants} the relationship between code-based and graphically-based methods in the digital and analog flows. Perhaps counterintuitively, the two are used in diametrically opposite portions of the design hierarchy. The digital flow uses code - the combination of a PnR "layout solver" and designer-dictated constraints - to produce the upper, "module" levels of a design hierarchy. Its low levels, principally comprised of "standard cell" logic gates, are conversely designed with graphical methods highly similar to the analog flow. Said analog flow, in contrast, uses these graphical methods for its "module layers" (e.g. amplifiers, data converters), while relying on code-based _parametric cells_ (commonly called "p-cells") for its lowest levels (e.g. single transistors or passive elements).
+Notably, code remains a material part of the analog method; it merely occupies a very different place in the design hierarchy. Figure~\ref{fig:layout-quadrants} the relationship between code-based and graphically-based methods in the digital and analog flows. Perhaps counterintuitively, the two are used in diametrically opposite portions of the design hierarchy. The digital flow uses code - the combination of a PnR "layout solver" and designer-dictated constraints - to produce the upper, "module" levels of a design hierarchy. Its low levels, principally comprised of "standard cell" logic gates, are conversely designed with graphical methods highly similar to the analog flow. Said analog flow, in contrast, uses these graphical methods for its "module layers" (e.g. amplifiers, data converters), while relying on code-based _parametric cells_ (commonly called "p-cells") for its lowest levels (e.g. single transistors or passive elements).
 
 Why? In short: in modern technologies, the lowest levels are the hardest - both to optimize, and to meet design-rule correctness in the first place. The digital flow uses hand-crafted standard logic cells which can be highly tuned and co-designed with the underlying technology, recognizing that their design effort will be amortized billions of times over. Producing analog layout is a lower-volume proposition. It is much more difficult to amortize the manual production of each low-level transistor polygon. This is generally saved for the most performance-critical devices, e.g. those in high-speed RF transceivers. Code based "p-cells" instead produce these polygons from a set of input parameters similar to those provided to schematic designers. In addition to schematic-level parameters, principally including device sizing, these programs often add layout-specific parameters such as requirements for segmentation ("multi-fingering"), overlap, abutment, or proximity of contacts. The placement of and interconnect between these p-cells is then performed in the custom graphical flow.
 
-![layout_quadrants](fig/layout_quadrants.png "Relationship Between Custom and Programmed Layout Generation in the Digital and Analog Design Flows")
+![layout-quadrants](fig/layout_quadrants.png "Relationship Between Custom and Programmed Layout Generation in the Digital and Analog Design Flows")
 
 
 ## The Two Most Tried (and Mostly Failed) Models
 
 Analog and custom circuits have long been identified as a bottleneck in the IC design process. Research has accordingly long attempted to improve "the analog way" of producing layout. Approaches have included:
 
-- Circuit-level synthesis from high-level specifications ([@laygen_ii], [@aida])
-- Libraries for codifying high-level design procedures ([@chang2018bag2], [@werblun2019], [@expert_design_plan])
-- Dedicated domain-specific languages for high-level layout ([@lds_layout_description_script])
-- Sizing optimizers, parameterizable across circuit families ([@habal_constraint_based])
+- Circuit-level synthesis from high-level specifications ([@laygenii], [@aida])
+- Libraries for codifying high-level design procedures ([@chang2018bag2], [@werblun2019], [@schweikardt2022edp])
+- Dedicated domain-specific languages for high-level layout ([@unutulmaz2011lds])
+- Sizing optimizers, parameterizable across circuit families ([@habal2011])
 - "Silicon compilers" ([@man1986cathedral], [@johannsen1979]) and other circuit-specific compilers, e.g. for datapaths ([@pang1989datapath]), SRAMs ([@guthaus2016openram]), amplifiers ([@koh1990opasyn])
 - Automated place-and-route layout generation, from unannotated analog circuit netlists ([@chen2020magical] [@kunal2019align])
 - Novel attempts to make use of the digital place and route pipeline ([@weimurmann2021], [@openfasoc])
 
-Surveys and summaries of these techniques such as [@approaches_analog_synthesis89] have now appeared for more than three decades. Figure~\ref{fig:fraunhofer_history}, originally published in [@laygen_ii] and later extended by Fraunhofer IIS, catalogs these efforts across time and several axes of their approach.
+Surveys and summaries of these techniques such as [@spence89] have now appeared for more than three decades. Figure~\ref{fig:fraunhofer-history}, originally published in [@laygenii] and later extended by Fraunhofer IIS, catalogs these efforts across time and several axes of their approach.
 
-![fraunhofer_history](./fig/fraunhofer_history.png "History of Analog Automation")
+![fraunhofer-history](./fig/fraunhofer_history.png "History of Analog Automation")
 
 These research efforts largely fall into one of two large families:
 
@@ -2200,9 +2203,9 @@ This gridding concept can be highly valuable for streamlining the connection-pro
 
 Several popular programming libraries and frameworks epitomize the programmed-custom model. Open source libraries such as [gdstk](https://github.com/heitzmann/gdstk) and its predecessor [gdspy](https://github.com/heitzmann/gdspy) are canonical examples. While both place some emphasis on the GDSII data and file format (even in their names), both expose Python APIs to add, manipulate, and query the content of custom layouts. [Gdsfactory](https://gdsfactory.github.io/) and PHIDL [@McCaughan2021PHIDL] expose similar low-level APIs, with higher-level functionality and emphasis tailored to _photonic_ chips and circuits. (Photonics may be a domain more amenable to the programmed-custom model overall than highly integrated CMOS, as indicated by the survey in [@dikshit2023].)
 
-The most relevant here at UC Berkeley is the Berkeley Analog Generator, BAG ([@chang2018bag2], [@werblun2019]), and related projects such as LAYGO [@laygo]. BAG means different things to different people. One (perhaps founding) view was that BAG codifies the _design process_ which designers tend to very loosely keep collected in memory. This (at least conceptually) includes selecting circuit architectures, applying sizing decisions, and ultimately producing layout. In practice, aways more time, energy, and attention has been dedicated to its efforts to program custom layout. BAG endeavors to enable process-portable layout-programs in which a _circuit_ is codified in a program, and its underlying implementation technology is essentially a _parameter_. That technology parameter is quite complex, generally expressed as a large pile of YAML markup. The portability goals are central to BAG's usage of such a gridded layout abstraction. The verbosity of BAG's programming model, particularly that for routing, was nonetheless cited as a primary shortcoming by [@ye2023_ted_analog]. This work introduces TED, a framework heavily focused on streamlining much of this programmer interface, at the seeming cost of some levels of control. 
+The most relevant here at UC Berkeley is the Berkeley Analog Generator, BAG ([@chang2018bag2], [@werblun2019]), and related projects such as LAYGO [@laygo]. BAG means different things to different people. One (perhaps founding) view was that BAG codifies the _design process_ which designers tend to very loosely keep collected in memory. This (at least conceptually) includes selecting circuit architectures, applying sizing decisions, and ultimately producing layout. In practice, aways more time, energy, and attention has been dedicated to its efforts to program custom layout. BAG endeavors to enable process-portable layout-programs in which a _circuit_ is codified in a program, and its underlying implementation technology is essentially a _parameter_. That technology parameter is quite complex, generally expressed as a large pile of YAML markup. The portability goals are central to BAG's usage of such a gridded layout abstraction. The verbosity of BAG's programming model, particularly that for routing, was nonetheless cited as a primary shortcoming by [@ye2023ted]. This work introduces TED, a framework heavily focused on streamlining much of this programmer interface, at the seeming cost of some levels of control. 
 
-We also note that "the analog way" makes its own use of programmed-custom layout. As illustrated in Figure~\ref{fig:layout_quadrants}, most GUI-drawn custom layout does include programmed-custom components, for its lowest-level primitives. These low-level layouts are commonly called _parametric cells_ or _p-cells_ for short. Typical instances produce a single transistor or passive element, parameterized by its physical dimensions, segmentation, and potentially by more elaborate criteria such as demands for redundant contacts. These low-level p-cells perform the highly invaluable task of producing DRC-compliant designs for the lowest, often most detailed and complicated layers of a technology-stack.
+We also note that "the analog way" makes its own use of programmed-custom layout. As illustrated in Figure~\ref{fig:layout-quadrants}, most GUI-drawn custom layout does include programmed-custom components, for its lowest-level primitives. These low-level layouts are commonly called _parametric cells_ or _p-cells_ for short. Typical instances produce a single transistor or passive element, parameterized by its physical dimensions, segmentation, and potentially by more elaborate criteria such as demands for redundant contacts. These low-level p-cells perform the highly invaluable task of producing DRC-compliant designs for the lowest, often most detailed and complicated layers of a technology-stack.
 
 
 ## Programmed Custom Success Stories (Mostly SRAM Compilers)
@@ -2260,7 +2263,7 @@ pub enum Shape {
 
 In the `layout21::raw` model, a layout is comprised of two kinds of entities: (1) layered geometric elements, and (2) located, oriented instances of other `Layout`s. This "geometry plus hierarchy" model largely tracks that of GDSII and of VLSIR's layout schema. Layout21's in-memory format is designed to be straightforwardly translatable to `vlsir.layout`, and therefore straightforwardly exchangeable between programs and languages.
 
-Layout21's design incorporates a second, seemingly easy to miss fact about layout (even custom layout): it gets big, fast. Perhaps most significant among its principal design decisions, Layout21 is implemented in the Rust [@matsakis_rustlang] language. Rust is a "systems programming" language, designed for applications commonly implemented in C or C++. It compiles to native machine code via an LLVM [@lattner2004] based pipeline similar to that used by the popular Clang C compiler. It endeavors to further enable parallel applications via the inclusion of its _ownership and borrowing_ system, which, among other benefits, produces multi-threaded code which is provably race-free at compile time. Layout21 does not, as of this writing, capitalize on these parallelism opportunities. But many aspects of its design, notably including the implementation language from which it begins, are compatible with readily doing so. More impactfully on Layout21's usefulness, its host language's provable _memory safety_ removes large categories of (often fatal) program errors, generally resulting in program-killing segmentation faults.
+Layout21's design incorporates a second, seemingly easy to miss fact about layout (even custom layout): it gets big, fast. Perhaps most significant among its principal design decisions, Layout21 is implemented in the Rust [@matsakis2014] language. Rust is a "systems programming" language, designed for applications commonly implemented in C or C++. It compiles to native machine code via an LLVM [@lattner2004] based pipeline similar to that used by the popular Clang C compiler. It endeavors to further enable parallel applications via the inclusion of its _ownership and borrowing_ system, which, among other benefits, produces multi-threaded code which is provably race-free at compile time. Layout21 does not, as of this writing, capitalize on these parallelism opportunities. But many aspects of its design, notably including the implementation language from which it begins, are compatible with readily doing so. More impactfully on Layout21's usefulness, its host language's provable _memory safety_ removes large categories of (often fatal) program errors, generally resulting in program-killing segmentation faults.
 
 Rust's safety guarantees are nice, and Layout21 benefits (some) from them. But they are not why Layout21 uses Rust. Moreso it has two attributes unavailable elsewhere: (1) its speed, and (2) its suite of modern development niceties. Package management, documentation, unit testing, sharing, and the like - all the semi-technical facets that actually _get code shared_ - come built in. It also helps that Rust features high "embedability", into both low-level languages such as C, and "slow languages" such as Python and JavaScript. 
 
@@ -2287,9 +2290,9 @@ Most vitally: these abstract views are all that _callers_, i.e. users, of the fu
 Layouts and their abstracts have analogous roles. System-level designers, i.e. those combining packaged chips and PCBs into systems, are deeply familiar with one form of abstract layout: the _datasheet_. Each IC datasheet includes 
 
 - (a) A descriptive port list, indicating each IC pin's function. E.g. "analog supply", "reference clock", or "primary output".
-- (b) A physical diagram, indicating the shape and size of each pin.
+- (b) A physical diagram, indicating the shape and size of each pin, such as that shown in figure~\ref{fig:datasheet-abstract-layout}. 
 
-![datasheet_abstract_layout](fig/datasheet_abstract_layout.png "Abstract Layout, in the Form of a Packaged IC Datasheet")
+![datasheet-abstract-layout](fig/datasheet_abstract_layout.png "Abstract Layout, in the Form of a Packaged IC Datasheet")
 
 The abstract view of IC layouts is most popularly expressed in Library Exchange Format (LEF). LEF is an ascii text format which specifies a combination of layout-abstract libraries, and technology parameters which support them. (The latter subset is often denoted "tech-LEF".) LEF calls its layout-abstract the `MACRO`. Each `MACRO` includes: 
 
@@ -2301,7 +2304,7 @@ The abstract view of IC layouts is most popularly expressed in Library Exchange 
 
 Example LEF format content: 
 
-```
+```text
 MACRO MyCircuit # MACRO (module)
  CLASS BLOCK ;
  ORIGIN 0 0 ;
@@ -2371,13 +2374,13 @@ Such a tool, potentially in concert with more efficient abstract-specification m
 
 ## `Tetris` Layer
 
-Layout21's more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells.
+Layout21's more abstract "tetris" layer operates on rectilinear blocks in regular grid. Placement is performed through a relative-locations API, while routing is performed through the assignment of circuit nets to intersections between routing tracks on adjacent layers. Underlying "tetris blocks" are designed through conventional graphical means, similar to the design process commonly depolyed for digital standard cells. Figure~\ref{fig:tetris_routing} schematically illustrates the tetris concept, including its rectilinear, edge-connected blocks, and track-based connectivity semantics.
 
-![](fig/tetris_routing.png "Tetris Concept")
+![tetris_routing](fig/tetris_routing.png "Tetris Concept")
 
 ### `Tetris` Blocks
 
-"Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. Shapes with "holes" are disallowed, as are those with concave "inlets". Figure~\ref{fig:tetris-blocks} shows example valid and invalid tetris block shapes. 
+"Tetris" blocks are named as such because they can be built of a limited set of shapes and sizes. These include a set of rectilinear shapes similar (but not equal) to the set of convex rectilinear polygons. Shapes with "holes" are disallowed, as are those with concave "inlets". Figure~\ref{fig:tetris-shapes} shows example valid and invalid tetris block shapes. 
 
 
 ![tetris-shapes](./fig/tetris-shapes.png "Valid and Invalid Tetris Block Shapes")
@@ -2425,9 +2428,9 @@ pub enum PortKind {
 }
 ```
 
-Figure~\ref{fig:tetris_port_locs} schematically captures the valid locations, for a block with a vertical layer N and horizontal top layer N+1.
+Figure~\ref{fig:tetris-port-locs} schematically captures the valid locations, for a block with a vertical layer N and horizontal top layer N+1.
 
-![tetris_port_locs](fig/tetris_port_locs.png "Valid Tetris port locations in blue, for a vertical layer N and horizontal top layer N+1")
+![tetris-port-locs](fig/tetris_port_locs.png "Valid Tetris port locations")
 
 Tetris routing is similarly performed through the specification of a series of integer track indices. Tetris layout implementations principally consist of:
 
@@ -2584,7 +2587,7 @@ These cells are highly performance, power, and area constrained, and accordingly
 
 Modern standard cell libraries are large, often comprising thousands of cells. Modern designs also commonly require a variety of such libraries (or at least one even larger library) to make trade-offs between power, area, and performance. One set of cells may consistently choose a higher-performance, higher-power, higher-area design style, while another makes the opposite trade-off on all three. Mixing and matching of these library level trade-offs often cannot be done within a single design macro, or the output of a single PnR layout generation, as libraries making varying trade-offs often feature mutually-incompatible physical designs, e.g. different cell-height "pitches". The aforementioned low-area library may be designed to a regular pitch of X, while the high-performance library to a pitch of Y, where X / Y is not a rational number (or at least not a convenient value of one). There has therefore been a longstanding desire to produce standard cell layouts more automatically, i.e. leveraging PnR-like techniques.
 
-This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex design rules, highly difficult to _a priori_ encode into a solver. The two problems also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@stdcell_routing_sat_burns] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in [@gupta98ilp], ILP based placement "implicitly explores all possible transistor placements". Recently research including [@nvcell] has propsed machine learning techniques to aid in searching these spaces.
+This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex design rules, highly difficult to _a priori_ encode into a solver. The two problems also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@ryzhenko2012] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in [@gupta98ilp], ILP based placement "implicitly explores all possible transistor placements". Recently research including [@nvcell] has propsed machine learning techniques to aid in searching these spaces.
 
 Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each is often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case.
 
@@ -2686,19 +2689,23 @@ AlignHdl21's `Placement` dictates relative instance placements in a format simil
 
 Figure~\ref{fig:alignhdl21-placement1} schematically illustrate the placement scheme. Each of the leaf-level elements are instances of primitives (what ALIGN calls "generators" - adding an N+1th definition for the term) or instances of other child modules. 
 
-Figure~\ref{fig:alignhdl21-placement2}
+Figure~\ref{fig:alignhdl21-placement2} says FIXME!
 
 ![alignhdl21-placement1](./fig/alignhdl21-placement1.png "Conceptual Placement")
+
 ![alignhdl21-placement2](./fig/alignhdl21-placement2.png "Conceptual Placement With Nesting") 
 
 ---
 
 FIXME: either get these into the flow, or ditch em
 
-![align_not_best_placement](./fig/align_not_best_placement.png "Unconstrained Resistor Placement")
-![align_res_alignment](./fig/align_res_alignment.png "Errant resistor alignment")
-![align_res_terms](./fig/align_res_terms.png "Better resistor placement")
-![align_grid_fail](./fig/align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
+![align-not-best-placement](./fig/align_not_best_placement.png "Unconstrained Resistor Placement")
+
+![align-res-alignment](./fig/align_res_alignment.png "Errant resistor alignment")
+
+![align-res-terms](./fig/align_res_terms.png "Better resistor placement")
+
+![align-grid-fail](./fig/align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
 
 
 # Applications
@@ -2713,7 +2720,7 @@ A central challenge throughout these courses of research has been identifying in
 
 ![cktgym-motivation](./fig/cktgym-motivation.jpg "ML and Circuit Research Silos")
 
-Machine learning research has increased by leaps in bounds, both enabling and enabled by a proliferation of high productivity open-source frameworks such as PyTorch ([@NEURIPS2019_bdbca288]) and TensorFlow ([@abadi2016tensorflow]). ML has also been demonstrated to be of great utility across a wide range of domains. Image recognition, text recognition, and large language model based natural language actors serve as prime examples. Machine learning researchers accordingly have a broad menu of domains towards which to direct their efforts. 
+Machine learning research has increased by leaps in bounds, both enabling and enabled by a proliferation of high productivity open-source frameworks such as PyTorch ([@pytorch]) and TensorFlow ([@abadi2016tensorflow]). ML has also been demonstrated to be of great utility across a wide range of domains. Image recognition, text recognition, and large language model based natural language actors serve as prime examples. Machine learning researchers accordingly have a broad menu of domains towards which to direct their efforts. 
 
 Circuits are not the easiest such domain. Much of the requisite knowledge is confined to a comparatively small number of people. Perhaps more impactfully, IC research is both highly laborious to set up (complex toolchains with tons of specialty jargon), and worse still, highly access-controlled. Advanced process technology is the most tightly guarded ingredient. Recent years have increasingly made silicon PDKs (and lack of sharing them) a topic of worldwide public policy. Fabs have acted accordingly. 
 
@@ -2746,17 +2753,17 @@ A common premise in ML-for-circuits research has been optimization of circuit _p
 
 ![folded_opamp](./fig/folded_opamp.png "Rail to Rail Input Op-Amp")
 
-A common and valuable view of this circuit for sake of understanding and learning its operation breaks it into descriptive, functional sub-sections. Figure~\ref{fig:folded_opamp_sections} illustrates a common such breakdown into four sections: one each for the two input stages, one for the output stage, and a peripheral, biasing stage. 
+A common and valuable view of this circuit for sake of understanding and learning its operation breaks it into descriptive, functional sub-sections. Figure~\ref{fig:folded-opamp-sections} illustrates a common such breakdown into four sections: one each for the two input stages, one for the output stage, and a peripheral, biasing stage. 
 
-![folded_opamp_sections](./fig/folded_opamp_sections.png "Op-Amp Separated by Descriptive Sections")
+![folded-opamp-sections](./fig/folded_opamp_sections.png "Op-Amp Separated by Descriptive Sections")
 
 
 
-While the view of figure~\ref{fig:folded_opamp_sections} is powerful for understanding, it is not as valuable for design. Veteran designers of such circuits recognize they are (a) not making 26 independent device sizing decisions, and (b) not designing four independent sub-sections. 
+While the view of figure~\ref{fig:folded-opamp-sections} is powerful for understanding, it is not as valuable for design. Veteran designers of such circuits recognize they are (a) not making 26 independent device sizing decisions, and (b) not designing four independent sub-sections. 
 
-This latter distinction largely hinges on the qualifier _independent_. This circuit and most others in the classical analog genre operate based on device matching between pairs and groups of ostensibly identical transistors. This tactic pairs with both signaling schemes - primarily the prominence of differential signals in on-die contexts - and with surrounding needs such as replica-current biasing. Figure~\ref{fig:folded_opamp_better} groups the op-amp's devices into these matched sub-groups.
+This latter distinction largely hinges on the qualifier _independent_. This circuit and most others in the classical analog genre operate based on device matching between pairs and groups of ostensibly identical transistors. This tactic pairs with both signaling schemes - primarily the prominence of differential signals in on-die contexts - and with surrounding needs such as replica-current biasing. Figure~\ref{fig:folded-opamp-better} groups the op-amp's devices into these matched sub-groups.
 
-![folded_opamp_better](./fig/folded_opamp_better.png "Op-Amp in terms of independent devices and current densities")
+![folded-opamp-better](./fig/folded_opamp_better.png "Op-Amp in terms of independent devices and current densities")
 
 In total, the rail to rail op-amp in fact includes only six unique unit devices:
 
@@ -2965,7 +2972,7 @@ Both the designer-agent and boss-agent run continuously in a server-style mode. 
 - FIXME: write
 - ADC ref: [@nguyen2018adc]
 
-![ro_adc_block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
+![ro-adc-block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
 
 ## USB PHY in Open-Source SkyWater 130nm
 
