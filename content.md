@@ -3,7 +3,7 @@
 
 # Introduction
 
-This is a thesis about integrated circuits, and more specifically about how we design them. The first and likely most important question is _who cares_. ICs were invented in 1959, roughly 65 years before this writing. The whole field may seem old, or may seem fairly combed-over for novel research topics. On Fisher and Pry's "simple model" [@fisher1971simple], now more commonly known as the s-curve, one might reasonably believe we are more or less at the top right. 
+This is a thesis about integrated circuits, and more specifically about how we design them. The first and likely most important question should be _who cares_. ICs were invented in 1959, roughly 65 years before this writing. The whole field may seem old, or may seem fairly combed-over for novel research topics. On Fisher and Pry's "simple model" [@fisher1971simple], now more commonly known as the s-curve, one might reasonably believe we are more or less at the top right. 
 
 ![s-curve](./fig/s-curve.png "Fisher and Pry's S-Curve of Technological Change")
 
@@ -13,7 +13,7 @@ Why? To date, the primary manifestation of our semiconductor-based information a
 
 Moreover, these machines kept getting better, year after year. In 1965's _Cramming More Components onto Integrated Circuits_ [@moore1998cramming], Gordon Moore introduced the now-famous "law" setting the field on an exponential rate of progress for the foreseeable future. But the phrase _Moore’s Law_ has always been off. The inclusion of the term _law_, coupled with the fact that it concerns a complicated scientific-seeming topic, leads people to believe it is some law of nature, like Newton’s laws of motion or the second law of thermodynamics. Or perhaps more like Ahmdal’s law, which sets a theoretical limit on a category of abstract quantities (computer programs). 
 
-What Gordon Moore made in truth was a prediction, and one  about people. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an end failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
+What Gordon Moore made in truth was a prediction, and one about people. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an end failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
 
 Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before as the time of this manuscript, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson & Hennessy's seminal computer architecture text. 
 
@@ -62,7 +62,7 @@ While GitHub has become the face of open-source software _development_, it is al
 
 ## Lessons of the “Generator Era”
 
-The IC research community, particularly its outpost here at UC Berkeley, has spent much of the past decade promoting the role of "generators" as the future's design-mechanism. Just what this term means varies wildly among proponents. One common thread cuts through seemingly all definitions: generators are (at least) _code that executes and produces hardware_. At what level of detail, and on what factors are included, opinions vary widely.
+The IC research community, particularly its outpost here at UC Berkeley, has spent much of the past decade promoting the role of "generators" as the future's design-mechanism. Just what this term means varies widely among proponents. One common thread cuts through seemingly all definitions: generators are (at least) _code that executes and produces hardware_. At what level of detail, and on what factors are included, opinions vary widely.
 
 Two prominent Berkeley-originated projects, Chisel and BAG, serve as prime examples. Chisel is a "hardware construction library" embedded in the Scala programming language, targeting generation of RTL-level circuits. Conceptually one can think of it as a high-powered replacement for the popular HDLs' parametric and behavioral constructs. BAG, in contrast, uses the same term generator to refer to programs which map process-portable custom circuits into (hopefully) arbitrary implementation technologies, generally requiring lengthy simulation-based optimizations (hours or days) along the way.
 
@@ -143,7 +143,8 @@ Protocol buffers [@Varda2008] were introduced first internally to google and the
 2. A data schema description language (SDL), and
 3. A paired binding code-compiler
 
-Several similar, generally related follow-on projects including CapnProto, FlatBuffers, and FlexBuffers each take similar high-level approaches.
+Several similar, generally related follow-on projects including CapnProto, FlatBuffers, and FlexBuffers each take similar high-level approaches. Each includes the three core protobuf components (binary format, schema language, and compiler), differing in a variety of trade-offs in schema feature-set and format design. Such projects have proliferated sufficiently to motivate comparative research [@raghavan2021breakfast] into their relative performance strengths and weaknesses, across a variety of data content.
+
 Meta-programs using protobuf begin by "programming" datatypes in its SDL. This operates much like a programming language in which only struct-definitions are allowed. The core protobuf structure-type `message` indicates its intended usage in communication. The protobuf compiler then accepts this SDL as input, and transforms it into typed "bindings" in a diverse set of programming languages, notably including Python, C++, Rust, JavaScript, and most other popular alternatives. An example protobuf SDL `message` definition:
 
 ```protobuf
@@ -179,8 +180,7 @@ message SampleMessage {
 
 ## The `VLSIR` Design Database Schema
 
-_VLSIR_ is the name of this work's central design database, and of the broader software system which operates on it. VLSIR is designed in ProtoBuf. 
-[Its design database schema](https://github.com/vlsir/vlsir) is authored in the ProtoBuf SDL. A simplified excerpt from the VLSIR schema, defining the `layout.Instance` type, is included below.
+_VLSIR_ is the name of this work's central design database, and of the broader software system which operates on it. VLSIR is designed in ProtoBuf. [Its design database schema](https://github.com/vlsir/vlsir) is authored in the ProtoBuf SDL. A simplified excerpt from the VLSIR schema, defining the `layout.Instance` type, is included below.
 
 ```protobuf
 // # Layout Instance
@@ -194,8 +194,7 @@ message Instance {
 }
 ```
 
-The VLSIR schema defines such types for circuits, layout, spice-class simulation input and output, and process technology.
-The schema format serves as a core exchange medium for a variety of programs and libraries written in a variety of languages, with varying trade-offs between designer productivity, performance, and ease of compatibility with related libraries.
+The VLSIR schema defines such types for circuits, layout, spice-class simulation input and output, and process technology. The schema format serves as a core exchange medium for a variety of programs and libraries written in a variety of languages, with varying trade-offs between designer productivity, performance, and ease of compatibility with related libraries.
 
 
 ## Design of the `VLSIR` Software System
@@ -208,7 +207,7 @@ The roles of front-ends and back-ends differ somewhat between the three. In LLVM
 
 VLSIR's front-ends are also user-facing programming tools. Generally we have eschewed designing altogether new languages (or "DSL"s) and focused on providing libraries in existing, popular languages. These front ends include libraries for circuit design (chapter 3), layout design (chapter 5), and several dedicated libraries targeting specific circuit families. VLSIR's back-ends are generally its interface to existing EDA software and data formats. For example, a widely used back end focuses on executing SPICE-class simulation, parsing and providing its results in schema-defined data structures.
 
-The choice of ProtoBuf affords for a rich diversity of front and back ends, implemented in a diversity of programming languages and featuring diverse needs for performance, portability, and designer productivity.
+The choice of ProtoBuf affords for a rich diversity of front and back ends, implemented in a diversity of programming languages and featuring diverse needs for performance, portability, and designer productivity. Protobuf's efficient binary format is especially invaluable for VLSIR's larget, most complex set of data: that of IC layout. While [@raghavan2021breakfast] finds that alternative serialization systems can outperform protobuf in space-efficiency and in (de)serialization runtime, the differences are, on VLSIR's scale of demands, fairly immaterial. More important to VLSIR, the protobuf ecosystem and surrounding tools are materially more developed than the peer systems compared. At the scale of VLSIR's needs, the shared high-level approach is what dictates the bulk of performance; relative differences inject second-order effects. 
 
 ### VLSIR Circuits 
 
@@ -2116,7 +2115,7 @@ Layout of digital circuits has proven amenable to automatic generation in countl
 - Compile an RTL-level subset of this code to logic gates, in a process typically called _logic synthesis_
 - _Place and route_ a gate-level circuit netlist into physical layout
 
-The combination of logic synthesis and PnR layout serves as a powerful "hardware compiler" from portable HDL code to target silicon technologies. Analogous attempts at the compilation of analog circuits have generally failed, or failed to achieve substantial industry adoption. Despite its comparative simplicity (compared to analog), digital "back end" design remains a laborious process, often requiring professional teams of hundreds for large designs.
+The combination of logic synthesis and PnR layout serves as a powerful "hardware compiler" from portable HDL code to target silicon technologies. Analogous attempts at the compilation of analog circuits have generally failed, or at least failed to achieve substantial adoption. Despite its comparative simplicity (compared to analog), digital "back end" design remains a laborious process, often requiring professional teams of hundreds for large designs.
 
 ## The Analog Way
 
@@ -2212,10 +2211,10 @@ Reference [@fritchmancim2021] illustrates many of the difficulties in using such
 
 It instead proposes an all digital compute in memory macro, in which each "atom" is comprised of a _write only_ SRAM bit cell, plus a single bit "multiplier" implemented with a minimum-sized NOR2 gate. Figure~\ref{fig:cim-concept} through figure~\ref{fig:cim-macro} depict the compute in memory macro's atomic bit-cell and critical building blocks.
 
-![](fig/cim-concept.png "Compute in Memory Concept")
-![](fig/cim-bitcell.png "Compute in Memory Atom/ Bit-Cell")
-![](fig/cim-column.png "Compute in Memory Column")
-![](fig/cim-macro.png "Compute in Memory Macro")
+![cim-concept](fig/cim-concept.png "Compute in Memory Concept")
+![cim-bitcell](fig/cim-bitcell.png "Compute in Memory Atom/ Bit-Cell")
+![cim-column](fig/cim-column.png "Compute in Memory Column")
+![cim-macro](fig/cim-macro.png "Compute in Memory Macro")
 
 Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory. This example from [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else. Contemporary work including [@kumar2023] further extended layout21 and [@fritchmancim2021] to produce an SRAM compiler framework in SkyWater's 130nm open-source technology.
 
@@ -2504,21 +2503,28 @@ Each `RelativePlace` depends upon one of more other `Placeable` objects via its 
 
 ### Tetris-Mos Gate Array Circuit Style
 
-In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation.
+In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. Figures~\ref{fig:tetris_pmos_stack} and ~ref{fig:tetris_circuit} depict the tetris-MOS layout style in the SkyWater 130 open-source technology, and the use of the style in a simple amplifier design.  
 
-![](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+\setkeys{Gin}{width=.5\linewidth}
 
-![](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
+![tetris_pmos_stack](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+
+![tetris_circuit](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
+
+This style of MOS circuit design has often been called the _gate array_ style, in reference to its regular pattern of identical devices. The style is much more common and popular in digital circuits than in analog ones, in which device lengths are commonly varied as a tactic to enhance analog performance metrics, e.g. intrinsic gain. 
+
+The gate array style is however of great value to programmed layout contexts. Allowances for arbitrary primitive-level device geometry can be incorporated in principle, but tend to push an even greater burden onto user-level programs to manage physical device dimensions. This also heavily constrains user-programs capacity for process-portability. Many libraries in the space, Tetris included, instead use an approach dictated by regular grids and regular primitive-device sizes. Commonly the gate-dimension grid is set to the minimum gate pitch, or a similar pitch as used by digital circuits. 
+
+Regaining the key analog performance metrics of longer-channel MOS devices is then acheived through _gate stacking_. This approach recognizes the deep similarities between MOS transistors of, for example, length L, versus a series combination of ten transistors of length L/10. In most classical MOS models, especially at analog-domain current-densities (i.e. far less than the saturation current), the two are functionally identical. Modern device-engineering techniques make them less identical, but in many cases the series-stack no less good. (And in many cases, better.)
+
+The combination of regular gate-array device sizes and gate stacking is central to Tetris's programmed-custom model. It is also central to the analog layout-compilation methods detailed in chapter 7.
+
+\setkeys{Gin}{width=.75\linewidth}
 
 
 # Compiled (Analog) Layout
 
-![align_not_best_placement](./fig/align_not_best_placement.png "Unconstrained Placement Result. 100 unit resistors, arranged in 10 parallel strands of 10 in series.")
-![align_res_alignment](./fig/align_res_alignment.png "Errant resistor alignment")
-![align_res_terms](./fig/align_res_terms.png "Better resistor placement")
-![align_grid_fail](./fig/align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
-
-Attempts to compile analog and otherwise "custom" circuit layout are not new. Research and commercial efforts have included both analog circuit _synthesis_, e.g. from high-level specs or other terse descriptions, as well as netlist to layout compilation. Here we focus on the latter. And we note the popular "digital way" of producing layout has (a) the same form as the analog-layout compilation problem: from an input circuit netlist and technology info, produce a layout implementation, and (b) has ubiquitously succeeded. To make digital IC layout is essentially synonymous with using automatic PnR. 
+Attempts to compile analog and otherwise "custom" circuit layout are far from new. Research and commercial efforts have included both analog circuit _synthesis_, e.g. from high-level specs or other terse descriptions, as well as netlist to layout compilation. Here we focus on the latter. And we note the popular "digital way" of producing layout has (a) the same form as the analog-layout compilation problem: from an input circuit netlist and technology info, produce a layout implementation, and (b) has ubiquitously succeeded. To make digital IC layout is essentially synonymous with using automatic PnR. 
 
 The vast gulf in success between digital and analog layout automation begs a core question: why does PnR work for digital, but fail for analog?
 
@@ -2530,13 +2536,13 @@ First, PnR compilers typically target _synchronous_ digital circuits, in which a
 - _Setup time constraints_ dictate that each combinational logic path complete propagation within the clock period. This generally manifests as a _maximum_ propagation delay through any combinational path.
 - _Hold time constraints_ demand that each path completes outside of the state elements' "blind windows", during which they are subject to errant sampling. This generally manifests as a _minimum_ propagation delay through any combinational path.
 
-In an important sense for the optimization required in PnR, each and every digital circuit boils down to something like Figure~\ref{fig:static-timing}. Closure trajectories, commonly called _arcs_, include an initial "launch" state element (shown here as a flip-flop), a combinational logic path, and a final "capture" state element (which also generally serves as the launch element for a further path). 
+In an important sense for the optimization required in PnR, each and every digital circuit boils down to something like Figure~\ref{fig:static-timing}. Signal trajectories, commonly called _arcs_, include an initial "launch" state element (shown here as a flip-flop), a combinational logic path, and a final "capture" state element (which also generally serves as the launch element for a further path). 
 
 ![static-timing](./fig/static-timing.png "Conceptual view of how the static timing closure problem sees synchronous digital circuits")
 
 This _timing closure_ problem is parameterized by a small set of numbers - principally the clock period and a few parameters which dictate logic-cell delays (power-supply voltage, process "corner", etc.). Several other parameters, such as skews throughout the clock network, inject second-order effects.
 
-Second, timing closure has been proven to be efficiently computable, particularly via _static timing analysis_ (STA). While the transistor-level simulation scales incredibly poorly to million-transistor circuits, the combination of synchronous digital logic and STA avoids it altogether. In the STA methodology, the largest circuit which needs direct transistor-level simulation is the largest standard logic cell, e.g. a flip-flop. Each element of the logic-cell library is characterized offline for delay, setup and hold time, and any other relevant timing metrics. These results are summarized in (typically tabular) _static timing models_ which capture their dependence on key variables such as capacitive loading or incoming transition times.
+Second, timing closure has been proven to be efficiently computable, particularly via _static timing analysis_ (STA). While transistor-level simulation scales incredibly poorly to million-transistor circuits, the combination of synchronous digital logic and STA avoids it altogether. In the STA methodology, the largest circuit which needs direct transistor-level simulation is the largest standard logic cell. Generally this is on the order of the size of a flip-flop, or a few dozen transistors. Each element of the logic-cell library is characterized offline for delay, setup and hold time, and any other relevant timing metrics. These results are summarized in (typically tabular) _static timing models_ which capture their dependence on key variables such as capacitive loading or incoming transition times.
 
 With these timing model libraries in tow, STA's evaluation of timing constraints boils down to:
 
@@ -2560,29 +2566,25 @@ Contrast this with analog circuits:
 2. Transistor-level simulation is the sole means of evaluating those metrics;
 3. Even the production of simulation collateral and metric extraction is highly circuit and context-specific
 
-In short: fail across the board. Analog circuits have no "analog" to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each have depends on wholly different criteria. These criteria generally lack any efficient surrogates; their success can generally only be evaluated through transistor-level simulation. Such simulations scale poorly with the number of circuit elements, quickly requiring hours to complete on feasible contemporary hardware. Moreover their efficiency is dramatically reduced by the inclusion of _parasitic elements_, the very layout information that a PnR solver is attempting to optimize. Including a sufficiently high-fidelity simulation model for making productive layout decisions generally means requiring extensive runtimes. Embedding such evaluations in an iterative layout-optimizer has proven too costly to ever be deployed widely. Machine learning based optimizers such as BagNET [@bagnet] use a combination of wholesale removal of layout elements (i.e. "schematic level" simulations) and lower-cost surrogate simulations (e.g. a DC operating point standing in for a high-frequency response) to evaluate design candidates.
+In short: fail across the board. Analog circuits have no "analog" (ahem) to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each depends on wholly different criteria. 
+
+These criteria also generally lack any efficient surrogates. Their success can generally only be evaluated through transistor-level simulation. Such simulations scale poorly with the number of circuit elements, quickly requiring hours to complete on feasible contemporary hardware. Moreover their efficiency is dramatically reduced by the inclusion of _parasitic elements_, the very layout information that a PnR solver is attempting to optimize. Including a sufficiently high-fidelity simulation model for making productive layout decisions generally means requiring extensive runtimes. Embedding such evaluations in an iterative layout-optimizer has proven too costly to ever be deployed widely. Machine learning based optimizers such as BagNET [@bagnet] use a combination of wholesale removal of layout elements (i.e. "schematic level" simulations) and lower-cost surrogate simulations (e.g. a DC operating point standing in for a high-frequency response) to evaluate design candidates.
 
 ## Semi-Related: PnR of Digital Logic "Standard Cells"
 
 Analog PnR has a semi-analogous sister problem: creation of the _cell libraries_ used by the digital PnR flow. The digital flow relies on the availability of a library of logic gates which can excute the core combinational logic functions (e.g. NAND, NOR, INV), sequential data storage (e.g. flip-flops and latches), and often more elaborate combinations thereof (e.g. and-or-invert operations or multi-bit storage cells). Common practice is to design these circuits, or at least their layouts, "the analog way", in graphical, polygon-by-polygon mode.
 
-These cells are highly performance, power, and area constrained, and accordingly provide highly challenging design-rule optimization problems in designing their layouts. This effort is highly leveraged. Like the bit-cells of widely used SRAM, the most core standard logic cells will be reused billions, sometimes trillions of times over.
+These cells are highly performance, power, and area constrained, and accordingly provide highly challenging design-rule optimization problems in designing their layouts. This effort is highly leveraged. Like the bit-cells of widely used SRAM, the most core standard logic cells are reused billions, sometimes trillions of times over.
 
 Modern standard cell libraries are large, often comprising thousands of cells. Modern designs also commonly require a variety of such libraries (or at least one even larger library) to make trade-offs between power, area, and performance. One set of cells may consistently choose a higher-performance, higher-power, higher-area design style, while another makes the opposite trade-off on all three. Mixing and matching of these library level trade-offs often cannot be done within a single design macro, or the output of a single PnR layout generation, as libraries making varying trade-offs often feature mutually-incompatible physical designs, e.g. different cell-height "pitches". The aforementioned low-area library may be designed to a regular pitch of X, while the high-performance library to a pitch of Y, where X / Y is not a rational number (or at least not a convenient value of one). There has therefore been a longstanding desire to produce standard cell layouts more automatically, i.e. leveraging PnR-like techniques.
 
-This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex, difficult to a priori encode in a set of PnR rules. They also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@stdcell_routing_sat_burns] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in [@gupta98ilp], ILP based placement "implicitly explores all possible transistor placements". Recently research including [@nvcell] has propsed machine learning techniques to aid in searching these spaces.
+This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex design rules, highly difficult to _a priori_ encode into a solver. The two problems also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@stdcell_routing_sat_burns] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in [@gupta98ilp], ILP based placement "implicitly explores all possible transistor placements". Recently research including [@nvcell] has propsed machine learning techniques to aid in searching these spaces.
 
-Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each if often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case.
+Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each is often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case.
 
 Morever, these circuits often lack such clear optimality goals. Perhaps more important, even if they do have such a goal - e.g. that for "perfect" symmetry - solutions which acheive these optima are often fairly evident to designers knowledgeable of the circuit. In other words, the effort of the optimizer - which tends to be _slow_, for all but the smallest circuits - tends to go to waste. Where a standard-cell placer can, or at least is more likely to, find counterintuitive solutions that can be proven superior, analog PnR is much less likely to do so. Even when it does, it generally must meet another, highly inscrutable optimailty constraint: the opinion of its analog designer.
 
 ## Ramifications for Analog PnR
-
-- Can't get as closed of a loop, no timing-style criteria
-- More designer involvement 
-- 
-
----
 
 Perhaps in part through first recongnizing these limitations, Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solvers. The BAG project and its programmed-custom model has been the primary artifact. Prior generations of libraries and frameworks, often called _silicon compilers_, (e.g. [@man1986cathedral]), or more specific circuit-focused families such as _datapath compilers_ and _SRAM compilers_ adopted similarly conceptual approaches.
 
@@ -2599,23 +2601,19 @@ Tetris, in contrast, takes the approach of digital PnR: it is agnostic about the
 - Theres a lotta analog constraints
 - Hdl21 is a great place to store all that metadata
 
-
 The relatively sad state of analog layout production does offer
 Think of a typical design feedback loop:
 
 1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
-2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (typical for pro's). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
+2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
 3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
    a. Evaluations all succeed, congratulations! Circuit's done.
    b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
    c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
 
-The good news: we need not automate the entirety of this process to make valuable progress.
+The good news: we need not automate the entirety of this process to make valuable progress. Improving any of them helps. 
 
-- VLSIR and Hdl21 improve step 1,
--
-
-BAG began with more or less this intent, to automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for _software_ to perform step 2. The goal is to _perform step 2 more effectively than the manual methods_. This is where the programmed-custom systems tend to fail.
+The BAG project began with the intent to (more or less) automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for _software_ to perform step 2. The goal is to _perform step 2 more effectively than the manual methods_. This is where the programmed-custom systems tend to fail.
 
 
 ## `AlignHdl21`
@@ -2683,6 +2681,17 @@ AlignHdl21's `Placement` dictates relative instance placements in a format simil
 Figure~\ref{fig:alignhdl21-placement1} illustrates a conceptual placement. Each of the leaf-level elements are instances of primitives (what ALIGN calls "generators" - adding an N+1th definition for the term) or instances of other child modules. 
 
 ![alignhdl21-placement1](./fig/alignhdl21-placement1.jpg "Conceptual Placement")
+
+
+
+---
+
+FIXME: either get these into the flow, or ditch em
+
+![align_not_best_placement](align_not_best_placement.png "Unconstrained Placement Result. 100 unit resistors, arranged in 10 parallel strands of 10 in series.")
+![align_res_alignment](align_res_alignment.png "Errant resistor alignment")
+![align_res_terms](align_res_terms.png "Better resistor placement")
+![align_grid_fail](align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
 
 
 # Applications
