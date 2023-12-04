@@ -28,7 +28,9 @@ The combination means one thing: there will be much more need for much more spec
 
 Integrated circuits are "integrated" in the sense that more than one - and often in current practice, more than ten orders of magnitude more than one - circuit component is integrated in a single silicon die.
 
-The most detailed representation of these circuits, and the sole representation sufficiently detailed for fabrication, is commonly called _layout_. IC layout is a chip's physical blueprint. The nature of silicon manufacturing allows for representing these blueprints in "2.5D" terms. Each silicon wafer is extremely uniform in one of its three axes. This axis extends into and out of the plane of the die surface, and is commonly referred to as the z-axis. This z-axis is typically split into a discrete number of _layers_. These layers refer to a variety of physical features, such as metal connections, insulators there-between, ion injections which form transistor junctions, etc. The IC "x" and "y" dimensions, in constast, span the surface of the die, and are much more free-form to be specified by the IC designer. These two axes typically allow for nearly free-form closed 2D polygons. An IC blueprint is therefore conceptually comprised of a list of such polygons, each affixed with a z-axis layer annotation. Figures ~\ref{fig:layout2d} and ~\ref{fig:layout3d} depicts a typical IC layout visualization and the three-dimensional structure that it represents.
+The most detailed representation of these circuits, and the sole representation sufficiently detailed for fabrication, is commonly called _layout_. IC layout is a chip's physical blueprint. The nature of silicon manufacturing allows for representing these blueprints in "2.5D" terms. Each silicon wafer is extremely uniform in one of its three axes. This axis extends into and out of the plane of the die surface, and is commonly referred to as the z-axis. This z-axis is typically split into a discrete number of _layers_. These layers refer to a variety of physical features, such as metal connections, insulators there-between, ion injections which form transistor junctions, etc. The IC "x" and "y" dimensions, in constast, span the surface of the die, and are much more free-form to be specified by the IC designer. These two axes typically allow for nearly free-form closed 2D polygons. An IC blueprint is therefore conceptually comprised of a list of such polygons, each affixed with a z-axis layer annotation. Figure~\ref{fig:layout2d} depicts a typical IC layout visualization.
+
+Figure~\ref{fig:layout3d} expands this view to the three-dimensional structure that it represents.
 
 ![layout2d](./fig/layout2d.png "Typical IC Layout Visualization. X and Y axes represent dimensions on-die. Colors represent z-axis layer annotations.")
 
@@ -1688,7 +1690,9 @@ Schematics consist of:
 
 The element-library holds similar content to that of SPICE: transistors, resistors, capacitors, voltage sources, and the like. It is designed in concert with Hdl21's [primitive element library](https://github.com/dan-fritchman/Hdl21#primitives-and-external-modules).
 
-The complete element library is shown in Figure~\ref{fig:schematic-symbols}. (Figure~\ref{fig:schematic-symbols} is itself also a valid SVG schematic, rendered by popular authoring platform overleaf.com's Latex compilation pipeline.)
+The complete element library is shown in Figure~\ref{fig:schematic-symbols}. 
+
+(Figure~\ref{fig:schematic-symbols} is itself also a valid SVG schematic, rendered by popular authoring platform overleaf.com's Latex compilation pipeline.)
 
 \begin{figure}[schematic-symbols]
   \centering
@@ -2119,11 +2123,11 @@ The combination of logic synthesis and PnR layout serves as a powerful "hardware
 
 ## The Analog Way
 
-The analog way, in contrast, shares little between circuits. No "compiler" is invoked to produce layout from a more abstract description. Instead designers are free to produce essentially any combination of 2.5 dimensional shapes in a custom graphical environment. Only a small fraction of these combinations will conform to a given technology's design rules; this is a major part of the effort. Designers are free to produce device sizing, placement, and routing essentially as they see fit - at the primary cost of needing to produce it.
+The analog way, in contrast, shares little between circuits. No "compiler" is invoked to produce layout from a more abstract description. Instead designers are free to produce essentially any combination of 2.5 dimensional shapes in a custom graphical environment. Only an infinitesimally small fraction of possible combinations will conform to a given technology's design rules. This is a major part of the effort. Designers are free to produce device sizing, placement, and routing essentially as they see fit - at the primary cost of needing to produce it.
 
-Notably, code remains a material part of the analog method; it merely occupies a very different place in the design hierarchy. Figure~\ref{fig:layout_quadrants} the relationship between code-based and graphically-based methods in the digital and analog flows. Perhaps counterintuitively, the two are used in diametrically opposite portions of the design hierarchy. The digital flow uses code - the combination of a PnR "layout solver" and designer-dictated constraints - to produce the upper, "module" levels of a design hierarchy. Its low levels, principally comprised of "standard cell" logic gates, are conversely designed with graphical methods highly similar to the analog flow. Said analog flow, in contrast, uses these graphical methods for its "module layers" (e.g. amplifiers, data converters), while relying on code-based \_parametric cells* ("p-cells") for its lowest levels (e.g. single transistors or passive elements).
+Notably, code remains a material part of the analog method; it merely occupies a very different place in the design hierarchy. Figure~\ref{fig:layout_quadrants} the relationship between code-based and graphically-based methods in the digital and analog flows. Perhaps counterintuitively, the two are used in diametrically opposite portions of the design hierarchy. The digital flow uses code - the combination of a PnR "layout solver" and designer-dictated constraints - to produce the upper, "module" levels of a design hierarchy. Its low levels, principally comprised of "standard cell" logic gates, are conversely designed with graphical methods highly similar to the analog flow. Said analog flow, in contrast, uses these graphical methods for its "module layers" (e.g. amplifiers, data converters), while relying on code-based _parametric cells_ (commonly called "p-cells") for its lowest levels (e.g. single transistors or passive elements).
 
-Why? In short: in modern technologies, the lowest levels are the hardest - both to optimize, and to meet design-rule correctness in the first place. The digital flow uses hand-crafted standard logic cells which can be highly tuned and co-designed with the underlying technology, recognizing that their design effort will be amortized billions of times over. Analog design is a lower-volume industry. It is much more difficult to amortize the manual production of each low-level transistor polygon. This is generally saved for the most performance-critical devices, e.g. those in high-speed RF transceivers. Code based "p-cells" instead produce these polygons from a set of input parameters similar to those provided to schematic designers. In addition to schematic-level parameters, principally including device sizing, these programs often add layout-specific parameters such as requirements for segmentation ("multi-fingering"), overlap, abutment, or proximity of contacts. The placement of and interconnect between these p-cells is then performed in the custom graphical flow.
+Why? In short: in modern technologies, the lowest levels are the hardest - both to optimize, and to meet design-rule correctness in the first place. The digital flow uses hand-crafted standard logic cells which can be highly tuned and co-designed with the underlying technology, recognizing that their design effort will be amortized billions of times over. Producing analog layout is a lower-volume proposition. It is much more difficult to amortize the manual production of each low-level transistor polygon. This is generally saved for the most performance-critical devices, e.g. those in high-speed RF transceivers. Code based "p-cells" instead produce these polygons from a set of input parameters similar to those provided to schematic designers. In addition to schematic-level parameters, principally including device sizing, these programs often add layout-specific parameters such as requirements for segmentation ("multi-fingering"), overlap, abutment, or proximity of contacts. The placement of and interconnect between these p-cells is then performed in the custom graphical flow.
 
 ![layout_quadrants](fig/layout_quadrants.png "Relationship Between Custom and Programmed Layout Generation in the Digital and Analog Design Flows")
 
@@ -2209,7 +2213,7 @@ The genesis of the layout21 library was in fact to produce a similar set of circ
 
 Reference [@fritchmancim2021] illustrates many of the difficulties in using such analog signal processing techniques. Particularly, while the analog-domain mathematical operations can often be performed highly effectively, they ultimately must produce digital data to participate in broader digital systems. These data conversion steps can serve as bottlenecks to both power and area. While [@rekhi2019] provided a lower bound on this "conversion cost", based on applying observed state of the art data converter metrics. But these bounds are likely far too permissive. Such machine learning acceleration systems rarely feature the trade-offs required for state of the art data conversion, which often requires highly complex calibration and area unto itself.
 
-It instead proposes an all digital compute in memory macro, in which each "atom" is comprised of a _write only_ SRAM bit cell, plus a single bit "multiplier" implemented with a minimum-sized NOR2 gate. Figure~\ref{fig:cim-concept} through figure~\ref{fig:cim-macro} depict the compute in memory macro's atomic bit-cell and critical building blocks.
+It instead proposes an all digital compute in memory macro, in which each "atom" is comprised of a _write only_ SRAM bit cell, plus a single bit "multiplier" implemented with a minimum-sized NOR2 gate. Figure~\ref{fig:cim-concept} depicts the compute in memory macro's atomic bit-cell and critical building blocks.
 
 ![cim-concept](fig/cim-concept.png "Compute in Memory Concept")
 ![cim-bitcell](fig/cim-bitcell.png "Compute in Memory Atom/ Bit-Cell")
@@ -2503,13 +2507,15 @@ Each `RelativePlace` depends upon one of more other `Placeable` objects via its 
 
 ### Tetris-Mos Gate Array Circuit Style
 
-In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. Figures~\ref{fig:tetris_pmos_stack} and ~ref{fig:tetris_circuit} depict the tetris-MOS layout style in the SkyWater 130 open-source technology, and the use of the style in a simple amplifier design.  
+In a co-designed circuit style, all unit MOS devices are of a single geometry. Parameterization consists of two integer parameters: (a) the number of unit devices stacked in series, and (b) the number of such stacks arrayed in parallel. The core stacked-MOS cells are physically designed similar to digital standard cells, including both the active device stack and a complementary dummy device. This enables placement alongside and directly adjacent to core logic cells, and makes each analog layout amenable to PnR-style automation. Figure~\ref{fig:tetris_stack} shows the tetris-MOS layout style in the SkyWater 130 open-source technology. 
+
+Figure~\ref{fig:tetris_circuit} depicts its use in a simple amplifier design.  
 
 \setkeys{Gin}{width=.5\linewidth}
 
-![tetris_pmos_stack](fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
+![tetris_stack](./fig/tetris_pmos_stack.jpg "MOS Stack Design in Standard Logic Cell Style")
 
-![tetris_circuit](fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
+![tetris_circuit](./fig/tetris_circuit.png "Amplifier Layout in the Tetris Design Style")
 
 This style of MOS circuit design has often been called the _gate array_ style, in reference to its regular pattern of identical devices. The style is much more common and popular in digital circuits than in analog ones, in which device lengths are commonly varied as a tactic to enhance analog performance metrics, e.g. intrinsic gain. 
 
@@ -2678,20 +2684,21 @@ AlignHdl21's `Placement` dictates relative instance placements in a format simil
 - A name-based reference to any of these, or to any of the elements of the virtual hierarchy which can be constructed through ALIGN's `Group` functionality, or 
 - A nested column (row)
 
-Figure~\ref{fig:alignhdl21-placement1} illustrates a conceptual placement. Each of the leaf-level elements are instances of primitives (what ALIGN calls "generators" - adding an N+1th definition for the term) or instances of other child modules. 
+Figure~\ref{fig:alignhdl21-placement1} schematically illustrate the placement scheme. Each of the leaf-level elements are instances of primitives (what ALIGN calls "generators" - adding an N+1th definition for the term) or instances of other child modules. 
 
-![alignhdl21-placement1](./fig/alignhdl21-placement1.jpg "Conceptual Placement")
+Figure~\ref{fig:alignhdl21-placement2}
 
-
+![alignhdl21-placement1](./fig/alignhdl21-placement1.png "Conceptual Placement")
+![alignhdl21-placement2](./fig/alignhdl21-placement2.png "Conceptual Placement With Nesting") 
 
 ---
 
 FIXME: either get these into the flow, or ditch em
 
-![align_not_best_placement](align_not_best_placement.png "Unconstrained Placement Result. 100 unit resistors, arranged in 10 parallel strands of 10 in series.")
-![align_res_alignment](align_res_alignment.png "Errant resistor alignment")
-![align_res_terms](align_res_terms.png "Better resistor placement")
-![align_grid_fail](align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
+![align_not_best_placement](./fig/align_not_best_placement.png "Unconstrained Resistor Placement")
+![align_res_alignment](./fig/align_res_alignment.png "Errant resistor alignment")
+![align_res_terms](./fig/align_res_terms.png "Better resistor placement")
+![align_grid_fail](./fig/align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
 
 
 # Applications
