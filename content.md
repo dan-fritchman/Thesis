@@ -1,10 +1,9 @@
 
-\setkeys{Gin}{width=.75\linewidth}
-
 # Introduction
 
 This is a thesis about integrated circuits, and more specifically about how we design them. The first and likely most important question should be _who cares_. ICs were invented in 1959, roughly 65 years before this writing. The whole field may seem old, or may seem fairly combed-over for novel research topics. On Fisher and Pry's "simple model" [@fisher1971simple], now more commonly known as the s-curve, one might reasonably believe we are more or less at the top right. 
 
+\setkeys{Gin}{width=.5\linewidth}
 ![s-curve](./fig/s-curve.png "Fisher and Pry's S-Curve of Technological Change")
 
 In truth, the field stands to become far more important - and far more ripe for design-level breakthroughts - in the next 65 years than it was in its first 65. 
@@ -15,13 +14,16 @@ Moreover, these machines kept getting better, year after year. In 1965's _Crammi
 
 What Gordon Moore made in truth was a prediction, and one about people. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an end failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
 
-Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but aways before as the time of this manuscript, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including Figure~\ref{fig:patterson_moore} from Patterson \& Hennessy's seminal computer architecture text. 
+Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but at the time of this writing, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including figure~\ref{fig:patterson_moore}, excerpted from Patterson \& Hennessy's seminal computer architecture text. 
 
+\setkeys{Gin}{width=\linewidth}
 ![patterson_moore](./fig/patterson_moore.png "Patterson and Hennessy's Depiction of the End of Moore's Law")
 
 The end of the Moore Era coincided with large swaths of human activity just catching on to just how useful all this computation could be. And perhaps more impactfully, other swathes realized that incredibly computation-intensive methods (i.e. those of machine learning) proved aways more suitable to a variety of tasks than prior, "expert" programmed methods. 
 
-The combination means one thing: there will be much more need for much more specialized, task-centric hardware. Where software "ate" the prior era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. 
+The combination means one thing: there will be much more need for much more specialized, task-centric hardware. Where software "ate" the last era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. 
+
+While not especially popular, this outlook is also not novel. The same Patterson \& Hennessy responsible for cataloging the wind-down shown in figure~\ref{fig:patterson_moore} went so far as to deem the combination of developments the dawn of a "new golden age"  [@hennessy2019new]. Whether we view this as a challenge or opportunity, the world of the coming decades will need far more customized electronic hardware than that of decades-past. Integrated circuits will continue to be at their core. ICs are also among the most laborious, most capital intensive, most challenging parts to design - and especially to get right. We will need a lot - perhaps 10x or 100x - more of them. 
 
 
 ## The IC Design Process
@@ -34,6 +36,7 @@ Figure~\ref{fig:layout3d} expands this view to the three-dimensional structure t
 
 ![layout2d](./fig/layout2d.png "Typical IC Layout Visualization. X and Y axes represent dimensions on-die. Colors represent z-axis layer annotations.")
 
+\setkeys{Gin}{width=.5\linewidth}
 ![layout3d](./fig/layout3d.png "Three-Dimensional IC Blueprint")
 
 While layout is the sole language comprehensible for IC fabrication, it is generally far too detailed for much of IC design. The silicon design and closely related electronic design automation (EDA) software fields have, over time, produced a substantial stack of software, concepts, and practices which allow for IC-design at far more abstract levels than that of physical layout. Different subsets of the IC field have proven more and less amenable to these improvements.
@@ -44,6 +47,8 @@ Each circuit component (or *element*) generally has a short-form conceptual and 
 
 In a loose analogy to software, layout is akin to machine code, It is the sole format understood by the underlying implementation technology (in software, the processor; in silicon, the fab). Circuits are then analogous to the assembly language. Each circuit (and assembly) is specific to its underlying implementation technology. 
 
+## The Analog Bottleneck
+
 For decades both software and hardware have searched for more productive, higher levels of abstraction. These efforts have proven more and less successful in different sub-stripes of IC design. The next key layer, popularized in the 1980s, maps roughly to "C-level" languages popular for low-level and "systems" software. Popular hardware description languages (HDLs) introduced around this time include Verilog and VHDL. Each allow for technology-independent descriptions of digital circuits. This paradigm also introduces the _logical_ (rather than the circuit) level as the primary one of simulation and verification. Discrete-event simulation further enhances the efficiency of this verification paradigm. 
 
 In addition to enhancing the efficacy of verification, the digital HDLs provided a dramatic improvement in workflow to produce layout. In the typical _digital back-end flow_, HDL code is transformed into layout by way of an optimizing "layout compiler". Designers provide a combination of register-transfer level (RTL) HDL code, plus a set of physical constraints and/or goals. These two primary inputs are fed to a compilation pipeline, generally comprising a combination of _logic synthesis_ which translates RTL to gate-level netlists, and "place and route" (PnR) layout compilation. 
@@ -53,7 +58,7 @@ Notably, the benefits afforded by the 80s-era HDLs accrue to digital circuits, b
 Analog and custom circuits have accordingly long been acknowledged as a bottleneck in the IC design process. In the author's anecdotal experience, analog efforts tend to produce (notably crude) designer productivity metrics (e.g. transistor-count per designer-month) on the order of 100-1000x lower than their digital peers. This may be, and in the author's opinion is likely to be, the bottleneck to the post-Moore era. Many other research efforts, including many substantial sources of inspriation here, endeavor to further raise the productivity and abstraction-level of the digital flow. This work focuses on analog and custom circuits. 
 
 
-## Dad, When We Grow Up, Can We Be Software ?
+## When We Grow Up, Can We Be Software?
 
 While digital IC design productivity outpaced its analog brethren decades ago, it pales in comparison to a closely adjacent field: software. One dramatic change over the same timeframe: the "as a service" (SaaS) distribution model has made many software libraries dramatically easier to integrate. In the service-based model, library-level code is not distributed to its users. Instead it is used to enable network-based API calls to an author-managed server. 
 
@@ -201,6 +206,7 @@ The VLSIR schema defines such types for circuits, layout, spice-class simulation
 
 ## Design of the `VLSIR` Software System
 
+\setkeys{Gin}{width=\linewidth}
 ![vlsir-system](./fig/vlsir-system.png "The VLSIR System")
 
 The broader VLSIR system, schematically depicted in Figure~\ref{fig:vlsir-system}, is heavily inspired by the LLVM [@lattner2004] compiler platform, and by the FIRRTL system ([@izraelevitz2017], [@li2016]) developed shortly beforehand by colleagues here at UC Berkeley. Like LLVM and FIRRTL, VLSIR defines a central design interchange format. VLSIR's is defined in the protocol buffer SDL. All three projects build this central data layer for the purposes of decoupling and reusing diverse _front and back ends_.
@@ -1235,7 +1241,7 @@ Here the transistors to be instantiated in `Inv` are provided as parameters. Thi
 
 The `hdl21.pdk` package inclues a three-valued `Corner` enumerated type and related classes for describing common process-corner variations. 
 
-```
+```text
 Corner = TYP | SLOW | FAST
 ```
 
@@ -1243,7 +1249,7 @@ Typical technologies includes several quantities which undergo such variations. 
 
 Quantities which can be varied are often keyed by a `CornerType`. 
 
-```
+```text
 CornerType = MOS | CMOS | RES | CAP | ...
 ```
 
@@ -1256,7 +1262,7 @@ class CmosCornerPair:
     pmos: Corner
 ```
 
-```
+```text
 CmosCorner = TT | FF | SS | SF | FS
 ```
 
@@ -1740,7 +1746,7 @@ For a schematic to produce a valid Hdl21 generator, the result of evaluating eac
 
 \begin{figure}
   \centering
-  \includesvg[width=200pt]{./fig/schematic-inverter.sch.svg}
+  \includesvg[width=400pt]{./fig/schematic-inverter.sch.svg}
   \caption{Example SVG Schematic}
   \label{fig:schematic-inverter}
 \end{figure}
@@ -1901,7 +1907,7 @@ All schematic elements operate on a "Manhattan style" orthogonal grid. Orient-ab
 
 These orientations are translated to and from SVG `transform` attributes. SVG schematics use the `matrix` transform to capture the combination of orientation and location. SVG `matrix` transforms are [specified in six values](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform#matrix) defining a 3x3 matrix. Transforming by `matrix(a,b,c,d,e,f)` is equivalent to multiplying a vector `(x, y, 1)` by the matrix:
 
-```
+```text
 a c e
 b d f
 0 0 1
@@ -1909,7 +1915,7 @@ b d f
 
 Note that this is also equivalent to a multiplication and addition of the vector two-dimensional vector `(x,y)`:
 
-```
+```text
 | a c | | x | + | e |
 | b d | | y |   | f |
 ```

@@ -22,7 +22,6 @@
     Title = {Closing the Analog Design Loop with the Berkeley Analog Generator},
     School = {EECS Department, University of California, Berkeley},
     Year = {2019},
-    Month = {May},
     URL = {http://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-23.html},
     Number = {UCB/EECS-2019-23},
     Abstract = {Analog and mixed signal IC design is notoriously difficult and slow due in large part to the layout. Modern integrated circuit fabrication with such small devices can have significant interconnect parasitics that can drastically aﬀect the behavior of a circuit’s design. The implication is that simulations of circuit’s behavior are unreliable until after the interconnect parasitics are extracted from the layout and included in the simulation. The Berkeley Analog Generator (BAG) is a Python-based tool that interfaces with the Cadence Virtuoso software [3] that aims to solve the above problem. BAG allows the user to write parametrizable generator scripts that will automatically generate the entire layout and schematic, as well as run the layout-versus-schematic (LVS) and post-layout extraction (PEX) tools and export the results in a time that ranges from seconds to minutes based on circuit complexity. Designers who have decided on a certain topology can write a layout and schematic generator script in a high level programming language with class based hierarchy once, and then any changes in the circuit simply require changing the corresponding parameters ﬁle containing the circuit specifications. Additionally, BAG allows the automation of simulation and post-processing of simulation data as well as implementation of higher-level design scripts that encapsulate designer insights and methodology, as well as opens the doors for automated optimizer-driven circuit design. This report shows examples of many common circuit blocks and their BAG implementation in an advanced process node, as well as an example of how BAG can be used to speed up the design process. Although the generator scripting oﬀers the implementation in a higher-level language, certain implementation strategies and methodologies work better than others, and this report aims at presenting a systematic generator writing methodology and illustrates it on a set of typical analog-mixed signal blocks found in a high-speed link front-end. In three months, a library of generators ranging from small basic circuits to entire receiver chains were written; then in roughly two weeks, an LVS/PEX verified design for a 25Gbps optical communication link receiver in a 14nm FinFET process was created using BAG cells and test benches. Further possibilities and uses of BAG are also discussed.}
@@ -253,7 +252,6 @@ series = {SIGGRAPH '02}
     Title = {A Composable Mixed-Signal Generator Framework with Applications to an SRAM Compiler},
     School = {EECS Department, University of California, Berkeley},
     Year = {2023},
-    Month = {May},
     URL = {http://www2.eecs.berkeley.edu/Pubs/TechRpts/2023/EECS-2023-137.html},
     Number = {UCB/EECS-2023-137},
     Abstract = {Generators are a key component in enabling analog/mixed-signal design automation, reuse, and optimization. Existing generator frameworks suffer from being tightly integrated with commercial tools, having performance limitations, and being difficult to customize to circuits that require different styles of layout. In this thesis, we present Substrate, a new framework for writing analog and mixed-signal generators. Substrate offers high performance, strongly-typed APIs, and a wide set of utilities for schematic entry, layout entry, and functional verification. To provide more compact SRAMs that are easy to integrate into digital flows, we also develop SRAM22, an open-source SRAM generator for the Skywater 130nm open-source process. We describe how SRAM22 utilizes Substrate features to generate compact layout, while retaining the flexibility expected from a generator. SRAM22-generated SRAMs have been integrated into RISC-V cores produced using both open-source and commercial digital tools.}
@@ -285,7 +283,6 @@ pages={209-216},
 keywords={field programmable gate arrays;hardware description languages;program compilers;software reusability;hardware development practices;hardware libraries;open-source hardware intermediate representation;hardware compiler transformations;Hardware construction languages;retargetable compilers;software development;virtual Cambrian explosion;hardware compiler frameworks;parameterized libraries;FIRRTL;FPGA mappings;Chisel;Flexible Intermediate Representation for RTL;Reusability;Hardware;Libraries;Hardware design languages;Field programmable gate arrays;Tools;Open source software;RTL;Design;FPGA;ASIC;Hardware;Modeling;Reusability;Hardware Design Language;Hardware Construction Language;Intermediate Representation;Compiler;Transformations;Chisel;FIRRTL}, 
 doi={10.1109/ICCAD.2017.8203780}, 
 ISSN={1558-2434}, 
-month={Nov},
 }
 
 @techreport{li2016,
@@ -293,7 +290,6 @@ month={Nov},
     Title = {Specification for the FIRRTL Language},
     Institution = {EECS Department, University of California, Berkeley},
     Year = {2016},
-    Month = {Feb},
     URL = {http://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-9.html},
     Number = {UCB/EECS-2016-9}
 }
@@ -301,7 +297,7 @@ month={Nov},
 @INPROCEEDINGS{baaij2010,
   author={Baaij, Christiaan and Kooijman, Matthijs and Kuper, Jan and Boeijink, Arjan and Gerards, Marco},
   booktitle={2010 13th Euromicro Conference on Digital System Design: Architectures, Methods and Tools}, 
-  title={C?aSH: Structural Descriptions of Synchronous Hardware Using Haskell}, 
+  title={CLaSH: Structural Descriptions of Synchronous Hardware Using Haskell}, 
   year={2010},
   volume={},
   number={},
@@ -635,4 +631,15 @@ series = {ASP-DAC '06}
   booktitle={Proceedings of the Workshop on Hot Topics in Operating Systems},
   pages={199--205},
   year={2021}
+}
+
+@article{hennessy2019new,
+  title={A new golden age for computer architecture},
+  author={Hennessy, John L and Patterson, David A},
+  journal={Communications of the ACM},
+  volume={62},
+  number={2},
+  pages={48--60},
+  year={2019},
+  publisher={ACM New York, NY, USA}
 }
