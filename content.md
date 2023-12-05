@@ -2599,7 +2599,21 @@ Analog layouts also have several key differences. Perhaps most importantly, each
 
 Morever, these circuits often lack such clear optimality goals. Perhaps more important, even if they do have such a goal - e.g. that for "perfect" symmetry - solutions which acheive these optima are often fairly evident to designers knowledgeable of the circuit. In other words, the effort of the optimizer - which tends to be _slow_, for all but the smallest circuits - tends to go to waste. Where a standard-cell placer can, or at least is more likely to, find counterintuitive solutions that can be proven superior, analog PnR is much less likely to do so. Even when it does, it generally must meet another, highly inscrutable optimailty constraint: the opinion of its analog designer.
 
+
 ## Ramifications for Analog PnR
+
+Lacking such a global and universal optimization goal has one central ramification: successful analog PnR must be fed with more targeted and instrumental goals as replacements. Goals of symmetry across desirably matched devices are a common example. Targets for specific wire resistances or RC time constants can be another. Needing to break the solver's targets into constituent sub-problems requires two related processes to succeed: 
+
+- First, someone or something must make this breakdown. Some amount of automation is possible. The ALIGN and MAGICAL projects particularly focus on netlist graph analysis to infer suitable goals for device matching and differential-ness of signals and instances. Automatic inference of signal priority - e.g. the often orders-of-magnitude difference in importance between the highest and lowest priority signals in an analog circuit - is more difficult. Typically this must instead be delegated as a task for the designer. 
+- Second, the solver must be able to simultaneously solve all of these constituent subproblems. In many cases they will be highly negatively correlated. Contention for routing resources, e.g. to reduce resistance or RC time constant, is an obvious example. 
+
+Several knock-on problems then follow. It is difficult to confidently produce a set of constraints for part (1) which assures a design of meeting its parametric goals. (*Provably* doing so, with real devices and technologies, is nearly hopeless.) The solver may, perhaps frequently, find solution-corners in which the sub-problems are solved, but their constituent goal is not. Much of the process of designing these sub-problems is then likely taken offline. Instead of specifying "wire X must have a resistance of less than 10 ohms", a designer might perform some offline analysis of her own and specify "please route wire X on the highest metal layer available". 
+
+Notably the majority of the constraint and goal languages of popular digital PnR flows are much more like the latter statement. Except for the central optimization goal and parameter - closing timing at the specified clock rate - constraints tend to be much more procedural. "Place clock buffer A at location (X,Y)" is far more common than, for example, "place clock buffer A at a point which equalizes its input and output wire delays". 
+
+Popular digital PnR supports thousands of such distinct constraints. Seemingly all would or could also be relevant for analog circuits. Plus analog circuits have a large space of constraints and goals of their own, often concerning goals for matching or symmetry. 
+
+## Cutesy Subsection Title
 
 Perhaps in part through first recongnizing these limitations, Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solvers. The BAG project and its programmed-custom model has been the primary artifact. Prior generations of libraries and frameworks, often called _silicon compilers_, (e.g. [@man1986cathedral]), or more specific circuit-focused families such as _datapath compilers_ and _SRAM compilers_ adopted similarly conceptual approaches.
 
@@ -2609,15 +2623,9 @@ All, or at least all familiar to the author, remain pretty tough. Generalizing t
 
 Tetris, in contrast, takes the approach of digital PnR: it is agnostic about the source of primitive-level layouts. In the digital flow, standard cells are commonly generated "the analog way"; PnR operates solely on their abstract layouts, commonly provided as LEF. Tetris similarly separates the production of primitive-level cells and module-level combinations thereof. 
 
+---
 
-
-- Placement isnt so bad
-- Routing is abjectly awful
-- Theres a lotta analog constraints
-- Hdl21 is a great place to store all that metadata
-
-The relatively sad state of analog layout production does offer
-Think of a typical design feedback loop:
+The (relatively sad) state of analog layout production does offer considerable opportunity, and considerable low-hanging fruit. Consider a typical design feedback loop:
 
 1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
 2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
@@ -2629,6 +2637,25 @@ Think of a typical design feedback loop:
 The good news: we need not automate the entirety of this process to make valuable progress. Improving any of them helps. 
 
 The BAG project began with the intent to (more or less) automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for _software_ to perform step 2. The goal is to _perform step 2 more effectively than the manual methods_. This is where the programmed-custom systems tend to fail.
+
+
+## `ALIGN`
+
+Analog PnR has been a subject of several recent research efforts, many spurred by DARPA's [CRAFT](https://www.darpa.mil/program/circuit-realization-at-faster-timescales) initiative. The MAGICAL and ALIGN projects have been among the most prominent examples. [ALIGN](https://github.com/ALIGN-analoglayout/ALIGN-public) is an open-source analog PnR engine, authored by researchers at Intel Labs, the University of Minnesota, and Texas A&M University. It expressly targets the automation of four broad classes of circuits: low-frequency classical analog, wireline transceivers, wireless transceiver components, and power delivery components. It is implemented in a combination of Python and modern C++. 
+
+Like MAGICAL, ALIGN began with the goal of producing layout from existing, un-annotated circuit netlists. This goal was in part aimed for porting between technologies. It quickly developed a JSON-format constraint schema to aid in this process, offering a second designer-input to inform layout generation. ALIGN's constraint schema includes facilities to: 
+
+- Create virtual hierarchy, referred to as `Group`s. Instances within each group are placed with near each other with increased priority. Matched or differential forms use popular placement styles such as common-centroid. 
+- Dictate placement `Symmetry` between instances, which may include instances of virtual-hierarchy `Group`s
+- Set relative placement between instances, via constraints to `Order` their locations, `Align` (ahem) them on a particular edge, or combining several such constraints into a `Floorplan`
+- Request particular metal layers for routing of a given signal
+- Request that a given signal be routed on more than one of ALIGN's routing tracks, reducing its resistance and RC time constants
+
+And many more. 
+
+Our own research team has long had a valuable partnership with Intel. Recent BWRC research has included IC designs for computer architecture, SERDES, wireless transceivers, and more implemented in Intel's process technologies, primarily the popular 16nm FinFET. The same technology was used for the 2022 and 2023 editions of the educational chips described in (FIXME: course ref). This partnership was largely how this work came to consider analog PnR, and particularly PnR through ALIGN. The ALIGN "PDK" developed by the Intel team serves as a central ingredient. 
+
+Working with external corporate (and especially academic) partners produced a related, non-technical realization: we have a really significant "not invented here" syndrome. Especially when alternative home-grown offerings have "Berkeley", right in the name, right up front. This is in part the nature of our field; industry IC designers are quite inept at sharing between institutions too. This is in part due to technical shortcomings, particularly in the tangled pile of EDA software and PDK content which tends to be so difficult to share, both technically and contractually. It is also cultural. Working with collaborators one cannot directly tap on the shoulder requires commitments to a number of topics at which IC designers, and especially researchers, and _especially_ grad students, don't really excel. Documentation and "design for understandability" are prime examples. 
 
 
 ## `AlignHdl21`
