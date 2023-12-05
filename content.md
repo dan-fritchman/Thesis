@@ -244,7 +244,7 @@ message Package {
   string domain = 1;
   // `Module` Definitions
   repeated Module modules = 2;
-  // `ExternalModule` interfaces used by `modules`, and available externally
+  // `ExternalModule` Headers
   repeated ExternalModule ext_modules = 3;
   // Description
   string desc = 10;
@@ -274,7 +274,8 @@ message Signal {
 
 // # Signal Slice
 // Reference to a subset of bits of `signal`.
-// Indices `top` and `bot` are both inclusive, similar to popular HDLs.
+// Indices `top` and `bot` are both inclusive,
+// similar to popular HDLs.
 message Slice {
   // Parent Signal Name
   string signal = 1;
@@ -302,7 +303,8 @@ message ConnectionTarget {
 }
 
 // # Port Connection
-// Pairing between an Instance port (name) and a parent-module ConnectionTarget.
+// Pairing between an Instance port (name)
+// and a parent-module ConnectionTarget.
 message Connection {
   string portname = 1;
   ConnectionTarget target = 2;
@@ -325,9 +327,10 @@ message Module {
   // Module Name
   string name = 1;
   // Port List, referring to elements of `signals` by name
-  // Ordered as they will be in order-sensitive formats, such as typical netlist formats.
+  // Ordered as they will be in order-sensitive formats,
+  // such as typical SPICE netlist dialects.
   repeated Port ports = 2;
-  // Signal Definitions, including externally-facing `Port` signals
+  // Signal Definitions, including externally-facing `Port`s
   repeated Signal signals = 3;
   // Module Instances
   repeated Instance instances = 4;
@@ -357,8 +360,6 @@ enum SpiceType {
 }
 
 // # Externally Defined Module
-// Primarily for sake of port-ordering, for translation with connect-by-position
-// formats.
 message ExternalModule {
 
   // Qualified External Module Name
@@ -366,9 +367,10 @@ message ExternalModule {
   // Description
   string desc = 2;
   // Port Definitions
-  // Ordered as they will be in order-sensitive formats, such as typical netlist formats.
+  // Ordered as they will be in order-sensitive formats,
+  // such as typical SPICE netlist dialects.
   repeated Port ports = 3;
-  // Signal Definitions, limited to those used by external-facing ports.
+  // Signal Definitions
   repeated Signal signals = 4;
   // Params
   repeated vlsir.utils.Param parameters = 5;
@@ -385,14 +387,17 @@ The core `Instance`-`Module` reference-referent pair has a slightly more elabora
 
 ```protobuf
 // # Domain-Qualified Name
-// Refers to an object outside its own namespace, at the global domain `domain`.
+// Refers to an object outside its own namespace,
+// at the global domain `domain`.
 message QualifiedName {
   string domain = 1;
   string name = 2;
 }
 
 // # Reference
-// Pointer to another Message, either defined in its own namespace (local) or another (external).
+// Pointer to another message,
+// either defined in its own namespace (`local`)
+// or another (`external`).
 message Reference {
   oneof to {
     // Local string-valued reference.
@@ -476,7 +481,7 @@ Popular HDLs generally feature one of two forms of connection semantics. Verilog
 module my_module();
   logic a, b, c;                              // Declare signals
   another_module i1 (a, b, c);                // Create an instance
-  another_module i2 (.a(a), .b(b), .c(c));    // Another instance, connected by-name
+  another_module i2 (.a(a), .b(b), .c(c));    // Connected by name
 endmodule
 ```
 
@@ -568,11 +573,9 @@ Many or most Hdl21 `Module`s are written such that they look like class definiti
 
 ```python
 class Module:
-    # ...
+    # A simplified excerpt from `h.Module`
     def __init_subclass__(cls, *_, **__):
-        """Sub-Classing Disable-ization"""
-        msg = f"Error attempting to create {cls.__name__}. Sub-Typing {cls} is not supported."
-        raise RuntimeError(msg)
+        raise RuntimeError("Sub-Typing `Module` is not supported")
 ```
 
 Aside: as a design philosophy, Hdl21 generally eschews object-oriented practices in its user-facing interfaces. Several of its central types including `Module` and `Bundle` make this ban explicit. Hdl21 does make use of OOP techniques _internally_, and some at the "power user" (e.g. PDK package developer) level, primarily for defining its many hierarchy-traversing data model visitors. 
@@ -581,10 +584,11 @@ Instead Hdl21 makes heavy use of the decorator pattern, particularly applying de
 
 ```python
 def module(cls: type) -> Module:
-    # Create the Module object
+    # Create the `Module` object
     module = Module(name=cls.__name__)
 
-    # Take a lap through the class body, type-check everything and assign relevant attributes to the bundle
+    # Take a lap through the class body,
+    # add everything to the `Module`
     for item in cls:
         module.add(item)
 
@@ -704,7 +708,7 @@ class MyParams:
     # Required
     width = h.Param(dtype=int, desc="Width. Required")
     # Optional - including a default value
-    text = h.Param(dtype=str, desc="Optional string", default="My Favorite Module")
+    height = h.Param(dtype=int, desc="Height. Optional", default=11)
 ```
 
 Each param-class is defined similarly to the Python standard-library's `dataclass`. The `paramclass` decorator converts these class-definitions into type-checked `dataclasses`, with fields using the `dtype` of each parameter.
@@ -1003,7 +1007,9 @@ class MySim:
         var=x,
         sweep=LinearSweep(0, 1, 2),
     )
-    mymc = MonteCarlo(inner=[Dc(var="y", sweep=PointSweep([1]), name="swpdc")], npts=11)
+    mymc = MonteCarlo(
+        inner=[Dc(var="y", sweep=PointSweep([1]), name="swpdc")], npts=11
+    )
     delay = Meas(analysis=mytran, expr="trig_targ_something")
     opts = Options(reltol=1e-9)
 
@@ -1038,9 +1044,12 @@ noise = s.noise(
     sweep=LogSweep(1e1, 1e10, 10),
     name="mynoise",
 )
-sw = s.sweepanalysis(inner=[tr], var=p, sweep=LinearSweep(0, 1, 2), name="mysweep")
+sw = s.sweepanalysis(
+    inner=[tr], var=p, sweep=LinearSweep(0, 1, 2), name="mysweep"
+)
 mc = s.montecarlo(
-    inner=[Dc(var="y", sweep=PointSweep([1]), name="swpdc"),], npts=11, name="mymc",
+    inner=[Dc(var="y", sweep=PointSweep([1]), name="swpdc"),],
+    npts=11, name="mymc",
 )
 s.save(SaveMode.ALL)
 s.meas(analysis=tr, name="a_delay", expr="trig_targ_something")
@@ -1069,8 +1078,7 @@ These atomic elements are Hdl21's `Primitive`s, provided in its `primitives` lib
 
 Hdl21 primitives come in _ideal_ and _physical_ flavors. The difference is most frequently relevant for passive elements, which can for example represent either (a) technology-specific passives, e.g. a MIM or MOS capacitor, or (b) an _ideal_ capacitor. Some element-types have solely physical implementations, some are solely ideal, and others include both.
 
-A summary of the `hdl21.primitives` library content:
-
+The `hdl21.primitives` library content is summarized in table 3.1.
 
 | Name                           | Description                       | Type     | 
 | ------------------------------ | --------------------------------- | -------- | 
@@ -1097,7 +1105,7 @@ A summary of the `hdl21.primitives` library content:
 
   : Hdl21 Primitives Library
 
-Each primitive is available in the `hdl21.primitives` namespace, either through its full name or any of its aliases. Most primitives have fairly verbose names (e.g. `VoltageControlledCurrentSource`, `IdealResistor`), but also expose short-form aliases. The `IdealResistor` primitive, for example, is also exported as each of `R`, `Res`, `Resistor`, `IdealR`, and `IdealRes`.
+Most primitives have fairly verbose names (e.g. `VoltageControlledCurrentSource`, `IdealResistor`), but also expose short-form aliases, both in the `hdl21` and `hdl21.primitives` namespaces. The `IdealResistor` primitive, for example, is also exported as each of `R`, `Res`, `Resistor`, `IdealR`, and `IdealRes`.
 
 ### `ExternalModules`
 
@@ -1166,31 +1174,33 @@ Hdl21's source repository includes the PDK packages for several popular open-sou
 import hdl21 as h
 import sky130
 
+nfet = sky130.modules.sky130_fd_pr__nfet_01v8
+pfet = sky130.modules.sky130_fd_pr__pfet_01v8
+
 @h.module
 class SkyInv:
-    """ An inverter, demonstrating using PDK modules """
+    """ An inverter, demonstrating the use of PDK modules """
 
     # Create some IO
-    i, o, VDD, VSS = h.Ports(4)
+    i, o, VDD, VSS = 4 * h.Port()
 
     # And create some transistors!
-    ps = sky130.modules.sky130_fd_pr__pfet_01v8(w=1, l=1)(d=o, g=i, s=VDD, b=VDD)
-    ns = sky130.modules.sky130_fd_pr__nfet_01v8(w=1, l=1)(d=o, g=i, s=VSS, b=VSS)
+    p = pfet(w=1, l=1)(d=o, g=i, s=VDD, b=VDD)
+    n = nfet(w=1, l=1)(d=o, g=i, s=VSS, b=VSS)
 ```
 
-Process-portable modules instead use Hdl21 `Primitives`, which can be compiled to a target technology:
+Process-portable modules can instead use Hdl21 `Primitives`, which can be compiled to a target technology:
 
 ```python
 from hdl21.primitives import Nmos, Pmos, MosVth
 
 @h.module
 class Inv:
-    # Create some IO
-    i, o, VDD, VSS = h.Ports(4)
+    i, o, VDD, VSS = 4 * h.Port() # Same IO
 
     # And now create some generic transistors!
-    ps = Pmos(w=1*µ, l=1*µ, vth=MosVth.STD)(d=o, g=i, s=VDD, b=VDD)
-    ns = Nmos(w=1*µ, l=1*µ, vth=MosVth.STD)(d=o, g=i, s=VSS, b=VSS)
+    p = Pmos(w=1*µ, l=1*µ, vth=MosVth.STD)(d=o, g=i, s=VDD, b=VDD)
+    n = Nmos(w=1*µ, l=1*µ, vth=MosVth.STD)(d=o, g=i, s=VSS, b=VSS)
 ```
 
 Compiling the generic devices to a target PDK then just requires a pass through the PDK's `compile()` method:
@@ -1202,7 +1212,7 @@ import sky130
 sky130.compile(Inv) # Produces the same content as `SkyInv` above
 ```
 
-Hdl21 `Generator`s may alternately choose to accept their 
+Hdl21 `Generator`s may alternately choose to accept their `Module`s, `ExternalModule`s, or `Primitive`s _as parameters_. For example: 
 
 ```python
 @h.paramclass
@@ -1222,17 +1232,16 @@ class InvParams:
 def Inv(params: InvParams) -> h.Module:
     @h.module
     class Inv:
-        # Create some IO
-        i, o, VDD, VSS = h.Ports(4)
+        i, o, VDD, VSS = 4 * h.Port() # Same IO
 
         # And now create some (parameterized) transistors!
-        ps = params.pmos(d=o, g=i, s=VDD, b=VDD)
-        ns = params.nmos(d=o, g=i, s=VSS, b=VSS)
+        p = params.pmos(d=o, g=i, s=VDD, b=VDD)
+        n = params.nmos(d=o, g=i, s=VSS, b=VSS)
 
     return Inv
 ```
 
-Here the transistors to be instantiated in `Inv` are provided as parameters. This is an excessively handy knock-on effect of `Module`s, external wrappers thereof, and PDKs all be rich Python objects: they're all just more variables in the program. This control-inversion-parameters style extends to any target technology, and to the built-in generic primitives. Here `Inv` uses the built-in generic `Nmos` and `Pmos` as default arguments, which can be overridden by each `Inv` instance, or by passing them through a PDK compiler function.  
+Here the transistors to be instantiated in `Inv` are provided as parameters. This is an excessively handy knock-on effect of `Module`s, external wrappers thereof, and PDKs all be rich Python objects: they're all just more variables in the program. This "control inversion parameters" style extends to any target technology, and to the built-in generic primitives. Here `Inv` uses the built-in generic `Nmos` and `Pmos` as default arguments, which can be overridden by each `Inv` instance. Higher-level generators can alternately create `Inv` with the default built-in generics, later passing them through a PDK compiler function.  
 
 
 ### PDK Corners
@@ -1251,7 +1260,7 @@ Quantities which can be varied are often keyed by a `CornerType`.
 CornerType = MOS | CMOS | RES | CAP | ...
 ```
 
-A particularly common such use case pairs NMOS and PMOS transistors into a `CmosCornerPair`. CMOS circuits are then commonly evauated at its four extremes, plus their typical case. These five conditions are enumerated in the `CmosCorner` type:
+A particularly common such use case pairs NMOS and PMOS transistors into a "corner pair". CMOS circuits are then commonly evauated at its four extremes, plus their typical case. These five conditions are enumerated in the `CmosCorner` type:
 
 ```python
 @dataclass
@@ -1325,10 +1334,14 @@ These "site packages" are named `sitepdks` by convention. They can often be shar
 from pathlib import Path
 
 import sky130
-sky130.install = sky130.Install(model_lib=Path("pdks") / "sky130" / ... / "sky130.lib.spice")
+sky130.install = sky130.Install(
+    model_lib=Path("/pdks/sky130") / ... / "sky130.lib.spice"
+)
 
 import asap7
-asap7.install = asap7.Install(model_lib=Path("pdks") / "asap7" / ... / "TT.pm")
+asap7.install = asap7.Install(
+    model_lib=Path("/pdks/asap7" / ... / "TT.pm"
+)
 ```
 
 "Site-portable" code requiring external PDK content can then refer to the PDK package's `install`, without being directly aware of its contents.
@@ -1444,7 +1457,7 @@ m1 = h.Module(name='m1')
 m1.s = h.Signal() # Signal `s` is now "parented" by `m1`
 
 m2 = h.Module(name='m2')
-m2.y = m1.s # Now `s` has been "orphaned" (or perhaps "cradle-robbed") by `m2`
+m2.y = m1.s # Now `s` has been "orphaned" (or perhaps "cradle-robbed") 
 ```
 
 Consider attempting to recreate this in Verilog. Module `m1` has a signal `s`, which because of the host language's reference semantics, can also be assigned into the content of module `m2`. A dedicated HDL would generally combat this at the syntax layer. Something like so would generally fail to parse:
@@ -1509,7 +1522,7 @@ Most of Hdl21's built-in elaborators are aways more complicated. Inline flatteni
 
 - `Orphanage`, described above
 - `InstanceBundles`, which expands the "bundle of instances" constructs, principally the built-in differential `Pair`
-- `ResolvePortRefs`, which transforms implicit connections such as `inst1.port1 = inst2.port2` into explicit signals
+- `ResolvePortRefs`, which transforms implicit connections between instances (such as `inst1.port1 = inst2.port2`) into explicit signals
 - `ConnTypes`, which checks for validity of each instance connection, including signal and bundle types
 - The afformentioned `BundleFlattener`, which transforms (potentially nested) bundle definitions into a flattened set of resolved signals
 - `ArrayFlattener`, which performs a similar task on instance arrays
@@ -1649,7 +1662,7 @@ In other words, Hdl21 schematics reverse the order of what a schematic is, to be
 1. A Picture
 2. A Circuit
 
-The schematic-schema of structure and metadata, detailed [later in this document](#the-svg-schematic-schema), is what makes an SVG a schematic.
+The schematic-schema of structure and metadata, detailed later in this document, is what makes an SVG a schematic.
 
 
 ### Schematics are Graphical Python Modules
@@ -1694,7 +1707,7 @@ Schematics consist of:
 - Ports, and
 - Wire connections there-between
 
-The element-library holds similar content to that of SPICE: transistors, resistors, capacitors, voltage sources, and the like. It is designed in concert with Hdl21's [primitive element library](https://github.com/dan-fritchman/Hdl21#primitives-and-external-modules).
+The element-library holds similar content to that of SPICE: transistors, resistors, capacitors, voltage sources, and the like. It is designed in concert with Hdl21's primitive element library.
 
 The complete element library is shown in Figure~\ref{fig:schematic-symbols}. 
 
@@ -1702,7 +1715,7 @@ The complete element library is shown in Figure~\ref{fig:schematic-symbols}.
 
 \begin{figure}
   \centering
-  \includesvg[width=200pt]{./fig/schematic-symbols.sch.svg}
+  \includesvg[width=180pt]{./fig/schematic-symbols.sch.svg}
   \caption{The SVG Schematic Element Library}
   \label{fig:schematic-symbols}
 \end{figure}
@@ -1903,7 +1916,7 @@ All schematic coordinates are stored in SVG pixel values. Schematics elements ar
 
 All schematic elements operate on a "Manhattan style" orthogonal grid. Orient-able elements such as `Instance`s and `Port`s are allowed rotation solely in 90 degree increments. Such elements may thus be oriented in a total of _eight_ distinct orientations: four 90 degree rotations, with an optional vertical reflection. Reflection and rotation of these elements are both applied about their origin locations. Note rotation and reflection are not commutative. If both a reflection and a nonzero rotation are applied to an element, the reflection is applied first.
 
-These orientations are translated to and from SVG `transform` attributes. SVG schematics use the `matrix` transform to capture the combination of orientation and location. SVG `matrix` transforms are [specified in six values](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform#matrix) defining a 3x3 matrix. Transforming by `matrix(a,b,c,d,e,f)` is equivalent to multiplying a vector `(x, y, 1)` by the matrix:
+These orientations are translated to and from SVG `transform` attributes. SVG schematics use the `matrix` transform to capture the combination of orientation and location. SVG `matrix` transforms are [specified in six values](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform) defining a 3x3 matrix. Transforming by `matrix(a,b,c,d,e,f)` is equivalent to multiplying a vector `(x, y, 1)` by the matrix:
 
 ```text
 a c e
@@ -2004,7 +2017,7 @@ Element({
 
 Notably each element _does not_ dictate what device appears in an ultimate circuit or netlist. The `of` string of each `Instance` dictates these choices. The element solely dictates its two fields: the pictorial symbol and the port list.
 
-The complete list of elements is defined in [the circuit element library documentation](#the-element-library). The content of the element library - particularly the kinds of elements and their port lists - _is_ part of the schematic schema, and must be adhered to by any schematic importer.
+The complete list of elements is defined in the circuit element library documentation. The content of the element library - particularly the kinds of elements and their port lists - _is_ part of the schematic schema, and must be adhered to by any schematic importer.
 
 ### `Wire`
 
@@ -2113,7 +2126,7 @@ Note: the SVG specification includes a paired definitions (`<defs>`) section and
 
 ![two-successful-models](./fig/two-successful-models.png "The Two Successful Models for Producing IC Layout")
 
-In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history/?key=13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's 60+ year history, it has shipped roughly 13 sextillion (1.3e22) total transistors. This total has certainly risen, likely dramatically, in the few years since. Essentially all of them have been designed by one of two methods:
+In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's 60+ year history, it has shipped roughly 13 sextillion (1.3e22) total transistors. (That total has risen dramatically in the few years since.) Essentially all of them have been designed by one of two methods:
 
 1. "The digital way", using a combination of HDL code, logic synthesis, and automatically placed and routed layout.
 2. "The analog way", using a graphical interface to produce essentially free-form layout shapes.
@@ -2216,16 +2229,19 @@ We also note that "the analog way" makes its own use of programmed-custom layout
 
 The most successful depolyments of programmed-custom layout have generally been _circuit family_ specific. E.g. while a layout-program at minimum produces a single circuit, these best-use-cases find families of similar circuits over which to find a set of meta-parameters, enabling the production of a small family. SRAM arrays have probably been the most successful example. SRAM serves as the primary high-density memory solution for nearly all of the digital flow, comprising most cache, register files, and configuration of most large digital SOCs. SRAM is therefore extremely area-sensitive, especially at its lowest and most detailed design layers. A common workflow uses the custom graphical methods to produce these "bit-cells" and similarly detailed layers, which using "SRAM compiler" programs to aggregate bits into usable IP blocks. An SRAM compiler is a programmed-custom layout program. It leverages the fact that large swathes of popular SRAM usage has a consistent set of parameters: size in bits, word width, numbers of read and write ports, and the like. The compiler (or what we might call "generator") programs generalize over this space and produce a family of memory IPs.
 
+\setkeys{Gin}{width=.75\linewidth}
+
+![cim-concept](fig/cim-concept.png "Compute in Memory Concept")
+![cim-bitcell](fig/cim-bitcell.png "Compute in Memory Atom/ Bit-Cell")
+![cim-column](fig/cim-column.png "Compute in Memory Column")
+![cim-macro](fig/cim-macro.png "Compute in Memory Macro")
+
 The genesis of the layout21 library was in fact to produce a similar set of circuits: "compute in memory" (CIM, or "processing in memory", PIM) circuits for machine learning acceleration. These circuits attempt to break the typical memory-bandwidth constraint on machine learning processing, by first breaking the traditional Von Neumann split between processing and memory. Instead, circuits are arranged in atomic combinations of processing and memory, e.g. a single storage bit coupled with a single-bit multiplier. Many research systems have implemented this marriage with analog signal processing, typically performing multiplication via a physical device characteristic, e.g. transistor voltage-current transfer [@chen2021], or that of an advanced memory cell such as RRAM[@yoon2021] or ReRAM [@xue2021]. Addition and accumulation are most commonly performed either on charge or current, the two analog quantities which tend to sum most straightforwardly. 
 
 Reference [@fritchmancim2021] illustrates many of the difficulties in using such analog signal processing techniques. Particularly, while the analog-domain mathematical operations can often be performed highly effectively, they ultimately must produce digital data to participate in broader digital systems. These data conversion steps can serve as bottlenecks to both power and area. While [@rekhi2019] provided a lower bound on this "conversion cost", based on applying observed state of the art data converter metrics. But these bounds are likely far too permissive. Such machine learning acceleration systems rarely feature the trade-offs required for state of the art data conversion, which often requires highly complex calibration and area unto itself.
 
 It instead proposes an all digital compute in memory macro, in which each "atom" is comprised of a _write only_ SRAM bit cell, plus a single bit "multiplier" implemented with a minimum-sized NOR2 gate. Figure~\ref{fig:cim-concept} depicts the compute in memory macro's atomic bit-cell and critical building blocks.
 
-![cim-concept](fig/cim-concept.png "Compute in Memory Concept")
-![cim-bitcell](fig/cim-bitcell.png "Compute in Memory Atom/ Bit-Cell")
-![cim-column](fig/cim-column.png "Compute in Memory Column")
-![cim-macro](fig/cim-macro.png "Compute in Memory Macro")
 
 Notably, the conclusions of [@fritchmancim2021] were that programmed-custom layout did not provide a sufficient benefit to the compute in memory circuit to justify its use over the more common digital PnR flow. This largely boiled down to a mismatch in layout area between its two primary functions, _compute_ and _memory_. Bit for bit, compute is much larger, and hence mitigates the benefit of tightly coupling its layout in memory. This example from [@fritchmancim2021] generalizes across much of the historic usage of the programmed-custom layout model. Programmed-custom tends to work well for circuits that are highly structured, repetitive, and parametric - i.e. SRAMs, and not much else. Contemporary work including [@kumar2023] further extended layout21 and [@fritchmancim2021] to produce an SRAM compiler framework in SkyWater's 130nm open-source technology.
 
@@ -2296,6 +2312,7 @@ Layouts and their abstracts have analogous roles. System-level designers, i.e. t
 - (a) A descriptive port list, indicating each IC pin's function. E.g. "analog supply", "reference clock", or "primary output".
 - (b) A physical diagram, indicating the shape and size of each pin, such as that shown in figure~\ref{fig:datasheet-abstract-layout}. 
 
+\setkeys{Gin}{width=.75\linewidth}
 ![datasheet-abstract-layout](fig/datasheet_abstract_layout.png "Abstract Layout, in the Form of a Packaged IC Datasheet")
 
 The abstract view of IC layouts is most popularly expressed in Library Exchange Format (LEF). LEF is an ascii text format which specifies a combination of layout-abstract libraries, and technology parameters which support them. (The latter subset is often denoted "tech-LEF".) LEF calls its layout-abstract the `MACRO`. Each `MACRO` includes: 
@@ -2639,7 +2656,7 @@ The BAG project began with the intent to (more or less) automate the entirety of
 
 ## `ALIGN`
 
-Analog PnR has been a subject of several recent research efforts, many spurred by DARPA's [CRAFT](https://www.darpa.mil/program/circuit-realization-at-faster-timescales) initiative. The MAGICAL and ALIGN projects have been among the most prominent examples. [ALIGN](https://github.com/ALIGN-analoglayout/ALIGN-public) is an open-source analog PnR engine, authored by researchers at Intel Labs, the University of Minnesota, and Texas A&M University. It expressly targets the automation of four broad classes of circuits: low-frequency classical analog, wireline transceivers, wireless transceiver components, and power delivery components. It is implemented in a combination of Python and modern C++. 
+Analog PnR has been a subject of several recent research efforts, many spurred by DARPA's [CRAFT](https://www.darpa.mil/program/circuit-realization-at-faster-timescales) initiative. The MAGICAL and ALIGN projects have been among the most prominent examples. [ALIGN](https://github.com/ALIGN-analoglayout/ALIGN-public) is an open-source analog PnR engine, authored by researchers at Intel Labs, the University of Minnesota, and Texas A\&M University. It expressly targets the automation of four broad classes of circuits: low-frequency classical analog, wireline transceivers, wireless transceiver components, and power delivery components. It is implemented in a combination of Python and modern C++. 
 
 Like MAGICAL, ALIGN began with the goal of producing layout from existing, un-annotated circuit netlists. This goal was in part aimed for porting between technologies. It quickly developed a JSON-format constraint schema to aid in this process, offering a second designer-input to inform layout generation. ALIGN's constraint schema includes facilities to: 
 
@@ -2660,8 +2677,7 @@ Working with external corporate (and especially academic) partners produced a re
 
 ## `AlignHdl21`
 
-\setkeys{Gin}{width=.5\linewidth}
-
+\setkeys{Gin}{width=\linewidth}
 ![hdl21-pnr](./fig/hdl21-pnr.jpg "Hdl21 to Analog PnR Flow")
 
 `AlignHdl21` combines Hdl21 `Module`s and `Generator`s with the associated metadata required to customize place-and-routed layout. 
@@ -2710,6 +2726,7 @@ ah.PnrInput(
 )
 ```
 
+\setkeys{Gin}{width=0.3\linewidth}
 ![alignhdl21-strongarm](./fig/alignhdl21-strongarm.jpg "Example StrongArm Comparator Layout, Compiled from Hdl21 and ALIGN")
 
 ### Placement
@@ -2724,8 +2741,8 @@ Figure~\ref{fig:alignhdl21-placement1} schematically illustrate the placement sc
 
 Figure~\ref{fig:alignhdl21-placement2} says FIXME!
 
+\setkeys{Gin}{width=0.5\linewidth}
 ![alignhdl21-placement1](./fig/alignhdl21-placement1.png "Conceptual Placement")
-
 ![alignhdl21-placement2](./fig/alignhdl21-placement2.png "Conceptual Placement With Nesting") 
 
 While ALIGN provides both automatic placement and routing, most AlignHdl21 modules tend to explicitly dictate placement and rely solely on its routing facilities. This is for two primary reasons. First, transistor-level analog circuits aren't all that hard to place. Designers tend to have a reasonable ideas of what placements suit their circuit and application. This is especially true when placement can be stated concisely and intuitively, such as by AlignHdl21's `Placement` constructs. Often circuits are designed with particular pitches in mind, or with desired sides and locations in mind for module ports. 
@@ -2755,6 +2772,7 @@ These techniques are also a prominent research frontier for circuit optimization
 
 A central challenge throughout these courses of research has been identifying individuals or teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. 
 
+\setkeys{Gin}{width=\linewidth}
 ![cktgym-motivation](./fig/cktgym-motivation.jpg "ML and Circuit Research Silos")
 
 Machine learning research has increased by leaps in bounds, both enabling and enabled by a proliferation of high productivity open-source frameworks such as PyTorch ([@pytorch]) and TensorFlow ([@abadi2016tensorflow]). ML has also been demonstrated to be of great utility across a wide range of domains. Image recognition, text recognition, and large language model based natural language actors serve as prime examples. Machine learning researchers accordingly have a broad menu of domains towards which to direct their efforts. 
@@ -2824,16 +2842,17 @@ class FcascParams:
     ninp = h.Param(dtype=int, desc="Input Nmos Unit Width", default=2)
     pinp = h.Param(dtype=int, desc="Input Pmos Unit Width", default=4)
 
-    # Current Mirror Ratios
-    alpha = h.Param(dtype=int, desc="Alpha (Pmos Input) Current Ratio", default=2)
-    beta = h.Param(dtype=int, desc="Beta (Nmos Input) Current Ratio", default=2)
-    gamma = h.Param(dtype=int, desc="Gamma (Output Cascode) Current Ratio", default=2)
+    # Current Ratios
+    alpha = h.Param(dtype=int, desc="Pmos Input Current Ratio", default=2)
+    beta = h.Param(dtype=int, desc="Nmos Input Current Ratio", default=2)
+    gamma = h.Param(dtype=int, desc="Output Current Ratio", default=2)
 ```
+
+\\newpage 
 
 ```python
 @h.generator
 def Fcasc(params: FcascParams) -> h.Module:
-    """# Rail-to-Rail, Dual Input Pair, Folded Cascode, Diff to SE Op-Amp"""
 
     # Multiplier functions of the parametric devices
     nbias = lambda x: nmos(m=params.nbias * x)
@@ -2851,20 +2870,20 @@ def Fcasc(params: FcascParams) -> h.Module:
         # ...
 
         ## Output Stack
-        pbo = h.Pair(pbias(x=gamma + beta))(g=outn, d=psd, s=VDD, b=VDD)
-        pco = h.Pair(pcasc(x=gamma))(g=pcascg, s=psd, d=outd, b=VDD)
-        nco = h.Pair(ncasc(x=gamma))(g=ibias2, s=nsd, d=outd, b=VSS)
-        nbo = h.Pair(nbias(x=gamma + alpha))(g=ibias1, d=nsd, s=VSS, b=VSS)
+        pbo = h.Pair(pbias(x=gamma + beta))(...)
+        pco = h.Pair(pcasc(x=gamma))(...)
+        nco = h.Pair(ncasc(x=gamma))(...)
+        nbo = h.Pair(nbias(x=gamma + alpha))(...)
 
         ## Input Pairs
         ## Nmos Input Pair
-        nin_bias = nbias(x=2 * alpha)(g=ibias1, s=VSS, b=VSS)
-        nin_casc = ncasc(x=2 * alpha)(g=ibias2, s=nin_bias.d, b=VSS)
-        nin = h.Pair(ninp(x=alpha))(g=inp, d=psd, s=nin_casc.d, b=VSS)
+        nin_bias = nbias(x=2 * alpha)(...)
+        nin_casc = ncasc(x=2 * alpha)(...)
+        nin = h.Pair(ninp(x=alpha))(...)
         ## Pmos Input Pair
-        pin_bias = pbias(x=2 * beta)(g=pbiasg, s=VDD, b=VDD)
-        pin_casc = pbias(x=2 * beta)(g=pbiasg, s=pin_bias.d, b=VDD)
-        pin = h.Pair(pinp(x=beta))(g=inp, d=nsd, s=pin_casc.d, b=VDD)
+        pin_bias = pbias(x=2 * beta)(...)
+        pin_casc = pbias(x=2 * beta)(...)
+        pin = h.Pair(pinp(x=beta))(...)
 ```
 
 It is possible, and in fact likely, that given sufficient effort machine learning agents will "learn" this domain knowledge for themselves. There are many such hard-won insights - the entire concept of differential signaling and matched devies; how these devices are identified by connection; the fact that each input pair should probably be of identical size. How much learning effort this will take, remains to be seen. 
