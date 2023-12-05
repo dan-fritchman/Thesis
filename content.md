@@ -2651,7 +2651,9 @@ Like MAGICAL, ALIGN began with the goal of producing layout from existing, un-an
 
 And many more. 
 
-Our own research team has long had a valuable partnership with Intel. Recent BWRC research has included IC designs for computer architecture, SERDES, wireless transceivers, and more implemented in Intel's process technologies, primarily the popular 16nm FinFET. The same technology was used for the 2022 and 2023 editions of the educational chips described in (FIXME: course ref). This partnership was largely how this work came to consider analog PnR, and particularly PnR through ALIGN. The ALIGN "PDK" developed by the Intel team serves as a central ingredient. 
+FIXME: a passage on their primitives / generators
+
+Our own research team has long had a valuable partnership with Intel. Recent BWRC research has included IC designs for computer architecture, SERDES, wireless transceivers, and more implemented in Intel's process technologies, primarily the popular 16nm FinFET. The same technology was used for the 2022 and 2023 editions of the educational chips described in [@burnett2018] and [@guo2023osci]. This partnership was largely how this work came to consider analog PnR, and particularly PnR through ALIGN. The ALIGN "PDK" developed by the Intel team serves as a central ingredient. 
 
 Working with external corporate (and especially academic) partners produced a related, non-technical realization: we have a really significant "not invented here" syndrome. Especially when alternative home-grown offerings have "Berkeley", right in the name, right up front. This is in part the nature of our field; industry IC designers are quite inept at sharing between institutions too. This is in part due to technical shortcomings, particularly in the tangled pile of EDA software and PDK content which tends to be so difficult to share, both technically and contractually. It is also cultural. Working with collaborators one cannot directly tap on the shoulder requires commitments to a number of topics at which IC designers, and especially researchers, and _especially_ grad students, don't really excel. Documentation and "design for understandability" are prime examples. 
 
@@ -2726,6 +2728,10 @@ Figure~\ref{fig:alignhdl21-placement2} says FIXME!
 
 ![alignhdl21-placement2](./fig/alignhdl21-placement2.png "Conceptual Placement With Nesting") 
 
+While ALIGN provides both automatic placement and routing, most AlignHdl21 modules tend to explicitly dictate placement and rely solely on its routing facilities. This is for two primary reasons. First, transistor-level analog circuits aren't all that hard to place. Designers tend to have a reasonable ideas of what placements suit their circuit and application. This is especially true when placement can be stated concisely and intuitively, such as by AlignHdl21's `Placement` constructs. Often circuits are designed with particular pitches in mind, or with desired sides and locations in mind for module ports. 
+
+Second, for all but quite small circuits, the ILP-based placement strategy used by ALIGN can be pretty slow. This time feels particularly poorly-spent on circuits for which the designer has a reasonably placement in mind. Attempts at making use of an alternate analytical placer proved unsuccessful. Such a strategy, which more closely mirrors common tactics used by digital PnR, would seem more amenable to larger analog circuits than ILP. 
+
 ---
 
 FIXME: either get these into the flow, or ditch em
@@ -2743,7 +2749,7 @@ FIXME: either get these into the flow, or ditch em
 
 ## Machine Learners Learning Circuits 101
 
-Recent research and commercial EDA has begun to deploy machine learning techniques throughout the IC design process. Perhaps the most prominent such example is ([@mirhoseini2021graph]). (Although follow up research ([@cheng2023assessment]) and [news](https://www.nytimes.com/2022/05/02/technology/google-fires-ai-researchers.html) | [reporting](https://spectrum.ieee.org/chip-design-controversy) cast doubt upon some of its claims. I for one find the primary rebuttal article, which remains unpublished for... reasons, quite compelling.)
+Recent research and commercial EDA has begun to deploy machine learning techniques throughout the IC design process. Perhaps the most prominent such example is [@mirhoseini2021graph]. (Although follow up research ([@cheng2023assessment]) and [news](https://www.nytimes.com/2022/05/02/technology/google-fires-ai-researchers.html) | [reporting](https://spectrum.ieee.org/chip-design-controversy) cast doubt upon some of its claims. I for one find the primary rebuttal article, which remains unpublished for... reasons, quite compelling.)
 
 These techniques are also a prominent research frontier for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
 
@@ -2864,7 +2870,7 @@ def Fcasc(params: FcascParams) -> h.Module:
 It is possible, and in fact likely, that given sufficient effort machine learning agents will "learn" this domain knowledge for themselves. There are many such hard-won insights - the entire concept of differential signaling and matched devies; how these devices are identified by connection; the fact that each input pair should probably be of identical size. How much learning effort this will take, remains to be seen. 
 
 
-## A Different Kinda Analog RL Thing
+## Future ML Designers
 
 ![ml-designer](./fig/ml-designer.png "ML Designer")
 
@@ -3000,10 +3006,19 @@ Both the designer-agent and boss-agent run continuously in a server-style mode. 
 
 ## Neural Sensor ADC in Intel 16nm FinFET
 
-- FIXME: write
-- ADC ref: [@nguyen2018adc]
+Among its first real-world uses, the combination of Hdl21 and ALIGN were deployed in the design of a ring oscillator (RO) based ADC intended for neural sensing applications, designed in Intel's 16nm FinFET technology. 
+
+Ring oscillator based converters operate based on the voltage or current dependence of a ring oscillator. The ADC's primary input is directed to the RO control terminal, modulating its frequency. The oscillator output is then sampled and its frequency is measured, generally by an all-digital frequency detector. 
+
+RO-ADCs have previously been used for low-area, low-cost sensors, such as for intra-SoC voltage, temperature, and device aging measurements. Their footprints are often substantially smaller than most alternate architectures. They are also highly digital integration friendly, often being made solely of the same standard-cell-style logic transistors as the SoC's digital logic. 
+
+Like many biological sensors, neural sensors are designed to be implanted in a human body. They are accordingly stringently power-constrained. A ring oscillator is therefore not necessarily an obvious fit, at least to me. However contemporary and forthcoming research has shown they have particular utility when designed in concern with dynamic digital back-ends, which rely on their analog front-end's capacity to rapidly change power-performance trade-offs, including entering extremely low-power states. (This work is, in a sense, a part of its design process.) ROs cleanly and straightforwardly enable these transitions. While ring oscillators are generally highly non-linear, a variety of techniques have proven sufficient to produce ADC resolutions in excess of 10b, sufficient for the neural application. 
+
+Figure~\ref{fig:ro-adc-block} schematically depicts the ADC. It is comprised of a pseudo-differential pair of sub-ADCs, each of which includes the RO, a phase-sampling comparator array, and a input resistor network through which the input modulates the RO's control terminal. Careful selection of the input resistor network was shown in [@nguyen2018adc] to provide cancellation of second-order oscillator non-linearity, a vital performance enhancement. Each of the ADC components is designed to operate at extremely low voltage. Its digital core operates at a nominal 500mV, while the analog front-end and oscillator itself runs at 300mV.
 
 ![ro-adc-block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
+
+
 
 ## USB PHY in Open-Source SkyWater 130nm
 
