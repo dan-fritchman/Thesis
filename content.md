@@ -144,9 +144,9 @@ Moreover, many of these "datacenter-scale programs" subsystems have vastly diffe
 
 Protocol buffers [@Varda2008] were introduced first internally to google and then as open source software to meet these needs of communication between diverse programs exchanging rich structured data. The ProtoBuf system principally includes three components:
 
-1. An efficient binary "wire format"
-2. A data schema description language (SDL), and
-3. A paired binding code-compiler
+- An efficient binary wire format,
+- A data schema description language (SDL), and
+- A paired binding code compiler
 
 Several similar, generally related follow-on projects including CapnProto, FlatBuffers, and FlexBuffers each take similar high-level approaches. Each includes the three core protobuf components (binary format, schema language, and compiler), differing in a variety of trade-offs in schema feature-set and format design. Such projects have proliferated sufficiently to motivate comparative research [@raghavan2021breakfast] into their relative performance strengths and weaknesses, across a variety of data content.
 
@@ -219,12 +219,13 @@ The choice of ProtoBuf affords for a rich diversity of front and back ends, impl
 
 To illustrate the design of the VLSIR schema, we highlight one of its core subcomponents: circuit descriptions. VLSIR's database schema includes a `circuit` subcomponent (`package` in ProtoBuf terms) which defines its circuit-level data model. The VLSIR circuit model is intentionally low-level, similar to that of structural Verilog. The `vlsir.circuit` components are a core interchange vessel for most programs using Hdl21, covered in Chapter 3. 
 
-- As in Hdl21 and Verilog, VLSIR's principal element of hardware reuse is called its `Module`.
-- `vlsir.circuit.Module`s consist of:
-  - Instances of other `Module`s, or of "headers" to externally-defined `ExternalModule` 
-  - Signals, each of potentially non-unity `width`. Each `vlsir.circuit.Signal` is therefore similar to the bus or vector of many popular HDLs, or more literally to the _packed array_ of Verilog. A subset of `Signal`s are annotated with `Port` attributes which indicate their availability for external connections.
-  - Connections there-between. Since `Signal`s, including those used as `Port`s, have non-unit bus widths, combinations to comprise their connections include sub-bus `Slice`s as well as series `Concatentation`s. This is the principal difference between VLSIR's model and that of lower-level models such as common in SPICE languages; signals and ports are all buses, and therefore can be combined in this variety of ways.
-- The principal collection of hardware content, `vlsir.circuit.Package`, is a collection of `Module` definitions which may instantiate each other. The VLSIR `Package` might commonly be named a "library" in similar models. Each `Package` includes a dependency-ordered list of `Module`s, as well as the headers to any `ExternalModule`s it requires.
+As in Hdl21 and Verilog, VLSIR's principal element of hardware reuse is called its `Module`. `vlsir.circuit.Module`s consist of:
+
+- Instances of other `Module`s, or of "headers" to externally-defined `ExternalModule`s 
+- Signals, each of potentially non-unity `width`. Each `vlsir.circuit.Signal` is therefore similar to the bus or vector of many popular HDLs, or more specifically to the _packed array_ of Verilog. A subset of `Signal`s are annotated with `Port` attributes which indicate their availability for external connections.
+- Connections there-between. Since `Signal`s, including those used as `Port`s, have non-unit bus widths, combinations to comprise their connections include sub-bus `Slice`s as well as series `Concatentation`s. This is the principal difference between VLSIR's model and that of lower-level models such as common in SPICE languages; signals and ports are all buses, and therefore can be combined in this variety of ways.
+
+The principal collection of hardware content, `vlsir.circuit.Package`, is a collection of `Module` definitions which may instantiate each other. The VLSIR `Package` might commonly be named a "library" in similar models. Each `Package` includes a dependency-ordered list of `Module`s, as well as the headers to any `ExternalModule`s it requires.
 
 A simplified excerpt of the `vlsir.circuit` data schema:
 
@@ -841,8 +842,8 @@ Here the function `G` is called twice, and produces two modules each with identi
 
 Note that while the modules returned by successive calls to `G` have identical _content_, they are nonetheless distinct objects in memory. Exporting both - particularly, the identical _names_ of both - to legacy EDA formats would generally produce redefinition errors. There are a few conceptual ways by which Hdl21 might confront this:
 
-1. By performing structured comparisons between all combinations of modules, and only exporting one of each identical set. 
-2. By avoiding producing identical modules in the first place, e.g. by caching the results of each generator call and returning the same object for each identical call.
+- 1. By performing structured comparisons between all combinations of modules, and only exporting one of each identical set. 
+- 2. By avoiding producing identical modules in the first place, e.g. by caching the results of each generator call and returning the same object for each identical call.
 
 Hdl21 uses approach 2 wherever possible. Each call to a `Generator` is logged and cached. Successive calls to the same function with identical parameter values return the same object. This ensures each generator-paramaters pair produces the same module on each call. 
 
@@ -1426,25 +1427,22 @@ However Hdl21 does not endeavor to reproduce the entirety of the EDA software fi
 
 These transformations occur in nested layers of several steps. A key component is the VLSIR data model and its surrounding software suite. The `vlsir.circuit` schema-package covered in Chapter 2 defines VLSIR's circuit data model. VLSIR's model is intentionally low-level, similar to that of structural Verilog. Hdl21's transformation from its own data model to legacy EDA formats is, in an important sense, divided in two steps:
 
-1. Transform Hdl21 data into VLSIR
-2. Hand off to the VLSIR libraries for conversion into EDA content
+- 1. Transform Hdl21 data into VLSIR
+- 2. Hand off to the VLSIR libraries for conversion into EDA content
 
 This division, particularly the definition of the intermediate data model, allows the latter to be reused across a variety of VLSIR-system programs and libraries beyond Hdl21. The former step - transforming HDL data into VLSIR - is Hdl21's primary "behind the scenes" job. It similarly divides in two:
 
-1. An elaboration step, in which the more complex facets of the Hdl21 data model are "compiled out". These include `Bundle`s, instance arrays, and a variety of compound hierarchical references.
-2. An export step, in which the elaborated Hdl21 data is translated into VLSIR's protobuf-defined content. This step is fairly mechanical as the elaborated Hdl21 model is designed to closely mirror that of VLSIR, excepting the native differences between a serializable data language such as protobuf versus an executable model such as in Python. (Particularly: only the latter has real pointers.)
+- 1. An elaboration step, in which the more complex facets of the Hdl21 data model are "compiled out". These include `Bundle`s, instance arrays, and a variety of compound hierarchical references.
+- 2. An export step, in which the elaborated Hdl21 data is translated into VLSIR's protobuf-defined content. This step is fairly mechanical as the elaborated Hdl21 model is designed to closely mirror that of VLSIR, excepting the native differences between a serializable data language such as protobuf versus an executable model such as in Python. (Particularly: only the latter has real pointers.)
 
 ### Elaboration
 
 Hdl21 elaboration is inspired by popular compiler designs and by Chisel's elaboration process. During elaboration a user-design `Module` or set of `Module`s are compiled into a simplified version of the Hdl21 data model suitable for export. Programs using Hdl21 therefore divide into two conceptual regions:
 
-1. _Generation time_, which might alternately be called "user time". This is when user-level code runs, constructing hardware content. This informally describes essentially all Hdl21-user-code, including all this document's preceding examples.
-2. _Elaboration time_. That hierarchical hardware tree is handed off to Hdl21's internally-defined elaboration process. This is where Hdl21 does most of its heavy lifting.
+- 1. _Generation time_, which might alternately be called "user time". This is when user-level code runs, constructing hardware content. This informally describes essentially all Hdl21-user-code, including all this document's preceding examples.
+- 2. _Elaboration time_. That hierarchical hardware tree is handed off to Hdl21's internally-defined elaboration process. This is where Hdl21 does most of its heavy lifting.
 
-- Elaboration consists of an ordered set of _elaboration passes_
-- Each elaboration pass is implemented as a Python class. Many core functions such as common data-model traversal operations are implemented in a shared base class.
-- Each elaboration pass performs a targeted, highly specific task, over a design hierarchy at a time. Examples include resolving undefined references, flattening `Bundle` definitions, and checking for valid port connections.
-- Elaboration is performed by an `Elaborator`, which is principally comprised of an ordered list of such elaboration-pass classes. This enables customization of the elaboration process by downstream (advanced) usage, e.g. to add custom transformations or extract specific metrics at arbitrary points in the process.
+Elaboration consists of an ordered set of _elaboration passes_. Each elaboration pass is implemented as a Python class. Many core functions such as common data-model traversal operations are implemented in a shared base class. Each elaboration pass performs a targeted, highly specific task, over a design hierarchy at a time. Examples include resolving undefined references, flattening `Bundle` definitions, and checking for valid port connections. Elaboration is performed by an `Elaborator`, which is principally comprised of an ordered list of such elaboration-pass classes. This enables customization of the elaboration process by downstream (advanced) usage, e.g. to add custom transformations or extract specific metrics at arbitrary points in the process.
 
 ### Elaboration Pass Example
 
@@ -1659,8 +1657,8 @@ Embedding in SVG also allows for rich, arbitrary annotations and metadata, such 
 
 In other words, Hdl21 schematics reverse the order of what a schematic is, to be:
 
-1. A Picture
-2. A Circuit
+- 1. A Picture
+- 2. A Circuit
 
 The schematic-schema of structure and metadata, detailed later in this document, is what makes an SVG a schematic.
 
@@ -2128,8 +2126,8 @@ Note: the SVG specification includes a paired definitions (`<defs>`) section and
 
 In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's 60+ year history, it has shipped roughly 13 sextillion (1.3e22) total transistors. (That total has risen dramatically in the few years since.) Essentially all of them have been designed by one of two methods:
 
-1. "The digital way", using a combination of HDL code, logic synthesis, and automatically placed and routed layout.
-2. "The analog way", using a graphical interface to produce essentially free-form layout shapes.
+- 1. "The digital way", using a combination of HDL code, logic synthesis, and automatically placed and routed layout.
+- 2. "The analog way", using a graphical interface to produce essentially free-form layout shapes.
 
 ## The Digital Way
 
@@ -2585,16 +2583,16 @@ Third, these delays have easily computable surrogates. In a common example, layo
 
 In summary:
 
-1. Synchronous logic offers a very straightforward set of pass/ fail measures;
-2. Static timing analysis offers an efficient means of computing those measures;
-3. Readily available surrogates for STA quantities offer _even more_ effecient means of estimating those quantities
-4. All of those same methods apply to _all synchronous digital circuits_.
+- 1. Synchronous logic offers a very straightforward set of pass/ fail measures;
+- 2. Static timing analysis offers an efficient means of computing those measures;
+- 3. Readily available surrogates for STA quantities offer _even more_ effecient means of estimating those quantities
+- 4. All of those same methods apply to _all synchronous digital circuits_.
 
 Contrast this with analog circuits:
 
-1. Virtually no two circuits have the same set of success and failure metrics;
-2. Transistor-level simulation is the sole means of evaluating those metrics;
-3. Even the production of simulation collateral and metric extraction is highly circuit and context-specific
+- 1. Virtually no two circuits have the same set of success and failure metrics;
+- 2. Transistor-level simulation is the sole means of evaluating those metrics;
+- 3. Even the production of simulation collateral and metric extraction is highly circuit and context-specific
 
 In short: fail across the board. Analog circuits have no "analog" (ahem) to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each depends on wholly different criteria. 
 
@@ -2642,9 +2640,9 @@ Tetris, in contrast, takes the approach of digital PnR: it is agnostic about the
 
 The (relatively sad) state of analog layout production does offer considerable opportunity, and considerable low-hanging fruit. Consider a typical design feedback loop:
 
-1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
-2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
-3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
+- 1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
+- 2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
+- 3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
    a. Evaluations all succeed, congratulations! Circuit's done.
    b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
    c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
@@ -2729,6 +2727,7 @@ ah.PnrInput(
 \setkeys{Gin}{width=0.3\linewidth}
 ![alignhdl21-strongarm](./fig/alignhdl21-strongarm.jpg "Example StrongArm Comparator Layout, Compiled from Hdl21 and ALIGN")
 
+
 ### Placement
 
 AlignHdl21's `Placement` dictates relative instance placements in a format similar to popular GUI programming frameworks. Each placement is a nested series of rows and columns. The root element of each placement is either a single row or single column. Within each row (column), each entry can be: 
@@ -2750,6 +2749,11 @@ While ALIGN provides both automatic placement and routing, most AlignHdl21 modul
 Second, for all but quite small circuits, the ILP-based placement strategy used by ALIGN can be pretty slow. This time feels particularly poorly-spent on circuits for which the designer has a reasonably placement in mind. Attempts at making use of an alternate analytical placer proved unsuccessful. Such a strategy, which more closely mirrors common tactics used by digital PnR, would seem more amenable to larger analog circuits than ILP. 
 
 
+### Elaboration
+
+ALIGN performs PnR hierarchically. Parent circuits may instantiate sub-circuits which are themselves outputs of the same PnR process. These child circuits require the same set of PnR constraints and guidance as any other, including their parents. 
+
+AlignHdl21 produces this hierarchical input via two of Hdl21's "pro-mode" features: custom elaboration, and `Properties`. 
 
 ```python
 
