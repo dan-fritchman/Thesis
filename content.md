@@ -2749,6 +2749,449 @@ While ALIGN provides both automatic placement and routing, most AlignHdl21 modul
 
 Second, for all but quite small circuits, the ILP-based placement strategy used by ALIGN can be pretty slow. This time feels particularly poorly-spent on circuits for which the designer has a reasonably placement in mind. Attempts at making use of an alternate analytical placer proved unsuccessful. Such a strategy, which more closely mirrors common tactics used by digital PnR, would seem more amenable to larger analog circuits than ILP. 
 
+
+
+```python
+
+class PnrWalker(h.HierarchyWalker):
+    """
+    # PnR Walker
+
+    Walks a root Hdl21 module, collecting up every dependency that has `PnrInput`.
+    """
+
+    def __init__(self):
+        self.pnr_inputs: List[PnrInput] = []
+        self.done: Set[h.Module] = set()
+
+    def visit_module(self, module: h.Module) -> h.Module:
+        """Visit a `Module`.
+        Primary method for most manipulations."""
+
+        if module in self.done:
+            return module  # Already done
+
+        # Collect its `PnrInput` if it has one
+        pnr_input: Optional[PnrInput] = module.props.get(PropNames.pnr_input)
+        if pnr_input is not None:
+            self.pnr_inputs.append(pnr_input)
+
+        # And continue with the data model traversal.
+        # We only look at instances and compound combinations thereof,
+        # since we are only looking for `PnrInput` properties stored on their target `Module`s
+        for inst in module.instarrays.values():
+            if isinstance(inst.of, h.Module):
+                self.visit_module(inst.of)
+        for inst in module.instbundles.values():
+            if isinstance(inst.of, h.Module):
+                self.visit_module(inst.of)
+        for inst in module.instances.values():
+            if isinstance(inst.of, h.Module):
+                self.visit_module(inst.of)
+
+        self.done.add(module)
+        return module
+
+
+def walk(top: PnrInput) -> List[PnrInput]:
+    """# Walk a hierarchical `Module`, collecting all dependent `PnrInput`s.
+    Input `top` will always come back as the first element of the output list."""
+
+    walker = PnrWalker()
+    walker.visit_module(top.module)
+    return walker.pnr_inputs
+
+```
+
+
+
+```python
+
+@dataclass(config=PydanticConfig)
+class PnrInput:
+    """
+    # PnrInput
+    The combination of an Hdl21 `Module`, a linked placement, and a set of PnR constraints.
+    """
+
+    # Required
+    module: h.Module
+    # Optional
+    placement: Optional[Placement] = None
+    constraints: Optional[List[data.Constraint]] = None
+    params: Optional[Any] = None  # Input parameters
+
+    def __post_init_post_parse__(self):
+        # Give our `Module` a reference to us as a `Property`.
+        if PropNames.pnr_input in self.module.props:
+            msg = f"Module {self.module} already has a property {PropNames.pnr_input}"
+            raise ValueError(msg)
+        self.module.props.set(PropNames.pnr_input, self)
+
+    @property
+    def name(self) -> str:
+        return utils.netlist_module_name(self.module)
+
+    @classmethod
+    def get(cls, m: h.Module) -> Optional["PnrInput"]:
+        """# Get the `PnrInput` affixed to Hdl21 Module `m`.
+        Returns `None` if no pnr input is provided."""
+        return m.props.get(PropNames.pnr_input)
+
+
+class PropNames:
+    # Names of `h.Module` properties written here
+    pnr_input: ClassVar[str] = "alignhdl21.pnr_input"  # is a `PnrInput`
+    constraints: ClassVar[str] = "alignhdl21.constraints"  # is a `List[Constraint]`
+
+```
+
+
+
+```python
+
+@h.paramclass
+class AlignFinFetParams:
+    """
+    # ALIGN FinFet Stack Parameters
+
+    The device parameters understood by the two supported ALIGN FinFet PDKs.
+
+    Note some of the `FinFetParams` effective fields are "one of the other" types,
+    and capitalize on the not-super-public behavior that Hdl21 does not export `None`-valued parameters.
+    """
+
+    # Optional
+    nfin = h.Param(dtype=int, desc="Number of Fins", default=4)
+    m = h.Param(dtype=Optional[int], desc="Multiplier", default=None)
+
+    # "Stack spec". At most one can be specified.
+    # If neither are specified, defaults to `nf=1`.
+    nf = h.Param(dtype=Optional[int], desc="Number of Fingers", default=None)
+    stack = h.Param(dtype=Optional[int], desc="Number series stacked", default=None)
+
+    def __post_init_post_parse__(self):
+        """# Post-parse validation
+        Particularly check for those 'one or the other' fields."""
+
+        if self.nf is not None and self.stack is not None:
+            raise ValueError("Cannot specify both `nf` and `stack`")
+        if self.nf is None and self.stack is None:
+            raise ValueError("Must specify one of `nf` or `stack`")
+
+```
+
+
+
+```python
+
+
+class Context(Enum):
+    """# Compilation Context
+    The enumerated set of things we can "compile to"."""
+
+    Align = "Align"
+    Lvs = "Lvs"
+    Sim = "Sim"
+
+
+# The module-scope `Context`
+context = Context.Align
+
+the_set_of_align_modules = set(align_modules.__dict__.values())
+
+
+class Walker(h.HierarchyWalker):
+    """# PDK Hierarchical Walker
+    A special one that depends on a module-scope `Context` to largely determine what to do with its `ExternalModule`s.
+    """
+
+    def visit_module(self, module: h.Module) -> h.Instantiable:
+        # Call the base class, particularly for its traversal of instances
+        module = super().visit_module(module)
+
+        if context == Context.Align or module not in the_set_of_align_modules:
+            return module  # Nothing to do
+
+        if context == Context.Lvs:
+            return getattr(lvs_modules, module.name)
+        if context == Context.Sim:
+            return getattr(sim_modules, module.name)
+        raise RuntimeError(f"Invalid Context: {context}")
+
+    def visit_external_module_call(self, call: h.ExternalModuleCall) -> h.Instantiable:
+        if call.module in the_set_of_align_modules:
+            if context == Context.Align:
+                return call  # Unchanged
+            elif context == Context.Lvs or context == Context.Sim:
+                return self.replace_mos(call)
+            else:
+                raise RuntimeError(f"Invalid Context: {context}")
+        return call
+
+    def replace_mos(self, call: h.ExternalModuleCall) -> h.Instantiable:
+        """
+        Transform one of our ALIGN modules into an simulation-compatible or LVS-compatible device.
+        Either returns an `ExternalModule` or a generator-call to a `Stack` of them.
+        """
+
+        module = call.module
+        if context == Context.Lvs:
+            unit_module = getattr(lvs_modules, module.name)
+        elif context == Context.Sim:
+            unit_module = getattr(sim_modules, module.name)
+        else:
+            raise RuntimeError(f"Invalid Module: {module}")
+
+        params = call.params
+        w = params.nfin * intel16_hdl21.NM_PER_FIN
+
+        if params.stack is None:
+            # Parallel Case
+            # Return the unit `ExternalModule` with an `nf` parameter.
+            #
+            # Apply the default `nf`, in case neither `nf` nor `stack` were specified.
+            nf = params.nf or 1
+            #
+            # NOTE: the ALIGN PDK and Intel16's "regular PDK" seem to differ in their interpretation of `nf` and `w`.
+            # Particularly, the simulation and LVS models do the "specify total width" way (AKA, the dumb way),
+            # and ALIGN does the "specify width per finger" way (AKA, normal sane people's way).
+            #
+            # Convert to the "total width" way here for simulation and LVS.
+            w = w * nf
+
+            unit_params = intel16_hdl21.MosParams(
+                m=params.m,
+                nf=nf,
+                w=w,
+                # No length specified; always use the default
+            )
+            return unit_module(unit_params)
+
+        # Stack Case
+        unit_params = intel16_hdl21.MosParams(
+            m=params.m,
+            nf=None,
+            w=w,
+            # No length specified; always use the default
+        )
+        # Call our `Stack` generator to array those out
+        stack = Stack(unit=unit_module(unit_params), nser=params.stack)
+        # `Stack` also uses slices, concatenations, stuff that needs to be elaborated out. Do that.
+        h.elaborate(stack)
+        return stack
+
+
+def compile(src: h.Elaboratables) -> None:
+    """Compile `src` to the technology"""
+    Walker.walk(src)
+
+```
+
+
+
+```python
+
+@h.paramclass
+class StackParams:
+    """# Stack Parameters"""
+
+    unit = h.Param(dtype=h.Instantiable, desc="Unit Transistor Device")
+    nser = h.Param(dtype=int, desc="Number series stacked")
+
+
+@h.generator
+def Stack(p: StackParams) -> h.Module:
+    """# Stack Generator
+    Create a series-stack of `nser` identical `unit` transistor devices."""
+
+    if p.nser < 2:
+        raise ValueError
+
+    # Create the result module, with a Mos-set of ports
+    m = h.Module()
+    m.d, m.g, m.s, m.b = deepcopy(h.MosPorts)
+
+    # Create the internal source-drain signals
+    m.i = h.Signal(width=p.nser - 1)
+
+    # Create an instance array of `unit` devices
+    m.units = p.nser * p.unit(
+        # Primary "stacking action" goes down right here
+        s=h.Concat(m.s, m.i),
+        d=h.Concat(m.i, m.d),
+        # Parallel connections
+        g=m.g,
+        b=m.b,
+    )
+
+    # And return the result
+    return m
+
+```
+
+
+
+```python
+
+class EarlyPass(ElabPass):
+    """
+    # Early Elaboration Pass
+
+    Designed to work on un-elaborated `Module`s, particularly those containing `Bundle`s.
+    Special treatment is given to the built-in `h.Diff` bundle and `h.Pair` instance-bundle,
+    which infer matching requirements.
+    """
+
+    def elaborate_module(self, module: h.Module) -> h.Module:
+        # Check for a `PnrInput` property
+        pnr_input: Optional[PnrInput] = module.props.get(PropNames.pnr_input)
+        if pnr_input is None:
+            return module
+
+        # OK, work to do here. Collect its `PnrInput` into a list of `Constraint`s.
+        constraints: List[data.Constraint] = []
+        pair_groups: List[PairGroup] = []
+        mappings = InstanceMappings()
+
+        for ib in module.instbundles.values():
+            if isinstance(ib, h.Pair):
+                pg = PairGroup.create(ib)
+                mappings.map[ib] = pg
+                pair_groups.append(pg)
+                constraints.append(pg.constraint())
+            else:
+                raise RuntimeError(f"Invalid non-Pair instance bundle {ib}")
+
+        if pair_groups:
+            # Create a symmetry constraint for each pair
+            #
+            # Note this is in "list of lists of instance names" form
+            # Each "group" we created above "counts" as, like, an outer list?
+            # We think it's possible to "symmetric blocks" things that are not "groups", but we don't.
+            #
+            # FIXME: always vertical for now. Maybe infer from the placement some day?
+            #
+            symm_constraint = data.SymmetricBlocks(
+                direction="V",
+                pairs=[[pg.groupname] for pg in pair_groups],
+            )
+            constraints.append(symm_constraint)
+
+        if pnr_input.placement is not None:
+            elaborate_placement(pnr_input.placement, mappings, constraints)
+
+        # Add the constraint-list as a new property
+        module.props.set(PropNames.constraints, constraints)
+
+        # And send it back
+        return module
+
+
+class LatePass(ElabPass):
+    """
+    # Late Elaboration Pass
+
+    Designed to work on "mostly elaborated" `Module`s.
+    Mostly focused on signal-roles (e.g. power, ground, clock), and converting them into corresponding constraints.
+    Note these `Signal`s can be part of `Bundle`s, and so do not necessarily exist during `EarlyPass`!
+    """
+
+    def elaborate_module(self, module: h.Module) -> h.Module:
+        #
+        # Check for the `PnrInput` and `List[Constraint]` valued properties.
+        # Based on `FirstPass` there should be both, or neither, or something went wrong.
+        #
+        pnr_input: Optional[PnrInput] = module.props.get(PropNames.pnr_input)
+        constraints: Optional[List[data.Constraint]] = module.props.get(
+            PropNames.constraints
+        )
+
+        if pnr_input is None and constraints is None:
+            # Unconstrained; nothing to do.
+            # FIXME: should we infer signal-role constraints anyway?
+            return module
+
+        if (pnr_input is None and constraints is not None) or (
+            pnr_input is not None and constraints is None
+        ):
+            msg = f"Internal error: invalid combination of pnr_input and constraints on {module}"
+            return self.fail(msg)
+
+        #
+        # OK we've got work to do on this one.
+        #
+
+        # Collect up ports by usage
+        clock_ports: List[h.Signal] = []
+        power_ports: List[h.Signal] = []
+        ground_ports: List[h.Signal] = []
+
+        for sig in itertools.chain(module.signals.values(), module.ports.values()):
+            # Append anything with non-SIGNAL `usage` to the constraints-to-be lists
+            if sig.usage == h.signal.Usage.CLOCK:
+                clock_ports.append(sig)
+            elif sig.usage == h.signal.Usage.POWER:
+                power_ports.append(sig)
+            elif sig.usage == h.signal.Usage.GROUND:
+                ground_ports.append(sig)
+
+        if clock_ports:
+            constraints.append(data.ClockPorts(ports=[s.name for s in clock_ports]))
+        if power_ports:
+            constraints.append(data.PowerPorts(ports=[s.name for s in power_ports]))
+        if ground_ports:
+            constraints.append(data.GroundPorts(ports=[s.name for s in ground_ports]))
+
+        # Add any user-provided constraints, *at the end*.
+        # FIXME NOTE: for now this is because
+        # (a) ALIGN cares about their order,
+        # (b) we know (for now) there will be some that rely on inferred constraints
+        # That is not ideal long-term and will need to change.
+        if pnr_input.constraints:
+            constraints.extend(pnr_input.constraints)
+
+        # And send it back
+        return module
+
+```
+
+
+
+```python
+
+
+def setup():
+    # Set up our custom hdl21 elaboration.
+    # Designed to be run at import-time
+    #
+    # This sets the global hdl21 elaborator, largely because elaboration is invoked in many places
+    # not directly accessible by us - e.g. while invoking simulation.
+    # The `constraint_elaborator` is a no-op for modules which do not include any `PnrInput`
+    # (or at least it should be!).
+    #
+
+    #
+    # Collect our list of passes. Order goes:
+    #
+    # - Our `EarlyPass`
+    # - Most other default elaboration
+    # - Our `LatePass`
+    # - The final default step, which just annotates the `Module._elaborated` field.
+    #
+    default_passes = Elaborator.default().passes
+    passes = [EarlyPass] + default_passes[:-1] + [LatePass] + [default_passes[-1]]
+
+    # Create our elaborator, and set it as the global default
+    set_elaborator(Elaborator(passes))
+
+
+setup()  # Invoke that elaboration setup
+
+```
+
+
+
 ---
 
 FIXME: either get these into the flow, or ditch em
@@ -3027,15 +3470,276 @@ Both the designer-agent and boss-agent run continuously in a server-style mode. 
 
 Among its first real-world uses, the combination of Hdl21 and ALIGN were deployed in the design of a ring oscillator (RO) based ADC intended for neural sensing applications, designed in Intel's 16nm FinFET technology. 
 
-Ring oscillator based converters operate based on the voltage or current dependence of a ring oscillator. The ADC's primary input is directed to the RO control terminal, modulating its frequency. The oscillator output is then sampled and its frequency is measured, generally by an all-digital frequency detector. 
+Ring oscillator based converters operate based on the voltage or current frequency-dependence of a tunable oscillator. The ADC's primary input is directed to the RO control terminal, modulating its frequency. The oscillator output is then sampled and its frequency is measured, generally by an all-digital frequency detector. RO-ADCs have previously been used for low-area, low-cost sensors, such as for intra-SoC voltage, temperature, and device aging measurements. Their footprints are often substantially smaller than most alternate architectures. They are also highly digital integration friendly, often being made solely of the same standard-cell-style logic transistors as the SoC's digital logic. 
 
-RO-ADCs have previously been used for low-area, low-cost sensors, such as for intra-SoC voltage, temperature, and device aging measurements. Their footprints are often substantially smaller than most alternate architectures. They are also highly digital integration friendly, often being made solely of the same standard-cell-style logic transistors as the SoC's digital logic. 
-
-Like many biological sensors, neural sensors are designed to be implanted in a human body. They are accordingly stringently power-constrained. A ring oscillator is therefore not necessarily an obvious fit, at least to me. However contemporary and forthcoming research has shown they have particular utility when designed in concern with dynamic digital back-ends, which rely on their analog front-end's capacity to rapidly change power-performance trade-offs, including entering extremely low-power states. (This work is, in a sense, a part of its design process.) ROs cleanly and straightforwardly enable these transitions. While ring oscillators are generally highly non-linear, a variety of techniques have proven sufficient to produce ADC resolutions in excess of 10b, sufficient for the neural application. 
+Like many biological sensors, neural sensors are designed to be implanted in a human body. They are accordingly stringently power-constrained. A ring oscillator is therefore not necessarily an obvious fit (at least to me). However contemporary and forthcoming research has shown they have particular utility when designed in concert with dynamic digital back-ends, which rely on their analog front-end's capacity to rapidly change power-performance trade-offs, including entering extremely low-power states. (This work is, in a sense, a part of its design process.) ROs cleanly and straightforwardly enable these transitions. While ring oscillators are generally highly non-linear, a variety of techniques have proven sufficient to produce ADC resolutions in excess of 10b, sufficient for the neural application. 
 
 Figure~\ref{fig:ro-adc-block} schematically depicts the ADC. It is comprised of a pseudo-differential pair of sub-ADCs, each of which includes the RO, a phase-sampling comparator array, and a input resistor network through which the input modulates the RO's control terminal. Careful selection of the input resistor network was shown in [@nguyen2018adc] to provide cancellation of second-order oscillator non-linearity, a vital performance enhancement. Each of the ADC components is designed to operate at extremely low voltage. Its digital core operates at a nominal 500mV, while the analog front-end and oscillator itself runs at 300mV.
 
 ![ro-adc-block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
+
+
+```python
+@h.paramclass
+class RoStageParams:
+    uinv = h.Param(dtype=h.Instantiable, desc="Unit Inverter")
+    ratio = h.Param(dtype=int, desc="Fwd/Cross Ratio", default=4)
+
+
+@h.generator
+def RoStage(params: RoStageParams) -> h.Module:
+    """# Pseudo-Diff Ring Oscillator Stage """
+
+    uinv = params.uinv
+
+    @h.module
+    class RoStage:
+        # IO
+        TOP, BOT = h.PowerGround()
+        NWELL, PSUB = h.PowerGround()
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+
+        # Internal Implementation
+        ## Cross-Coupled Output Inverters
+        cross = h.Pair(params.uinv)(i=out, o=h.inverse(out), ...)
+
+    ## Forward Inverters
+
+		R
+    conns = dict(
+        TOP=RoStage.TOP, BOT=RoStage.BOT, NWELL=RoStage.NWELL, PSUB=RoStage.PSUB
+    )
+    for k in range(params.ratio):
+        fwd_p_insts.append(
+            RoStage.add(
+                uinv(i=RoStage.inp.p, o=RoStage.out.p, **conns), name=f"fwd_p{k}"
+            )
+        )
+        fwd_n_insts.append(
+            RoStage.add(
+                uinv(i=RoStage.inp.n, o=RoStage.out.n, **conns), name=f"fwd_n{k}"
+            )
+        )
+
+    # Create PnR placement
+    cols = fwd_p_insts + [RoStage.cross_p, RoStage.cross_n] + fwd_n_insts
+    placement = ah.Placement(root=ah.Row(cols))
+    ah.PnrInput(
+        module=RoStage, placement=placement, constraints=[ah.ConfigureCompiler()]
+    )
+    return RoStage
+```
+
+FIXME: add some layout shots(?)
+
+
+
+```python
+
+@h.paramclass
+class StageParams:
+    # Optional
+    ro_stage = h.Param(dtype=h.Instantiable, desc="Delay Cell", default_factory=RoStage)
+    slicer = h.Param(dtype=h.Instantiable, desc="Slicer Module", default_factory=Slicer)
+
+
+@h.generator
+def Stage(params: StageParams) -> h.Module:
+    """# RO ADC Stage
+    Combination of an RO delay stage, plus a phase-sampling slicer."""
+
+    @h.module
+    class Stage:
+        VDD, VSS = h.PowerGround()  # IO
+        ctrl = h.Input(desc="RO Control Voltage")
+        clk = h.Input(desc="Sampling Clock")
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        samp = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+
+        # Internal Implementation
+        ro_stage = params.ro_stage(
+            inp=inp, out=out, TOP=VDD, NWELL=VDD, BOT=ctrl, PSUB=VSS
+        )
+        slicer = params.slicer(inp=out, out=samp, clk=clk, VDD=VDD, VSS=VSS)
+
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[Stage.slicer, Stage.ro_stage]))
+
+    ah.PnrInput(
+        module=Stage,
+        placement=placement,
+        constraints=[
+            ah.ConfigureCompiler(),
+            ah.PortLocation(ports=["clk", "samp_p", "samp_n"], location="TC"),
+        ],
+    )
+    return Stage
+```
+
+
+```python
+
+@h.generator
+def RoAdcHalf(params: RoAdcParams) -> h.Module:
+    """# RO ADC Half
+    One side of the pseudo-differential RO ADC."""
+
+    @h.module
+    class RoAdcHalf:
+        # IO
+        VDD, VSS = h.PowerGround()
+        inp = h.Input()
+        clk = h.Input(desc="Sampling Clock")
+        samp = h.Output(width=params.nstg, desc="Sampled Output")
+
+        # Implementation
+        rdiv = h.Signal()
+        res = params.input_res(inp=inp, out=rdiv, VSS=VSS)
+        ring = Ring(params)(clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=samp)
+
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[RoAdcHalf.res, RoAdcHalf.ring]))
+
+    # Create some `PnrInput`
+    ah.PnrInput(
+        module=RoAdcHalf,
+        placement=placement,
+        constraints=[ah.ConfigureCompiler()],
+        params=params,
+    )
+    return RoAdcHalf
+
+
+@h.generator
+def RoAdc(params: RoAdcParams) -> h.Module:
+    """
+    # RO-Based ADC
+    The top-level pseudo-differential combination of two `RoAdcHalf`s.
+    """
+
+    @h.module
+    class RoAdc:
+        # IO
+        VDD, VSS = h.PowerGround()
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        clk = h.Input(desc="Sampling Clock")
+        samp_p = h.Output(width=params.nstg, desc="Sampled Output (Positive)")
+        samp_n = h.Output(width=params.nstg, desc="Sampled Output (Negative)")
+
+        # Implementation
+        rdiv = h.Diff()
+        res = h.Pair(params.input_res)(inp=inp, out=rdiv, VSS=VSS)
+        rings = h.Pair(Ring(params))(
+            clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=h.bundlize(p=samp_p, n=samp_n)
+        )
+
+    """ 
+    NOTE: this seems like it should be, like, two `Half`s. As in the snippet below. 
+    Align seems to choke on that so far? 
+    We think it doesn't like having a module that is only a single pair of instances(?).
+    Luckily `Half` is not very big either; it's just "expanded" above. 
+
+```
+        # Implementation
+        halves = h.Pair(RoAdcHalf(params))(
+            inp=inp, clk=clk, samp=h.bundlize(p=samp_p, n=samp_n), VDD=VDD, VSS=VSS
+        )
+    
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[RoAdc.halves]))
+    ```
+    """
+    
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[RoAdc.res, RoAdc.rings]))
+    
+    # Create some `PnrInput`
+    ah.PnrInput(
+        module=RoAdc,
+        placement=placement,
+        constraints=[ah.ConfigureCompiler()],
+        params=params,
+    )
+    return RoAdc
+```
+
+```python
+
+@h.generator
+def DtsaDansVersion(_: h.HasNoParams) -> h.Module:
+    """# Dual Tail Comparator"""
+
+    plvt, nlvt = pdk.modules.plvt, pdk.modules.nlvt
+
+    @h.module
+    class DtsaDansVersion:
+        # IO
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        clk = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        VDD, VSS = h.PowerGround()
+
+        # Implementation
+        mid = h.Diff()
+        ntail, ptail = h.Signals(2)
+
+        # Input Stage
+        tailn = nlvt(nf=2)(d=ntail, g=clk.n, s=VSS, b=VSS)
+        ninpp = nlvt(nf=8)(d=mid.n, g=inp.p, s=ntail, b=VSS)
+        ninpn = nlvt(nf=8)(d=mid.p, g=inp.n, s=ntail, b=VSS)
+        ploadp = plvt(nf=8)(d=mid.p, g=clk.n, s=VDD, b=VDD)
+        ploadn = plvt(nf=8)(d=mid.n, g=clk.n, s=VDD, b=VDD)
+
+        # Output/ Latch Stage
+        tailp = plvt(nf=4)(d=ptail, g=clk.p, s=VDD, b=VDD)
+        plat = h.Pair(plvt(nf=2))(d=h.inverse(out), g=out, s=ptail, b=VDD)
+        nlat = h.Pair(nlvt(nf=2))(d=h.inverse(out), g=out, s=VSS, b=VSS)
+
+        # Forwarding between the two
+        nfwd = h.Pair(nlvt(nf=4))(d=h.inverse(out), g=mid, s=VSS, b=VSS)
+
+```
+
+```python
+
+@h.paramclass
+class SlicerParams:
+    sa = h.Param(dtype=h.Instantiable, desc="StrongArm", default_factory=NmosStrongArm)
+    sr = h.Param(dtype=h.Instantiable, desc="SR Latch", default_factory=SrLatch)
+
+
+@h.generator
+def Slicer(params: SlicerParams) -> h.Module:
+    """# StrongArm Based Slicer"""
+
+    @h.module
+    class Slicer:
+        # IO
+        VDD, VSS = h.PowerGround()
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        clk = h.Input()
+
+        # Internal Implementation
+        ## StrongArm Comparator
+        sa = params.sa(inp=inp, clk=clk, VDD=VDD, VSS=VSS)
+        ## SR Latch
+        sr = params.sr(inp=sa.out, out=out, VDD=VDD, VSS=VSS)
+
+    # placement = None
+    placement = ah.Placement(root=ah.Column(rows=[Slicer.sa, Slicer.sr]))
+
+    # Create some PnR input
+    ah.PnrInput(
+        params=params,
+        module=Slicer,
+        placement=placement,
+        constraints=[ah.ConfigureCompiler()],
+    )
+    return Slicer
+```
 
 
 
