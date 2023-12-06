@@ -1,1 +1,2 @@
-(FIXME: abstract coming soon)
+Analog and custom circuits have long been a bottleneck to the integrated circuit design process. Automation generation of such circuits has long been a topic of research, but has failed to break through to popular practice. This talk will introduce a modular framework including a cloud-native IC design database, an analog circuit programming framework, a web-native schematic system, and tools for directed programming and automatic compilation of semi-custom IC layout. Highlighted applications include wireline transceivers and data converters, including a recent prototype ADC targeted for neural sensing applications, and research infrastructure for distributed, machine learning based circuit optimization. 
+
