@@ -2642,8 +2642,8 @@ The (relatively sad) state of analog layout production does offer considerable o
 - 2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
 - 3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
    a. Evaluations all succeed, congratulations! Circuit's done.
-   b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
-   c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
+      b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
+      c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
 
 The good news: we need not automate the entirety of this process to make valuable progress. Improving any of them helps. 
 
@@ -2664,11 +2664,14 @@ Like MAGICAL, ALIGN began with the goal of producing layout from existing, un-an
 
 And many more. 
 
-FIXME: a passage on their primitives / generators
+In addition to PnR, ALIGN performs two related tasks inline: 
+
+- First, a set of PnR constraints is inferred from graph analysis of the circuit netlist. Inferred constraints primarily include those for matching and symmetry between devices. 
+- Second, primitive device layouts are generated inline. Each ALIGN PDK provides a set of Python-language parametric layout generators for each primitive device (e.g. transistor) it supports. These primitive-generators are invoked inline during PnR. Each uses the programmed-custom layout style to produce a detailed (hopefully) DRC-compliant layout from a terse set of device parameters. This is similar to the approach deployed by BAG, which similarly executes Python-based primitive-level layout generators inline with broader user "generation" code. It differs from the approach of Layout21 and digital PnR, both of which require primitive-level layouts be pre-produced before PnR is to begin. 
 
 Our own research team has long had a valuable partnership with Intel. Recent BWRC research has included IC designs for computer architecture, SERDES, wireless transceivers, and more implemented in Intel's process technologies, primarily the popular 16nm FinFET. The same technology was used for the 2022 and 2023 editions of the educational chips described in [@burnett2018] and [@guo2023osci]. This partnership was largely how this work came to consider analog PnR, and particularly PnR through ALIGN. The ALIGN "PDK" developed by the Intel team serves as a central ingredient. 
 
-Working with external corporate (and especially academic) partners produced a related, non-technical realization: we have a really significant "not invented here" syndrome. Especially when alternative home-grown offerings have "Berkeley", right in the name, right up front. This is in part the nature of our field; industry IC designers are quite inept at sharing between institutions too. This is in part due to technical shortcomings, particularly in the tangled pile of EDA software and PDK content which tends to be so difficult to share, both technically and contractually. It is also cultural. Working with collaborators one cannot directly tap on the shoulder requires commitments to a number of topics at which IC designers, and especially researchers, and _especially_ grad students, don't really excel. Documentation and "design for understandability" are prime examples. 
+^[Working with external corporate (and especially academic) partners produced a related, non-technical realization: we have a really significant "not invented here" syndrome. Especially when alternative home-grown offerings have "Berkeley", right in the name, right up front. This is in part the nature of our field; industry IC designers are quite inept at sharing between institutions too. This is in part due to technical shortcomings, particularly in the tangled pile of EDA software and PDK content which tends to be so difficult to share, both technically and contractually. It is also cultural. Working with collaborators one cannot directly tap on the shoulder requires commitments to a number of topics at which IC designers, and especially researchers, and _especially_ grad students, don't really excel. Documentation and "design for understandability" are prime examples.]
 
 
 ## `AlignHdl21`
@@ -2734,17 +2737,22 @@ AlignHdl21's `Placement` dictates relative instance placements in a format simil
 - A name-based reference to any of these, or to any of the elements of the virtual hierarchy which can be constructed through ALIGN's `Group` functionality, or 
 - A nested column (row)
 
-Figure~\ref{fig:alignhdl21-placement1} schematically illustrate the placement scheme. Each of the leaf-level elements are instances of primitives (what ALIGN calls "generators" - adding an N+1th definition for the term) or instances of other child modules. 
+Figure~\ref{fig:alignhdl21-placement1} schematically illustrate the placement scheme. Each of the leaf-level elements are Hdl21 instances which map to ALIGN primitive "generators" ^[Adding an N+1th definition for the term] or instances of other child modules. 
 
-Figure~\ref{fig:alignhdl21-placement2} says FIXME!
+Figure~\ref{fig:alignhdl21-placement2} shows a column-based such placement. 
+
+Figure~\ref{fig:alignhdl21-placement3} further highlights the capacity for nesting among placement entities. Each row consists of a set of entities which may themselves be nested columns, which may in turn include nested rows. The leaf-level nodes in this graph are Hdl21 instances, or name-based references to instances.
 
 \setkeys{Gin}{width=0.5\linewidth}
-![alignhdl21-placement1](./fig/alignhdl21-placement1.png "Conceptual Placement")
-![alignhdl21-placement2](./fig/alignhdl21-placement2.png "Conceptual Placement With Nesting") 
+![alignhdl21-placement1](./fig/alignhdl21-placement1.png "Example Placement")
+
+![alignhdl21-placement2](./fig/alignhdl21-placement2.png "Example Placement") 
+
+![alignhdl21-placement3](fig/alignhdl21-placement3.png "Example Placement With Nesting")
 
 While ALIGN provides both automatic placement and routing, most AlignHdl21 modules tend to explicitly dictate placement and rely solely on its routing facilities. This is for two primary reasons. First, transistor-level analog circuits aren't all that hard to place. Designers tend to have a reasonable ideas of what placements suit their circuit and application. This is especially true when placement can be stated concisely and intuitively, such as by AlignHdl21's `Placement` constructs. Often circuits are designed with particular pitches in mind, or with desired sides and locations in mind for module ports. 
 
-Second, for all but quite small circuits, the ILP-based placement strategy used by ALIGN can be pretty slow. This time feels particularly poorly-spent on circuits for which the designer has a reasonably placement in mind. Attempts at making use of an alternate analytical placer proved unsuccessful. Such a strategy, which more closely mirrors common tactics used by digital PnR, would seem more amenable to larger analog circuits than ILP. 
+Second, for all but quite small circuits, the ILP-based placement strategy used by ALIGN can be pretty slow. This time feels particularly poorly spent on circuits for which the designer has a reasonably placement in mind. Attempts at making use of an alternate analytical placer proved unsuccessful. Such a strategy, which more closely mirrors common tactics used by digital PnR, would seem more amenable to larger analog circuits than ILP. 
 
 
 ### Elaboration
@@ -2862,22 +2870,14 @@ set_elaborator(Elaborator(passes))
 
 This highlights a limitation of Hdl21's custom elaboration model: custom elaborators don't generally work together. A single `Elaborator` processes a design hierarchy at a time. One global such elaborator is used by default, and by most embedded elaboration-calls not directly invoked by users. A theoretical library incorporating both AlignHdl21 and some other custom elaboration activity would need to integrate the two itself. To date, no such combination has been designed. 
 
-### Compilation to Simulation and Post-Layout Verification 
+### Compilation to Simulation and Physical Verification 
+
+For FinFET technologies including Intel 16nm, ALIGN uses a combination of gate-array layout style and gate-stacking similar to that described in chapter 6. Each "unit" FinFET is of identical length. Schematic and netlist-level transistors then layer a "stack spec" parameter combination, in which an integer number of copies of the unit FinFET can be arrayed in either parallel or series. Devices use the common nomenclature for parallel unit-transistors, "number of fingers" or `nf`. Series connected devices use a (less common) `stack` parameter. 
 
 
 ```python
 @h.paramclass
 class AlignFinFetParams:
-    """
-    # ALIGN FinFet Stack Parameters
-
-    The device parameters understood by the two supported ALIGN FinFet PDKs.
-
-    Note some of the `FinFetParams` effective fields are "one of the other" types,
-    and capitalize on the not-super-public behavior that Hdl21 does not export `None`-valued parameters.
-    """
-
-    # Optional
     nfin = h.Param(dtype=int, desc="Number of Fins", default=4)
     m = h.Param(dtype=Optional[int], desc="Multiplier", default=None)
 
@@ -2885,144 +2885,65 @@ class AlignFinFetParams:
     # If neither are specified, defaults to `nf=1`.
     nf = h.Param(dtype=Optional[int], desc="Number of Fingers", default=None)
     stack = h.Param(dtype=Optional[int], desc="Number series stacked", default=None)
-
-    def __post_init_post_parse__(self):
-        """# Post-parse validation
-        Particularly check for those 'one or the other' fields."""
-
-        if self.nf is not None and self.stack is not None:
-            raise ValueError("Cannot specify both `nf` and `stack`")
-        if self.nf is None and self.stack is None:
-            raise ValueError("Must specify one of `nf` or `stack`")
-
 ```
 
+These are the devices and parameter-spaces against which most AlignHdl21 generators are written. But they, and particularly their `stack` series-connections parameter, lacks compatibility with several key verification programs: notably SPICE simulation and LVS. 
 
+Here Hdl21's notion of compiling into target PDKs comes in handy. Modules for simulation and LVS are produced by a PDK compiler which adds an enumerated `Context` target. Valid contexts include ALIGN PnR, spice simulation, and LVS. (The latter two also have subtle differences in their understanding of the PDK devies.)
+
+```text
+Context = ALIGN | LVS | SIM
+```
+
+A dedicated PDK compiler then translates ALIGN-compatible modules into either of the other two contexts. 
 
 ```python
-
-
-class Context(Enum):
-    """# Compilation Context
-    The enumerated set of things we can "compile to"."""
-
-    Align = "Align"
-    Lvs = "Lvs"
-    Sim = "Sim"
-
-
-# The module-scope `Context`
-context = Context.Align
-
-the_set_of_align_modules = set(align_modules.__dict__.values())
-
-
 class Walker(h.HierarchyWalker):
-    """# PDK Hierarchical Walker
-    A special one that depends on a module-scope `Context` to largely determine what to do with its `ExternalModule`s.
+    """
+    # PDK Hierarchy Walker
+    A special one that depends on a module-scope `Context` to largely determine what to do.
     """
 
-    def visit_module(self, module: h.Module) -> h.Instantiable:
-        # Call the base class, particularly for its traversal of instances
-        module = super().visit_module(module)
-
-        if context == Context.Align or module not in the_set_of_align_modules:
-            return module  # Nothing to do
-
-        if context == Context.Lvs:
-            return getattr(lvs_modules, module.name)
-        if context == Context.Sim:
-            return getattr(sim_modules, module.name)
-        raise RuntimeError(f"Invalid Context: {context}")
-
     def visit_external_module_call(self, call: h.ExternalModuleCall) -> h.Instantiable:
-        if call.module in the_set_of_align_modules:
-            if context == Context.Align:
-                return call  # Unchanged
-            elif context == Context.Lvs or context == Context.Sim:
-                return self.replace_mos(call)
-            else:
-                raise RuntimeError(f"Invalid Context: {context}")
-        return call
-
-    def replace_mos(self, call: h.ExternalModuleCall) -> h.Instantiable:
-        """
-        Transform one of our ALIGN modules into an simulation-compatible or LVS-compatible device.
-        Either returns an `ExternalModule` or a generator-call to a `Stack` of them.
-        """
-
-        module = call.module
-        if context == Context.Lvs:
-            unit_module = getattr(lvs_modules, module.name)
-        elif context == Context.Sim:
-            unit_module = getattr(sim_modules, module.name)
-        else:
-            raise RuntimeError(f"Invalid Module: {module}")
-
-        params = call.params
-        w = params.nfin * intel16_hdl21.NM_PER_FIN
+        """ Visit an `ExternalModule`, potentially replacing it. """
+        if call.module not in the_align_modules or context == Context.Align:
+            return call  # Unchanged
+        return self.replace_mos(call) # Replace it
+        
+    def replace_mos(self, call: h.Instantiable) -> h.Instantiable:
+      	""" Replace a PnR compatible transistor with one compatible with `context` """
+        # (Here excerpting only the portion for LVS.)
 
         if params.stack is None:
-            # Parallel Case
-            # Return the unit `ExternalModule` with an `nf` parameter.
-            #
-            # Apply the default `nf`, in case neither `nf` nor `stack` were specified.
-            nf = params.nf or 1
-            #
-            # NOTE: the ALIGN PDK and Intel16's "regular PDK" seem to differ in their interpretation of `nf` and `w`.
-            # Particularly, the simulation and LVS models do the "specify total width" way (AKA, the dumb way),
-            # and ALIGN does the "specify width per finger" way (AKA, normal sane people's way).
-            #
-            # Convert to the "total width" way here for simulation and LVS.
-            w = w * nf
+            # Parallel Case. Return the unit `ExternalModule` with an `nf` parameter.
+            # Make a few other parameter-space conversions first
+            params = intel16_hdl21.MosParams.convert(call.params)
+            # Get the right (external) module
+            module = lvs_modules(call.module)
+            # And return the combination
+            return module(params)
 
-            unit_params = intel16_hdl21.MosParams(
-                m=params.m,
-                nf=nf,
-                w=w,
-                # No length specified; always use the default
-            )
-            return unit_module(unit_params)
-
-        # Stack Case
-        unit_params = intel16_hdl21.MosParams(
-            m=params.m,
-            nf=None,
-            w=w,
-            # No length specified; always use the default
-        )
-        # Call our `Stack` generator to array those out
-        stack = Stack(unit=unit_module(unit_params), nser=params.stack)
-        # `Stack` also uses slices, concatenations, stuff that needs to be elaborated out. Do that.
+        # Series Stack Case
+        # Call our `Stack` generator to array those out.
+        unit_params = intel16_hdl21.MosParams.convert(call.params)
+        stack = Stack(unit=lvs_modules(call.module)(unit_params), nser=params.stack)
+        # `Stack` also uses stuff that needs to be elaborated out. 
         h.elaborate(stack)
         return stack
-
-
-def compile(src: h.Elaboratables) -> None:
-    """Compile `src` to the technology"""
-    Walker.walk(src)
-
 ```
 
-
+A paired `Stack` generator produces a series-stack of `nser` identical unit transistors. `Stack` accepts its unit transistor module as a parameter (i.e. it uses a control-inversion parameter) to allow MOS stacks of any technology or PDK. Notably these include the simulation and LVS-compatible versions of the target technology. 
 
 ```python
-
 @h.paramclass
 class StackParams:
-    """# Stack Parameters"""
-
     unit = h.Param(dtype=h.Instantiable, desc="Unit Transistor Device")
     nser = h.Param(dtype=int, desc="Number series stacked")
-
 
 @h.generator
 def Stack(p: StackParams) -> h.Module:
     """# Stack Generator
     Create a series-stack of `nser` identical `unit` transistor devices."""
-
-    if p.nser < 2:
-        raise ValueError
 
     # Create the result module, with a Mos-set of ports
     m = h.Module()
@@ -3046,24 +2967,309 @@ def Stack(p: StackParams) -> h.Module:
 
 ```
 
+Hdl21's embedding of hardware generation-code among its background compilation processes allows for the creation of modules such as `Stack` inline. The AlignHdl21 PDK compiler does so for each instance of an ALIGN-compatible series-stacked FinFET which it must convert into an LVS or simulation-compatible replacement. 
 
-
-
-
----
-
-FIXME: either get these into the flow, or ditch em
-
-![align-not-best-placement](./fig/align_not_best_placement.png "Unconstrained Resistor Placement")
-
-![align-res-alignment](./fig/align_res_alignment.png "Errant resistor alignment")
-
-![align-res-terms](./fig/align_res_terms.png "Better resistor placement")
-
-![align-grid-fail](./fig/align_grid_fail.png "Example Challenge Working Without Grids, or Adapting Between Grids ")
+This sort of re-use across compilation targets was a central goal of the CHISEL and FIRRTL projects. In their case, output targets tend to be digital implementation platforms: FPGAs, ASIC back-end flows, or RTL simulation models. In Hdl21 they are process technologies, or as in this case, subsets of models within a process technology targeting different verification tasks.
 
 
 # Applications
+
+## Neural Sensor ADC in Intel 16nm FinFET
+
+Among its first real-world uses, the combination of Hdl21 and ALIGN were deployed in the design of a ring oscillator (RO) based ADC intended for neural sensing applications, designed in Intel's 16nm FinFET technology. 
+
+Ring oscillator based converters operate based on the voltage or current frequency-dependence of a tunable oscillator. The ADC's primary input is directed to the RO control terminal, modulating its frequency. The oscillator output is then sampled and its frequency is measured, generally by an all-digital frequency detector. RO-ADCs have previously been used for low-area, low-cost sensors, such as for intra-SoC voltage, temperature, and device aging measurements. Their footprints are often substantially smaller than most alternate architectures. They are also highly digital integration friendly, often being made solely of the same standard-cell-style logic transistors as the SoC's digital logic. 
+
+Like many biological sensors, neural sensors are designed to be implanted in a human body. They are accordingly stringently power-constrained. A ring oscillator is therefore not necessarily an obvious fit (at least to me). However contemporary and forthcoming research has shown they have particular utility when designed in concert with dynamic digital back-ends, which rely on their analog front-end's capacity to rapidly change power-performance trade-offs, including entering extremely low-power states. (This work is, in a sense, a part of its design process.) ROs cleanly and straightforwardly enable these transitions. While ring oscillators are generally highly non-linear, a variety of techniques have proven sufficient to produce ADC resolutions in excess of 10b, sufficient for the neural application. 
+
+Figure~\ref{fig:ro-adc-block} schematically depicts the ADC. It is comprised of a pseudo-differential pair of sub-ADCs, each of which includes the RO, a phase-sampling comparator array, and a input resistor network through which the input modulates the RO's control terminal. Careful selection of the input resistor network was shown in [@nguyen2018adc] to provide cancellation of second-order oscillator non-linearity, a vital performance enhancement. Each of the ADC components is designed to operate at extremely low voltage. Its digital core operates at a nominal 500mV, while the analog front-end and oscillator itself runs at 300mV.
+
+![ro-adc-block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
+
+Figure~\ref{fig:adc-chip-layout} shows the test chip layout. It includes:
+
+* Three single-ended sub-ADCs (at left, nearer top) with varying configurations of ring oscillator
+* A VCO break-out section with bias current DAC (at left, nearer bottom)
+* A prototype digital back end (at right)
+
+![adc-chip-layout](fig/adc-chip-layout.png "Test Chip Layout")
+
+Figure~\ref{fig:adc-vco1-layout} shows the VCO breakout section, including the core ring oscillator (at bottom left), bias current DAC (at top left), output level shifters and drivers (at left), and associated ESD protection (at right). 
+
+![adc-vco1-layout](./fig/adc-vco1-layout.png "VCO Layout")
+
+Each of the test chip's key circuits are generated from the combination of Hdl21 and ALIGN. Top-level assembly is done "the analog way", via a popular graphical custom layout editor. 
+
+
+
+
+
+```python
+@h.paramclass
+class RoStageParams:
+    uinv = h.Param(dtype=h.Instantiable, desc="Unit Inverter")
+    ratio = h.Param(dtype=int, desc="Fwd/Cross Ratio", default=4)
+
+
+@h.generator
+def RoStage(params: RoStageParams) -> h.Module:
+    """# Pseudo-Diff Ring Oscillator Stage """
+
+    uinv = params.uinv
+
+    @h.module
+    class RoStage:
+        # IO
+        TOP, BOT = h.PowerGround()
+        NWELL, PSUB = h.PowerGround()
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+
+        # Internal Implementation
+        ## Cross-Coupled Output Inverters
+        cross = h.Pair(params.uinv)(i=out, o=h.inverse(out), ...)
+
+    ## Forward Inverters
+
+		R
+    conns = dict(
+        TOP=RoStage.TOP, BOT=RoStage.BOT, NWELL=RoStage.NWELL, PSUB=RoStage.PSUB
+    )
+    for k in range(params.ratio):
+        fwd_p_insts.append(
+            RoStage.add(
+                uinv(i=RoStage.inp.p, o=RoStage.out.p, **conns), name=f"fwd_p{k}"
+            )
+        )
+        fwd_n_insts.append(
+            RoStage.add(
+                uinv(i=RoStage.inp.n, o=RoStage.out.n, **conns), name=f"fwd_n{k}"
+            )
+        )
+
+    # Create PnR placement
+    cols = fwd_p_insts + [RoStage.cross_p, RoStage.cross_n] + fwd_n_insts
+    placement = ah.Placement(root=ah.Row(cols))
+    ah.PnrInput(
+        module=RoStage, placement=placement, constraints=[ah.ConfigureCompiler()]
+    )
+    return RoStage
+```
+
+FIXME: write
+
+
+```python
+
+@h.paramclass
+class StageParams:
+    # Optional
+    ro_stage = h.Param(dtype=h.Instantiable, desc="Delay Cell", default_factory=RoStage)
+    slicer = h.Param(dtype=h.Instantiable, desc="Slicer Module", default_factory=Slicer)
+
+
+@h.generator
+def Stage(params: StageParams) -> h.Module:
+    """# RO ADC Stage
+    Combination of an RO delay stage, plus a phase-sampling slicer."""
+
+    @h.module
+    class Stage:
+        VDD, VSS = h.PowerGround()  # IO
+        ctrl = h.Input(desc="RO Control Voltage")
+        clk = h.Input(desc="Sampling Clock")
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        samp = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+
+        # Internal Implementation
+        ro_stage = params.ro_stage(
+            inp=inp, out=out, TOP=VDD, NWELL=VDD, BOT=ctrl, PSUB=VSS
+        )
+        slicer = params.slicer(inp=out, out=samp, clk=clk, VDD=VDD, VSS=VSS)
+
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[Stage.slicer, Stage.ro_stage]))
+
+    ah.PnrInput(
+        module=Stage,
+        placement=placement,
+        constraints=[
+            ah.ConfigureCompiler(),
+            ah.PortLocation(ports=["clk", "samp_p", "samp_n"], location="TC"),
+        ],
+    )
+    return Stage
+```
+
+
+```python
+
+@h.generator
+def RoAdcHalf(params: RoAdcParams) -> h.Module:
+    """# RO ADC Half
+    One side of the pseudo-differential RO ADC."""
+
+    @h.module
+    class RoAdcHalf:
+        # IO
+        VDD, VSS = h.PowerGround()
+        inp = h.Input()
+        clk = h.Input(desc="Sampling Clock")
+        samp = h.Output(width=params.nstg, desc="Sampled Output")
+
+        # Implementation
+        rdiv = h.Signal()
+        res = params.input_res(inp=inp, out=rdiv, VSS=VSS)
+        ring = Ring(params)(clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=samp)
+
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[RoAdcHalf.res, RoAdcHalf.ring]))
+
+    # Create some `PnrInput`
+    ah.PnrInput(
+        module=RoAdcHalf,
+        placement=placement,
+        constraints=[ah.ConfigureCompiler()],
+        params=params,
+    )
+    return RoAdcHalf
+
+
+@h.generator
+def RoAdc(params: RoAdcParams) -> h.Module:
+    """
+    # RO-Based ADC
+    The top-level pseudo-differential combination of two `RoAdcHalf`s.
+    """
+
+    @h.module
+    class RoAdc:
+        # IO
+        VDD, VSS = h.PowerGround()
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        clk = h.Input(desc="Sampling Clock")
+        samp_p = h.Output(width=params.nstg, desc="Sampled Output (Positive)")
+        samp_n = h.Output(width=params.nstg, desc="Sampled Output (Negative)")
+
+        # Implementation
+        rdiv = h.Diff()
+        res = h.Pair(params.input_res)(inp=inp, out=rdiv, VSS=VSS)
+        rings = h.Pair(Ring(params))(
+            clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=h.bundlize(p=samp_p, n=samp_n)
+        )
+
+    """ 
+    NOTE: this seems like it should be, like, two `Half`s. As in the snippet below. 
+    Align seems to choke on that so far? 
+    We think it doesn't like having a module that is only a single pair of instances(?).
+    Luckily `Half` is not very big either; it's just "expanded" above. 
+
+```
+        # Implementation
+        halves = h.Pair(RoAdcHalf(params))(
+            inp=inp, clk=clk, samp=h.bundlize(p=samp_p, n=samp_n), VDD=VDD, VSS=VSS
+        )
+    
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[RoAdc.halves]))
+    ```
+    """
+    
+    # Create a placement
+    placement = ah.Placement(ah.Column(rows=[RoAdc.res, RoAdc.rings]))
+    
+    # Create some `PnrInput`
+    ah.PnrInput(
+        module=RoAdc,
+        placement=placement,
+        constraints=[ah.ConfigureCompiler()],
+        params=params,
+    )
+    return RoAdc
+```
+
+```python
+
+@h.generator
+def DtsaDansVersion(_: h.HasNoParams) -> h.Module:
+    """# Dual Tail Comparator"""
+
+    plvt, nlvt = pdk.modules.plvt, pdk.modules.nlvt
+
+    @h.module
+    class DtsaDansVersion:
+        # IO
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        clk = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        VDD, VSS = h.PowerGround()
+
+        # Implementation
+        mid = h.Diff()
+        ntail, ptail = h.Signals(2)
+
+        # Input Stage
+        tailn = nlvt(nf=2)(d=ntail, g=clk.n, s=VSS, b=VSS)
+        ninpp = nlvt(nf=8)(d=mid.n, g=inp.p, s=ntail, b=VSS)
+        ninpn = nlvt(nf=8)(d=mid.p, g=inp.n, s=ntail, b=VSS)
+        ploadp = plvt(nf=8)(d=mid.p, g=clk.n, s=VDD, b=VDD)
+        ploadn = plvt(nf=8)(d=mid.n, g=clk.n, s=VDD, b=VDD)
+
+        # Output/ Latch Stage
+        tailp = plvt(nf=4)(d=ptail, g=clk.p, s=VDD, b=VDD)
+        plat = h.Pair(plvt(nf=2))(d=h.inverse(out), g=out, s=ptail, b=VDD)
+        nlat = h.Pair(nlvt(nf=2))(d=h.inverse(out), g=out, s=VSS, b=VSS)
+
+        # Forwarding between the two
+        nfwd = h.Pair(nlvt(nf=4))(d=h.inverse(out), g=mid, s=VSS, b=VSS)
+
+```
+
+```python
+
+@h.paramclass
+class SlicerParams:
+    sa = h.Param(dtype=h.Instantiable, desc="StrongArm", default_factory=NmosStrongArm)
+    sr = h.Param(dtype=h.Instantiable, desc="SR Latch", default_factory=SrLatch)
+
+
+@h.generator
+def Slicer(params: SlicerParams) -> h.Module:
+    """# StrongArm Based Slicer"""
+
+    @h.module
+    class Slicer:
+        # IO
+        VDD, VSS = h.PowerGround()
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        clk = h.Input()
+
+        # Internal Implementation
+        ## StrongArm Comparator
+        sa = params.sa(inp=inp, clk=clk, VDD=VDD, VSS=VSS)
+        ## SR Latch
+        sr = params.sr(inp=sa.out, out=out, VDD=VDD, VSS=VSS)
+
+    # placement = None
+    placement = ah.Placement(root=ah.Column(rows=[Slicer.sa, Slicer.sr]))
+
+    # Create some PnR input
+    ah.PnrInput(
+        params=params,
+        module=Slicer,
+        placement=placement,
+        constraints=[ah.ConfigureCompiler()],
+    )
+    return Slicer
+```
+
+
+
+## USB PHY in Open-Source SkyWater 130nm
+
+FIXME: write
 
 ## Machine Learners Learning Circuits 101
 
@@ -3321,287 +3527,6 @@ The boss-agent also accepts human-designed circuits. Along with figure-of-merit 
 
 Both the designer-agent and boss-agent run continuously in a server-style mode. Their collective task is best interpreted not as one of optimization, but as one of improvement. No matter their perceived optimality of their circuit-designs to date, the boss-agent will continue identifying a highest-priority goal, and the designer-agent will continue to attempt to improve upon it.
 
-
-## Neural Sensor ADC in Intel 16nm FinFET
-
-Among its first real-world uses, the combination of Hdl21 and ALIGN were deployed in the design of a ring oscillator (RO) based ADC intended for neural sensing applications, designed in Intel's 16nm FinFET technology. 
-
-Ring oscillator based converters operate based on the voltage or current frequency-dependence of a tunable oscillator. The ADC's primary input is directed to the RO control terminal, modulating its frequency. The oscillator output is then sampled and its frequency is measured, generally by an all-digital frequency detector. RO-ADCs have previously been used for low-area, low-cost sensors, such as for intra-SoC voltage, temperature, and device aging measurements. Their footprints are often substantially smaller than most alternate architectures. They are also highly digital integration friendly, often being made solely of the same standard-cell-style logic transistors as the SoC's digital logic. 
-
-Like many biological sensors, neural sensors are designed to be implanted in a human body. They are accordingly stringently power-constrained. A ring oscillator is therefore not necessarily an obvious fit (at least to me). However contemporary and forthcoming research has shown they have particular utility when designed in concert with dynamic digital back-ends, which rely on their analog front-end's capacity to rapidly change power-performance trade-offs, including entering extremely low-power states. (This work is, in a sense, a part of its design process.) ROs cleanly and straightforwardly enable these transitions. While ring oscillators are generally highly non-linear, a variety of techniques have proven sufficient to produce ADC resolutions in excess of 10b, sufficient for the neural application. 
-
-Figure~\ref{fig:ro-adc-block} schematically depicts the ADC. It is comprised of a pseudo-differential pair of sub-ADCs, each of which includes the RO, a phase-sampling comparator array, and a input resistor network through which the input modulates the RO's control terminal. Careful selection of the input resistor network was shown in [@nguyen2018adc] to provide cancellation of second-order oscillator non-linearity, a vital performance enhancement. Each of the ADC components is designed to operate at extremely low voltage. Its digital core operates at a nominal 500mV, while the analog front-end and oscillator itself runs at 300mV.
-
-![ro-adc-block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
-
-
-```python
-@h.paramclass
-class RoStageParams:
-    uinv = h.Param(dtype=h.Instantiable, desc="Unit Inverter")
-    ratio = h.Param(dtype=int, desc="Fwd/Cross Ratio", default=4)
-
-
-@h.generator
-def RoStage(params: RoStageParams) -> h.Module:
-    """# Pseudo-Diff Ring Oscillator Stage """
-
-    uinv = params.uinv
-
-    @h.module
-    class RoStage:
-        # IO
-        TOP, BOT = h.PowerGround()
-        NWELL, PSUB = h.PowerGround()
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-
-        # Internal Implementation
-        ## Cross-Coupled Output Inverters
-        cross = h.Pair(params.uinv)(i=out, o=h.inverse(out), ...)
-
-    ## Forward Inverters
-
-		R
-    conns = dict(
-        TOP=RoStage.TOP, BOT=RoStage.BOT, NWELL=RoStage.NWELL, PSUB=RoStage.PSUB
-    )
-    for k in range(params.ratio):
-        fwd_p_insts.append(
-            RoStage.add(
-                uinv(i=RoStage.inp.p, o=RoStage.out.p, **conns), name=f"fwd_p{k}"
-            )
-        )
-        fwd_n_insts.append(
-            RoStage.add(
-                uinv(i=RoStage.inp.n, o=RoStage.out.n, **conns), name=f"fwd_n{k}"
-            )
-        )
-
-    # Create PnR placement
-    cols = fwd_p_insts + [RoStage.cross_p, RoStage.cross_n] + fwd_n_insts
-    placement = ah.Placement(root=ah.Row(cols))
-    ah.PnrInput(
-        module=RoStage, placement=placement, constraints=[ah.ConfigureCompiler()]
-    )
-    return RoStage
-```
-
-FIXME: add some layout shots(?)
-
-
-
-```python
-
-@h.paramclass
-class StageParams:
-    # Optional
-    ro_stage = h.Param(dtype=h.Instantiable, desc="Delay Cell", default_factory=RoStage)
-    slicer = h.Param(dtype=h.Instantiable, desc="Slicer Module", default_factory=Slicer)
-
-
-@h.generator
-def Stage(params: StageParams) -> h.Module:
-    """# RO ADC Stage
-    Combination of an RO delay stage, plus a phase-sampling slicer."""
-
-    @h.module
-    class Stage:
-        VDD, VSS = h.PowerGround()  # IO
-        ctrl = h.Input(desc="RO Control Voltage")
-        clk = h.Input(desc="Sampling Clock")
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-        samp = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-
-        # Internal Implementation
-        ro_stage = params.ro_stage(
-            inp=inp, out=out, TOP=VDD, NWELL=VDD, BOT=ctrl, PSUB=VSS
-        )
-        slicer = params.slicer(inp=out, out=samp, clk=clk, VDD=VDD, VSS=VSS)
-
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[Stage.slicer, Stage.ro_stage]))
-
-    ah.PnrInput(
-        module=Stage,
-        placement=placement,
-        constraints=[
-            ah.ConfigureCompiler(),
-            ah.PortLocation(ports=["clk", "samp_p", "samp_n"], location="TC"),
-        ],
-    )
-    return Stage
-```
-
-
-```python
-
-@h.generator
-def RoAdcHalf(params: RoAdcParams) -> h.Module:
-    """# RO ADC Half
-    One side of the pseudo-differential RO ADC."""
-
-    @h.module
-    class RoAdcHalf:
-        # IO
-        VDD, VSS = h.PowerGround()
-        inp = h.Input()
-        clk = h.Input(desc="Sampling Clock")
-        samp = h.Output(width=params.nstg, desc="Sampled Output")
-
-        # Implementation
-        rdiv = h.Signal()
-        res = params.input_res(inp=inp, out=rdiv, VSS=VSS)
-        ring = Ring(params)(clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=samp)
-
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[RoAdcHalf.res, RoAdcHalf.ring]))
-
-    # Create some `PnrInput`
-    ah.PnrInput(
-        module=RoAdcHalf,
-        placement=placement,
-        constraints=[ah.ConfigureCompiler()],
-        params=params,
-    )
-    return RoAdcHalf
-
-
-@h.generator
-def RoAdc(params: RoAdcParams) -> h.Module:
-    """
-    # RO-Based ADC
-    The top-level pseudo-differential combination of two `RoAdcHalf`s.
-    """
-
-    @h.module
-    class RoAdc:
-        # IO
-        VDD, VSS = h.PowerGround()
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        clk = h.Input(desc="Sampling Clock")
-        samp_p = h.Output(width=params.nstg, desc="Sampled Output (Positive)")
-        samp_n = h.Output(width=params.nstg, desc="Sampled Output (Negative)")
-
-        # Implementation
-        rdiv = h.Diff()
-        res = h.Pair(params.input_res)(inp=inp, out=rdiv, VSS=VSS)
-        rings = h.Pair(Ring(params))(
-            clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=h.bundlize(p=samp_p, n=samp_n)
-        )
-
-    """ 
-    NOTE: this seems like it should be, like, two `Half`s. As in the snippet below. 
-    Align seems to choke on that so far? 
-    We think it doesn't like having a module that is only a single pair of instances(?).
-    Luckily `Half` is not very big either; it's just "expanded" above. 
-
-```
-        # Implementation
-        halves = h.Pair(RoAdcHalf(params))(
-            inp=inp, clk=clk, samp=h.bundlize(p=samp_p, n=samp_n), VDD=VDD, VSS=VSS
-        )
-    
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[RoAdc.halves]))
-    ```
-    """
-    
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[RoAdc.res, RoAdc.rings]))
-    
-    # Create some `PnrInput`
-    ah.PnrInput(
-        module=RoAdc,
-        placement=placement,
-        constraints=[ah.ConfigureCompiler()],
-        params=params,
-    )
-    return RoAdc
-```
-
-```python
-
-@h.generator
-def DtsaDansVersion(_: h.HasNoParams) -> h.Module:
-    """# Dual Tail Comparator"""
-
-    plvt, nlvt = pdk.modules.plvt, pdk.modules.nlvt
-
-    @h.module
-    class DtsaDansVersion:
-        # IO
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        clk = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-        VDD, VSS = h.PowerGround()
-
-        # Implementation
-        mid = h.Diff()
-        ntail, ptail = h.Signals(2)
-
-        # Input Stage
-        tailn = nlvt(nf=2)(d=ntail, g=clk.n, s=VSS, b=VSS)
-        ninpp = nlvt(nf=8)(d=mid.n, g=inp.p, s=ntail, b=VSS)
-        ninpn = nlvt(nf=8)(d=mid.p, g=inp.n, s=ntail, b=VSS)
-        ploadp = plvt(nf=8)(d=mid.p, g=clk.n, s=VDD, b=VDD)
-        ploadn = plvt(nf=8)(d=mid.n, g=clk.n, s=VDD, b=VDD)
-
-        # Output/ Latch Stage
-        tailp = plvt(nf=4)(d=ptail, g=clk.p, s=VDD, b=VDD)
-        plat = h.Pair(plvt(nf=2))(d=h.inverse(out), g=out, s=ptail, b=VDD)
-        nlat = h.Pair(nlvt(nf=2))(d=h.inverse(out), g=out, s=VSS, b=VSS)
-
-        # Forwarding between the two
-        nfwd = h.Pair(nlvt(nf=4))(d=h.inverse(out), g=mid, s=VSS, b=VSS)
-
-```
-
-```python
-
-@h.paramclass
-class SlicerParams:
-    sa = h.Param(dtype=h.Instantiable, desc="StrongArm", default_factory=NmosStrongArm)
-    sr = h.Param(dtype=h.Instantiable, desc="SR Latch", default_factory=SrLatch)
-
-
-@h.generator
-def Slicer(params: SlicerParams) -> h.Module:
-    """# StrongArm Based Slicer"""
-
-    @h.module
-    class Slicer:
-        # IO
-        VDD, VSS = h.PowerGround()
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-        clk = h.Input()
-
-        # Internal Implementation
-        ## StrongArm Comparator
-        sa = params.sa(inp=inp, clk=clk, VDD=VDD, VSS=VSS)
-        ## SR Latch
-        sr = params.sr(inp=sa.out, out=out, VDD=VDD, VSS=VSS)
-
-    # placement = None
-    placement = ah.Placement(root=ah.Column(rows=[Slicer.sa, Slicer.sr]))
-
-    # Create some PnR input
-    ah.PnrInput(
-        params=params,
-        module=Slicer,
-        placement=placement,
-        constraints=[ah.ConfigureCompiler()],
-    )
-    return Slicer
-```
-
-
-
-## USB PHY in Open-Source SkyWater 130nm
-
-FIXME: write
 
 ## Citations to add
 
