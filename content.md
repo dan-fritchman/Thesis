@@ -1566,6 +1566,7 @@ This is several things on several different levels: a flip-flop, a standard logi
 
 Now, a much harder third example: 
 
+\setkeys{Gin}{width=.75\linewidth}
 ![high-quality-schematic](./fig/high-quality-schematic.png "A High Quality Schematic")
 
 _We_ know this is a schematic. But counterintuitively, despite being over a decade into a career largely made out of such pictures, on some deep level I do not know what makes them work. I.e. _why_ that pictorial form resonates as such a clear representation of the underlying circuit it represents, where others (e.g. the code) fail. It just does. 
@@ -1643,10 +1644,12 @@ That combination of observations drives the primary goals for Hdl21's paired sch
 
 Each Hdl21 schematic is an SVG image, and is commonly stored in a `.svg` suffix file. Example schematics are pictured in Figure~\ref{fig:schematic-dvbe} and Figure~\ref{fig:schematic-inverter}
 
+\setkeys{Gin}{width=.75\linewidth}
 ![schematic-dvbe](./fig/schematic-dvbe.jpg "Example SVG Schematic")
 
 SVG's capacity for semi-custom structure and metadata allows for a natural place to embed each schematic's cicuit content. Perhaps more important, embedding within a widely supported general-purpose image format means that schematics are readable (as pictures) by essentially any modern web browser or operating system. Popular sharing and development platforms such as GitHub and GitLab render SVG natively, and therefore display Hdl21 schematics natively in their web interfaces.
 
+\setkeys{Gin}{width=\linewidth}
 ![schematic-github](./fig/schematic-github.png "SVG Schematic Rendered by the Web Interface of Popular Software Sharing Platform github.com")
 
 Embedding in SVG also allows for rich, arbitrary annotations and metadata, such as:
@@ -1690,8 +1693,8 @@ _Reading_ schematics (as pictures) requires any old computer. _Writing_ them can
 
 The Hdl21 schematic system accordingly includes a web-stack graphical editor. It runs in three primary contexts (1) as a standalone desktop application, (2) as an extension to the popular IDE VsCode, and (3) as a web application. Figure~\ref{fig:schematic-system} outlines the overall system. The IDE platform is pictured in Figure~\ref{fig:schematic-vscode}.
 
+\setkeys{Gin}{width=\linewidth}
 ![schematic-system](./fig/hdl21-schematic-system.png "Hdl21 Schematic System")
-
 ![schematic-vscode](./fig/schematic-vscode.png "Schematic Editor, Running in the VsCode IDE Platform")
 
 Some schematic programs are "visualization-centric" - i.e. those which primarily aid in debug of post-synthesis or post-layout netlists. A related task is _schematic inference_ - the process of determining the most descriptive picture for a given circuit. While this is worthwhile for such debugging tasks, Hdl21 schematics focuses on primary design entry of schematics. We think that schematics are good when drawn, and tend to be bad, or at least afterthoughts, when inferred. 
@@ -2120,6 +2123,7 @@ Disallowing symbol-based hierarchy has a side benefit: it's much more straightfo
 
 # Programming Models for IC Layout
 
+\setkeys{Gin}{width=\linewidth}
 ![two-successful-models](./fig/two-successful-models.png "The Two Successful Models for Producing IC Layout")
 
 In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's 60+ year history, it has shipped roughly 13 sextillion (1.3e22) total transistors. (That total has risen dramatically in the few years since.) Essentially all of them have been designed by one of two methods:
@@ -2564,6 +2568,7 @@ First, PnR compilers typically target _synchronous_ digital circuits, in which a
 
 In an important sense for the optimization required in PnR, each and every digital circuit boils down to something like Figure~\ref{fig:static-timing}. Signal trajectories, commonly called _arcs_, include an initial "launch" state element (shown here as a flip-flop), a combinational logic path, and a final "capture" state element (which also generally serves as the launch element for a further path). 
 
+\setkeys{Gin}{width=.75\linewidth}
 ![static-timing](./fig/static-timing.png "Conceptual view of how the static timing closure problem sees synchronous digital circuits")
 
 This _timing closure_ problem is parameterized by a small set of numbers - principally the clock period and a few parameters which dictate logic-cell delays (power-supply voltage, process "corner", etc.). Several other parameters, such as skews throughout the clock network, inject second-order effects.
@@ -2883,8 +2888,8 @@ class AlignFinFetParams:
 
     # "Stack spec". At most one can be specified.
     # If neither are specified, defaults to `nf=1`.
-    nf = h.Param(dtype=Optional[int], desc="Number of Fingers", default=None)
-    stack = h.Param(dtype=Optional[int], desc="Number series stacked", default=None)
+    nf = h.Param(dtype=Optional[int], desc="Parallel fingers", default=None)
+    stack = h.Param(dtype=Optional[int], desc="Series stacks", default=None)
 ```
 
 These are the devices and parameter-spaces against which most AlignHdl21 generators are written. But they, and particularly their `stack` series-connections parameter, lacks compatibility with several key verification programs: notably SPICE simulation and LVS. 
@@ -2899,23 +2904,23 @@ A dedicated PDK compiler then translates ALIGN-compatible modules into either of
 
 ```python
 class Walker(h.HierarchyWalker):
-    """
-    # PDK Hierarchy Walker
-    A special one that depends on a module-scope `Context` to largely determine what to do.
-    """
 
-    def visit_external_module_call(self, call: h.ExternalModuleCall) -> h.Instantiable:
+    def visit_external_module_call(
+        self, call: h.ExternalModuleCall,
+    ) -> h.Instantiable:
         """ Visit an `ExternalModule`, potentially replacing it. """
         if call.module not in the_align_modules or context == Context.Align:
             return call  # Unchanged
         return self.replace_mos(call) # Replace it
         
     def replace_mos(self, call: h.Instantiable) -> h.Instantiable:
-      	""" Replace a PnR compatible transistor with one compatible with `context` """
+        """ Replace a PnR compatible transistor
+        with one compatible with `context` """
         # (Here excerpting only the portion for LVS.)
 
         if params.stack is None:
-            # Parallel Case. Return the unit `ExternalModule` with an `nf` parameter.
+            # Parallel Case.
+            # Return the unit `ExternalModule` with an `nf` parameter.
             # Make a few other parameter-space conversions first
             params = intel16_hdl21.MosParams.convert(call.params)
             # Get the right (external) module
@@ -2984,6 +2989,7 @@ Like many biological sensors, neural sensors are designed to be implanted in a h
 
 Figure~\ref{fig:ro-adc-block} schematically depicts the ADC. It is comprised of a pseudo-differential pair of sub-ADCs, each of which includes the RO, a phase-sampling comparator array, and a input resistor network through which the input modulates the RO's control terminal. Careful selection of the input resistor network was shown in [@nguyen2018adc] to provide cancellation of second-order oscillator non-linearity, a vital performance enhancement. Each of the ADC components is designed to operate at extremely low voltage. Its digital core operates at a nominal 500mV, while the analog front-end and oscillator itself runs at 300mV.
 
+\setkeys{Gin}{width=.75\linewidth}
 ![ro-adc-block](./fig/ro_adc_block.png "RO-Based ADC Block Diagram")
 
 Figure~\ref{fig:adc-chip-layout} shows the test chip layout. It includes:
@@ -2992,6 +2998,7 @@ Figure~\ref{fig:adc-chip-layout} shows the test chip layout. It includes:
 * A VCO break-out section with bias current DAC (at left, nearer bottom)
 * A prototype digital back end (at right)
 
+\setkeys{Gin}{width=\linewidth}
 ![adc-chip-layout](fig/adc-chip-layout.png "Test Chip Layout")
 
 Figure~\ref{fig:adc-vco1-layout} shows the VCO breakout section, including the core ring oscillator (at bottom left), bias current DAC (at top left), output level shifters and drivers (at left), and associated ESD protection (at right). 
@@ -3266,11 +3273,6 @@ def Slicer(params: SlicerParams) -> h.Module:
 ```
 
 
-
-## USB PHY in Open-Source SkyWater 130nm
-
-FIXME: write
-
 ## Machine Learners Learning Circuits 101
 
 Recent research and commercial EDA has begun to deploy machine learning techniques throughout the IC design process. Perhaps the most prominent such example is [@mirhoseini2021graph]. ^[Although a combination of follow up research [@cheng2023assessment], prominent [news reporting](https://www.nytimes.com/2022/05/02/technology/google-fires-ai-researchers.html) and [industry publications](https://spectrum.ieee.org/chip-design-controversy) cast doubt upon some of its claims. I for one find the _[Stronger Baselines](http://47.190.89.225/pub/education/MLcontra.pdf)_ rebuttal article, which remains only pseudo-published for... reasons... quite compelling.] These techniques are also a prominent research frontier for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
@@ -3526,15 +3528,3 @@ The boss-agent's goal-selection is influenced by:
 The boss-agent also accepts human-designed circuits. Along with figure-of-merit expectations, such circuit-suggestions are a primary mechanism for the injection of human expertise. Each human-recommended circuit is quickly evaluated against any paired goals, and if improving upon the designer-agent's state of the art, quickly injected into its observed environment for those goals.
 
 Both the designer-agent and boss-agent run continuously in a server-style mode. Their collective task is best interpreted not as one of optimization, but as one of improvement. No matter their perceived optimality of their circuit-designs to date, the boss-agent will continue identifying a highest-priority goal, and the designer-agent will continue to attempt to improve upon it.
-
-
-## Citations to add
-
-- MAGIC [@ousterhout1985magic]
-
-## Notes for Editing
-
-![homer](fig/homer.png "Homer's Reaction")
-
-Figure~\ref{fig:homer} 
-
