@@ -2115,9 +2115,7 @@ The second (and more contentious) topic of contention is Hdl21 schematics' refus
 
 This was an intentional choice, in furtherance of the goal to "make making the good schematics easy, and make making the bad schematics hard". Schematics tend to be worth more than the paper they're printed on when typical practitioners (other than their authors) understand their contents. A necessary condition is recognizing the symbols. There are relatively few elements which have both (a) pictorial symbols widely understood by the field, and (b) an uncontroversial set of ports. They are the elements of the Hdl21 schematic library. A wider set of elements - op-amps, oscillators, flip-flops, and the like - meet criteria (a), but have a wide diversity of IO interfaces. In Hdl21 schematics (as in all other schematic-systems of which we are aware), symbols dictate instance port-lists. 
 
-Disallowing symbol-based hierarchy has a side benefit: it's much more straightforward to confine a schematic to a single SVG file. This single-file property is a large part of what makes schematics renderable by existing platforms such as GitHub. But we _could_ make it work, I guess. Each schematic would be required to include the symbol-picture of every symbol that it instantiates, as they currently do for any primitive elements they instantiate. And the graphical editor would need to be, or at least desirably would be, edited to comprehend the links between schematics and symbols representing the same circuits. Just where this linkage would lie - within SVG content, or as separate "database metadata" - would remain to be seen. Comprehending schematics as circuits, as by importer programs, would desirably find this structure as straightfowardly as possible. 
-
-Note: the SVG specification includes a paired definitions (`<defs>`) section and `<use>` element, intended for instantiation of repeated content. In principle this would be a desirable place to hold Hdl21 schematics' element symbol definitions. Doing so would save space in the hypertext content. Sadly we (very quickly) found that popular platforms we'd like to have render schematics (ahem, GitHub) do not support the `<defs>` and corresponsing `<use>` elements.
+Disallowing symbol-based hierarchy has a side benefit: it's much more straightforward to confine a schematic to a single SVG file. This single-file property is a large part of what makes schematics renderable by existing platforms such as GitHub. But we _could_ make it work, I guess. Each schematic would be required to include the symbol-picture of every symbol that it instantiates, as they currently do for any primitive elements they instantiate. And the graphical editor would need to be, or at least desirably would be, edited to comprehend the links between schematics and symbols representing the same circuits. Just where this linkage would lie - within SVG content, or as separate "database metadata" - would remain to be seen. Comprehending schematics as circuits, as by importer programs, would desirably find this structure as straightfowardly as possible. ^[The SVG specification includes a paired definitions (`<defs>`) section and `<use>` element, intended for instantiation of repeated content. In principle this would be a desirable place to hold Hdl21 schematics' element symbol definitions. Doing so would save space in the hypertext content. Sadly we (very quickly) found that the `<defs>` and `<use>` elements are not supported by popular platforms which shall not be named, such as GitHub.]
 
 
 # Programming Models for IC Layout
@@ -2626,7 +2624,7 @@ Notably the majority of the constraint and goal languages of popular digital PnR
 
 Popular digital PnR supports thousands of such distinct constraints. Seemingly all would or could also be relevant for analog circuits. Plus analog circuits have a large space of constraints and goals of their own, often concerning goals for matching or symmetry. 
 
-## Cutesy Subsection Title
+## FIXME: Subsection Title
 
 Perhaps in part through first recongnizing these limitations, Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solvers. The BAG project and its programmed-custom model has been the primary artifact. Prior generations of libraries and frameworks, often called _silicon compilers_, (e.g. [@man1986cathedral]), or more specific circuit-focused families such as _datapath compilers_ and _SRAM compilers_ adopted similarly conceptual approaches.
 
@@ -2753,107 +2751,121 @@ Second, for all but quite small circuits, the ILP-based placement strategy used 
 
 ALIGN performs PnR hierarchically. Parent circuits may instantiate sub-circuits which are themselves outputs of the same PnR process. These child circuits require the same set of PnR constraints and guidance as any other, including their parents. 
 
-AlignHdl21 produces this hierarchical input via two of Hdl21's "pro-mode" features: custom elaboration, and `Properties`. 
+AlignHdl21 transforms a single `Module` into this hierarchical input via two of Hdl21's "pro-mode" features: custom elaboration, and `Properties`. Hdl21 `Modules`, `Instances`, and most other compound HDL objects support a form of schema-expansion via a `Property` system. Each property is a mapping from a string-valued key to a value, which may be any valid object. Hdl21's internals do not inspect, type-check, arrange, or in any way constrain what can be stored in `Properties`. These decisions are left to the application (or higher-library-level) using Hdl21. Properties are not exported in any form, not to netlists, or to simulations, or to VLSIR. They are generally intended to be application-specific additions to the HDL data model; each is confined to use within its application.
+
+Properties are accessed through a `get`/ `set` API, or through the native Python `dict` style square-bracket indexing. Properties are not namespaced or in any other way reserved between user-libraries. Their names must be globally unique, or they risk collisions. Convention dictates that each library setting properties uses keys of the form `{{libname}}.{{propname}}`, where `libname` is the library name, and `propname` is the unqualified name of the property. 
+
+AlignHdl21 uses this property system to affix each `PnrInput` to its target `Module`. 
 
 ```python
+class PropNames:
+    # Names of `h.Module` properties 
+    pnr_input: ClassVar[str] = "alignhdl21.pnr_input"
+    constraints: ClassVar[str] = "alignhdl21.constraints"
 
+@dataclass
+class PnrInput:
+    module: h.Module
+    placement: Optional[Placement] = None
+    constraints: Optional[List[data.Constraint]] = None
+
+    def __post_init__(self):
+        # (This runs after each instance is created,
+        # like a custom constructor.) 
+        # Give our `Module` a reference to us as a `Property`.
+        if PropNames.pnr_input in self.module.props:
+            raise ValueError(...)
+        self.module.props.set(PropNames.pnr_input, self)
+```
+
+Hierarchical `PnrInput` is then extracted from each `Module` by recursively and hierarchically traversing its instances, looking for `PnrInput` on each. This utilizes both the `Properties` extension system and the hierarchy-walking data model traversals common for Hdl21 PDK compilers. 
+
+```python
 class PnrWalker(h.HierarchyWalker):
-    """
-    # PnR Walker
-
-    Walks a root Hdl21 module, collecting up every dependency that has `PnrInput`.
-    """
 
     def __init__(self):
         self.pnr_inputs: List[PnrInput] = []
         self.done: Set[h.Module] = set()
 
     def visit_module(self, module: h.Module) -> h.Module:
-        """Visit a `Module`.
-        Primary method for most manipulations."""
-
         if module in self.done:
             return module  # Already done
 
         # Collect its `PnrInput` if it has one
-        pnr_input: Optional[PnrInput] = module.props.get(PropNames.pnr_input)
+        pnr_input = module.props.get(PropNames.pnr_input)
         if pnr_input is not None:
             self.pnr_inputs.append(pnr_input)
 
         # And continue with the data model traversal.
-        # We only look at instances and compound combinations thereof,
-        # since we are only looking for `PnrInput` properties stored on their target `Module`s
-        for inst in module.instarrays.values():
-            if isinstance(inst.of, h.Module):
-                self.visit_module(inst.of)
-        for inst in module.instbundles.values():
-            if isinstance(inst.of, h.Module):
-                self.visit_module(inst.of)
-        for inst in module.instances.values():
-            if isinstance(inst.of, h.Module):
-                self.visit_module(inst.of)
+        for inst in module.everything_instance_like:
+            self.visit_module(inst.of)
 
         self.done.add(module)
         return module
-
-
-def walk(top: PnrInput) -> List[PnrInput]:
-    """# Walk a hierarchical `Module`, collecting all dependent `PnrInput`s.
-    Input `top` will always come back as the first element of the output list."""
-
-    walker = PnrWalker()
-    walker.visit_module(top.module)
-    return walker.pnr_inputs
-
 ```
 
+Here `PnrWalker` recursively collects a dependency-ordered list of `PnrInput`. The first element of this list is, by definition, the initial "root" `Module`. 
+
+Extraction of PnR constraints from natively-annotated `Modules` is slightly more complicated. Some of the HDL objects which produce constraints do not exist at the beginning of Hdl21 elaboration - e.g. the signals expanded from nested `Bundle` definitions. Other HDL objects exist at the beginning of elaboration, but not by its end - e.g. those `Bundle` instances themselves. AlignHdl21 operates on both, by defining a custom `Elaborator` and two elaboration-passes - one intended to be run at the beginning of each elaboration, and another designed to be run at its end. 
+
+```python
+class EarlyPass(ElabPass):
+
+    def elaborate_module(self, module: h.Module) -> h.Module:
+        # Check for a `PnrInput` property. If lacking one, we're done.
+        pnr_input = module.props.get(PropNames.pnr_input)
+        if pnr_input is None:
+            return module
+
+        # Collect its `PnrInput` into a list of `Constraint`s.
+        constraints: List[data.Constraint] = []
+        
+        for ib in module.instbundles.values():
+            if isinstance(ib, h.Pair):
+                # Transform each differential `Pair`
+                # into `Group` and `Symmetric` constraints
+
+        if pnr_input.placement is not None:
+            # Transform `placement` into a further list of constraints
+            elaborate_placement(pnr_input.placement, constraints, ...)
+
+        # ...
+
+        # Add the constraint-list as a new property
+        module.props.set(PropNames.constraints, constraints)
+
+        # And send it back
+        return module
+```
+
+The `Early` elaboration pass operates on Hdl21's user-facing data model, including bundles of signals and instances. It accordingly is responsible for producing most constraints related to symmetry and grouping. It also translates the potentially nested `Placement`, which frequently refers to these compound HDL objects, into a series of corresponding placement constraints. 
+
+The `Late` elaboration pass receives near-fully elaborated HDL data, in which most compound objects have been compiled out. It is primarily responsible for attributes affixed to each `Signal` - e.g. routing requirements, pin locations, and "usage" intents for power, ground, and clock signals. Many of these objects do not exist at the time the `Early` pass executes, particularly those produced from bundles and from implicit connections. 
+
+Hdl21 elaboration is frequently invoked by other internal processes, outside direct user control. Invoking SPICE simulation and exporting VLSIR are common examples. It supports custom elaboration in these contexts by exposing a global, module-scope elaborator, which user-level code may override. AlignHdl21 does so to enable its constraint-extraction elaboration.
+
+```python
+# Set up our custom hdl21 elaboration.
+# Designed to be run at import-time. 
+# Order of passes: 
+# - Our `EarlyPass`
+# - Most other default elaboration
+# - Our `LatePass`
+# - The final default step
+#
+default_passes = Elaborator.default().passes
+passes = [EarlyPass] + default_passes[:-1] + [LatePass] + [default_passes[-1]]
+
+# Create our elaborator, and set it as the global default
+set_elaborator(Elaborator(passes))
+```
+
+This highlights a limitation of Hdl21's custom elaboration model: custom elaborators don't generally work together. A single `Elaborator` processes a design hierarchy at a time. One global such elaborator is used by default, and by most embedded elaboration-calls not directly invoked by users. A theoretical library incorporating both AlignHdl21 and some other custom elaboration activity would need to integrate the two itself. To date, no such combination has been designed. 
+
+### Compilation to Simulation and Post-Layout Verification 
 
 
 ```python
-
-@dataclass(config=PydanticConfig)
-class PnrInput:
-    """
-    # PnrInput
-    The combination of an Hdl21 `Module`, a linked placement, and a set of PnR constraints.
-    """
-
-    # Required
-    module: h.Module
-    # Optional
-    placement: Optional[Placement] = None
-    constraints: Optional[List[data.Constraint]] = None
-    params: Optional[Any] = None  # Input parameters
-
-    def __post_init_post_parse__(self):
-        # Give our `Module` a reference to us as a `Property`.
-        if PropNames.pnr_input in self.module.props:
-            msg = f"Module {self.module} already has a property {PropNames.pnr_input}"
-            raise ValueError(msg)
-        self.module.props.set(PropNames.pnr_input, self)
-
-    @property
-    def name(self) -> str:
-        return utils.netlist_module_name(self.module)
-
-    @classmethod
-    def get(cls, m: h.Module) -> Optional["PnrInput"]:
-        """# Get the `PnrInput` affixed to Hdl21 Module `m`.
-        Returns `None` if no pnr input is provided."""
-        return m.props.get(PropNames.pnr_input)
-
-
-class PropNames:
-    # Names of `h.Module` properties written here
-    pnr_input: ClassVar[str] = "alignhdl21.pnr_input"  # is a `PnrInput`
-    constraints: ClassVar[str] = "alignhdl21.constraints"  # is a `List[Constraint]`
-
-```
-
-
-
-```python
-
 @h.paramclass
 class AlignFinFetParams:
     """
@@ -3036,164 +3048,6 @@ def Stack(p: StackParams) -> h.Module:
 
 
 
-```python
-
-class EarlyPass(ElabPass):
-    """
-    # Early Elaboration Pass
-
-    Designed to work on un-elaborated `Module`s, particularly those containing `Bundle`s.
-    Special treatment is given to the built-in `h.Diff` bundle and `h.Pair` instance-bundle,
-    which infer matching requirements.
-    """
-
-    def elaborate_module(self, module: h.Module) -> h.Module:
-        # Check for a `PnrInput` property
-        pnr_input: Optional[PnrInput] = module.props.get(PropNames.pnr_input)
-        if pnr_input is None:
-            return module
-
-        # OK, work to do here. Collect its `PnrInput` into a list of `Constraint`s.
-        constraints: List[data.Constraint] = []
-        pair_groups: List[PairGroup] = []
-        mappings = InstanceMappings()
-
-        for ib in module.instbundles.values():
-            if isinstance(ib, h.Pair):
-                pg = PairGroup.create(ib)
-                mappings.map[ib] = pg
-                pair_groups.append(pg)
-                constraints.append(pg.constraint())
-            else:
-                raise RuntimeError(f"Invalid non-Pair instance bundle {ib}")
-
-        if pair_groups:
-            # Create a symmetry constraint for each pair
-            #
-            # Note this is in "list of lists of instance names" form
-            # Each "group" we created above "counts" as, like, an outer list?
-            # We think it's possible to "symmetric blocks" things that are not "groups", but we don't.
-            #
-            # FIXME: always vertical for now. Maybe infer from the placement some day?
-            #
-            symm_constraint = data.SymmetricBlocks(
-                direction="V",
-                pairs=[[pg.groupname] for pg in pair_groups],
-            )
-            constraints.append(symm_constraint)
-
-        if pnr_input.placement is not None:
-            elaborate_placement(pnr_input.placement, mappings, constraints)
-
-        # Add the constraint-list as a new property
-        module.props.set(PropNames.constraints, constraints)
-
-        # And send it back
-        return module
-
-
-class LatePass(ElabPass):
-    """
-    # Late Elaboration Pass
-
-    Designed to work on "mostly elaborated" `Module`s.
-    Mostly focused on signal-roles (e.g. power, ground, clock), and converting them into corresponding constraints.
-    Note these `Signal`s can be part of `Bundle`s, and so do not necessarily exist during `EarlyPass`!
-    """
-
-    def elaborate_module(self, module: h.Module) -> h.Module:
-        #
-        # Check for the `PnrInput` and `List[Constraint]` valued properties.
-        # Based on `FirstPass` there should be both, or neither, or something went wrong.
-        #
-        pnr_input: Optional[PnrInput] = module.props.get(PropNames.pnr_input)
-        constraints: Optional[List[data.Constraint]] = module.props.get(
-            PropNames.constraints
-        )
-
-        if pnr_input is None and constraints is None:
-            # Unconstrained; nothing to do.
-            # FIXME: should we infer signal-role constraints anyway?
-            return module
-
-        if (pnr_input is None and constraints is not None) or (
-            pnr_input is not None and constraints is None
-        ):
-            msg = f"Internal error: invalid combination of pnr_input and constraints on {module}"
-            return self.fail(msg)
-
-        #
-        # OK we've got work to do on this one.
-        #
-
-        # Collect up ports by usage
-        clock_ports: List[h.Signal] = []
-        power_ports: List[h.Signal] = []
-        ground_ports: List[h.Signal] = []
-
-        for sig in itertools.chain(module.signals.values(), module.ports.values()):
-            # Append anything with non-SIGNAL `usage` to the constraints-to-be lists
-            if sig.usage == h.signal.Usage.CLOCK:
-                clock_ports.append(sig)
-            elif sig.usage == h.signal.Usage.POWER:
-                power_ports.append(sig)
-            elif sig.usage == h.signal.Usage.GROUND:
-                ground_ports.append(sig)
-
-        if clock_ports:
-            constraints.append(data.ClockPorts(ports=[s.name for s in clock_ports]))
-        if power_ports:
-            constraints.append(data.PowerPorts(ports=[s.name for s in power_ports]))
-        if ground_ports:
-            constraints.append(data.GroundPorts(ports=[s.name for s in ground_ports]))
-
-        # Add any user-provided constraints, *at the end*.
-        # FIXME NOTE: for now this is because
-        # (a) ALIGN cares about their order,
-        # (b) we know (for now) there will be some that rely on inferred constraints
-        # That is not ideal long-term and will need to change.
-        if pnr_input.constraints:
-            constraints.extend(pnr_input.constraints)
-
-        # And send it back
-        return module
-
-```
-
-
-
-```python
-
-
-def setup():
-    # Set up our custom hdl21 elaboration.
-    # Designed to be run at import-time
-    #
-    # This sets the global hdl21 elaborator, largely because elaboration is invoked in many places
-    # not directly accessible by us - e.g. while invoking simulation.
-    # The `constraint_elaborator` is a no-op for modules which do not include any `PnrInput`
-    # (or at least it should be!).
-    #
-
-    #
-    # Collect our list of passes. Order goes:
-    #
-    # - Our `EarlyPass`
-    # - Most other default elaboration
-    # - Our `LatePass`
-    # - The final default step, which just annotates the `Module._elaborated` field.
-    #
-    default_passes = Elaborator.default().passes
-    passes = [EarlyPass] + default_passes[:-1] + [LatePass] + [default_passes[-1]]
-
-    # Create our elaborator, and set it as the global default
-    set_elaborator(Elaborator(passes))
-
-
-setup()  # Invoke that elaboration setup
-
-```
-
 
 
 ---
@@ -3213,11 +3067,9 @@ FIXME: either get these into the flow, or ditch em
 
 ## Machine Learners Learning Circuits 101
 
-Recent research and commercial EDA has begun to deploy machine learning techniques throughout the IC design process. Perhaps the most prominent such example is [@mirhoseini2021graph]. (Although follow up research ([@cheng2023assessment]) and [news](https://www.nytimes.com/2022/05/02/technology/google-fires-ai-researchers.html) | [reporting](https://spectrum.ieee.org/chip-design-controversy) cast doubt upon some of its claims. I for one find the primary rebuttal article, which remains unpublished for... reasons, quite compelling.)
+Recent research and commercial EDA has begun to deploy machine learning techniques throughout the IC design process. Perhaps the most prominent such example is [@mirhoseini2021graph]. ^[Although a combination of follow up research [@cheng2023assessment], prominent [news reporting](https://www.nytimes.com/2022/05/02/technology/google-fires-ai-researchers.html) and [industry publications](https://spectrum.ieee.org/chip-design-controversy) cast doubt upon some of its claims. I for one find the _[Stronger Baselines](http://47.190.89.225/pub/education/MLcontra.pdf)_ rebuttal article, which remains only pseudo-published for... reasons... quite compelling.] These techniques are also a prominent research frontier for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
 
-These techniques are also a prominent research frontier for circuit optimization. Prominent work has demonstrated reinforcement learning for optimizing transistor-level circuits ([@autockt]), and translation between both simple and detailed simulations, and between simple versus detailed circuit details (e.g. schematics versus layout) ([@bagnet]). 
-
-A central challenge throughout these courses of research has been identifying individuals or teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. 
+A central challenge throughout these courses of research has been assembling teams of collaborators with the requisite combination of skills and interests in two somewhat disparate fields - circuits and machine learning. Each has a fairly deep silo and set of domain-specific knowledge and practice. Figure~\ref{fig:cktgym-motivation} schematically depicts these two silos. 
 
 \setkeys{Gin}{width=\linewidth}
 ![cktgym-motivation](./fig/cktgym-motivation.jpg "ML and Circuit Research Silos")
@@ -3236,7 +3088,7 @@ This combination of challenges, plus the opportunities afforded by VLSIR, motiva
 
 Each is designed as a Python library, easing integration with most (really, all) popular ML frameworks, and with circuit frameworks including VLSIR and BAG. 
 
-On one level, CktGym's motivations mirror those of ProtoBuf and similar markup language projects. Circuits-ML programs are "too big", less in an overall complexity sense, and more in that of having two disparate sub-programs. CktGym decouples and distributes the two, defining an interface in serializable form, JSON over HTTP. 
+On one level, CktGym's motivations mirror those of ProtoBuf and similar markup language projects. Circuits-ML programs are "too big", less in an overall complexity sense, and more in that of having two disparate sub-programs. CktGym decouples and distributes the two, defining an interface in serializable form via JSON and/ or ProtoBuf over HTTP. 
 
 Each use-case of `CktGym` generally breaks down in three: 
 
@@ -3295,8 +3147,6 @@ class FcascParams:
     gamma = h.Param(dtype=int, desc="Output Current Ratio", default=2)
 ```
 
-\\newpage 
-
 ```python
 @h.generator
 def Fcasc(params: FcascParams) -> h.Module:
@@ -3331,6 +3181,8 @@ def Fcasc(params: FcascParams) -> h.Module:
         pin_bias = pbias(x=2 * beta)(...)
         pin_casc = pbias(x=2 * beta)(...)
         pin = h.Pair(pinp(x=beta))(...)
+
+    return Fcasc
 ```
 
 It is possible, and in fact likely, that given sufficient effort machine learning agents will "learn" this domain knowledge for themselves. There are many such hard-won insights - the entire concept of differential signaling and matched devies; how these devices are identified by connection; the fact that each input pair should probably be of identical size. How much learning effort this will take, remains to be seen. 
