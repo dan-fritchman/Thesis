@@ -2601,19 +2601,28 @@ In short: fail across the board. Analog circuits have no "analog" (ahem) to STA 
 
 These criteria also generally lack any efficient surrogates. Their success can generally only be evaluated through transistor-level simulation. Such simulations scale poorly with the number of circuit elements, quickly requiring hours to complete on feasible contemporary hardware. Moreover their efficiency is dramatically reduced by the inclusion of _parasitic elements_, the very layout information that a PnR solver is attempting to optimize. Including a sufficiently high-fidelity simulation model for making productive layout decisions generally means requiring extensive runtimes. Embedding such evaluations in an iterative layout-optimizer has proven too costly to ever be deployed widely. Machine learning based optimizers such as BagNET [@bagnet] use a combination of wholesale removal of layout elements (i.e. "schematic level" simulations) and lower-cost surrogate simulations (e.g. a DC operating point standing in for a high-frequency response) to evaluate design candidates.
 
-## Semi-Related: PnR of Digital Logic "Standard Cells"
+---
 
-Analog PnR has a semi-analogous sister problem: creation of the _cell libraries_ used by the digital PnR flow. The digital flow relies on the availability of a library of logic gates which can excute the core combinational logic functions (e.g. NAND, NOR, INV), sequential data storage (e.g. flip-flops and latches), and often more elaborate combinations thereof (e.g. and-or-invert operations or multi-bit storage cells). Common practice is to design these circuits, or at least their layouts, "the analog way", in graphical, polygon-by-polygon mode.
+Perhaps in part through first recongnizing these limitations, Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solvers. The BAG project and its programmed-custom model has been the primary artifact. Prior generations of libraries and frameworks, often called _silicon compilers_, (e.g. [@man1986cathedral]), or more specific circuit-focused families such as _datapath compilers_ and _SRAM compilers_ adopted similarly conceptual approaches.
 
-These cells are highly performance, power, and area constrained, and accordingly provide highly challenging design-rule optimization problems in designing their layouts. This effort is highly leveraged. Like the bit-cells of widely used SRAM, the most core standard logic cells are reused billions, sometimes trillions of times over.
+The primary downside to the programmed-custom frameworks remains: they are incredibly laborious to program. Layout of even relatively small custom circuits includes an incredible amount of detail, particularly relating to routing. Each programmed-custom framework attempts to layer over the most detailed layers with some more streamlined mental model. Many capitalize on PnR-style notions of integer tracks and routine grids. Layout21's Tetris model takes this a step further by dictating that all routing be specified in pairs of nets with 3D grid coordinates. 
 
-Modern standard cell libraries are large, often comprising thousands of cells. Modern designs also commonly require a variety of such libraries (or at least one even larger library) to make trade-offs between power, area, and performance. One set of cells may consistently choose a higher-performance, higher-power, higher-area design style, while another makes the opposite trade-off on all three. Mixing and matching of these library level trade-offs often cannot be done within a single design macro, or the output of a single PnR layout generation, as libraries making varying trade-offs often feature mutually-incompatible physical designs, e.g. different cell-height "pitches". The aforementioned low-area library may be designed to a regular pitch of X, while the high-performance library to a pitch of Y, where X / Y is not a rational number (or at least not a convenient value of one). There has therefore been a longstanding desire to produce standard cell layouts more automatically, i.e. leveraging PnR-like techniques.
+All, or at least all familiar to the author, remain pretty tough. Generalizing these layout programs across circuit parameters - e.g. the size of devices, or the resolution of a DAC - makes them much more so. Perhaps the most challenging parameter to generalize across is _process technology_. Each technology-independent framework generally requires some interface to producing tech-specific content, including all physically-valued coordinates. BAG does so through an elaborate YAML markup specification per technology, coupled with process-portable primitive-level layout generators. 
 
-This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex design rules, highly difficult to _a priori_ encode into a solver. The two problems also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@ryzhenko2012] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in [@gupta98ilp], ILP based placement "implicitly explores all possible transistor placements". Recently research including [@nvcell] has propsed machine learning techniques to aid in searching these spaces.
+Tetris, in contrast, takes the approach of digital PnR: it is agnostic about the source of primitive-level layouts. In the digital flow, standard cells are commonly generated "the analog way"; PnR operates solely on their abstract layouts, commonly provided as LEF. Tetris similarly separates the production of primitive-level cells and module-level combinations thereof. 
 
-Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each is often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case.
+The (relatively sad) state of analog layout production does offer considerable opportunity, and considerable low-hanging fruit. Consider a typical design feedback loop:
 
-Morever, these circuits often lack such clear optimality goals. Perhaps more important, even if they do have such a goal - e.g. that for "perfect" symmetry - solutions which acheive these optima are often fairly evident to designers knowledgeable of the circuit. In other words, the effort of the optimizer - which tends to be _slow_, for all but the smallest circuits - tends to go to waste. Where a standard-cell placer can, or at least is more likely to, find counterintuitive solutions that can be proven superior, analog PnR is much less likely to do so. Even when it does, it generally must meet another, highly inscrutable optimailty constraint: the opinion of its analog designer.
+- 1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
+- 2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
+- 3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
+   a. Evaluations all succeed, congratulations! Circuit's done.
+      b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
+      c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
+
+The good news: we need not automate the entirety of this process to make valuable progress. Improving any of them helps. 
+
+The BAG project began with the intent to (more or less) automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for _software_ to perform step 2. The goal is to _perform step 2 more effectively than the manual methods_. This is where the programmed-custom systems tend to fail.
 
 
 ## Ramifications for Analog PnR
@@ -2629,30 +2638,20 @@ Notably the majority of the constraint and goal languages of popular digital PnR
 
 Popular digital PnR supports thousands of such distinct constraints. Seemingly all would or could also be relevant for analog circuits. Plus analog circuits have a large space of constraints and goals of their own, often concerning goals for matching or symmetry. 
 
-## FIXME: Subsection Title
 
-Perhaps in part through first recongnizing these limitations, Berkeley IC research of the past decade has not been kind to the idea that analog circuits can be successfully laid out by PnR-style solvers. The BAG project and its programmed-custom model has been the primary artifact. Prior generations of libraries and frameworks, often called _silicon compilers_, (e.g. [@man1986cathedral]), or more specific circuit-focused families such as _datapath compilers_ and _SRAM compilers_ adopted similarly conceptual approaches.
+## Semi-Related: PnR of Digital Logic "Standard Cells"
 
-The primary downside to the programmed-custom frameworks remains: they are incredibly laborious to program. Layout of even relatively small custom circuits includes an incredible amount of detail, particularly relating to routing. Each programmed-custom framework attempts to layer over the most detailed layers with some more streamlined mental model. Many capitalize on PnR-style notions of integer tracks and routine grids. Layout21's Tetris model takes this a step further by dictating that all routing be specified in pairs of nets with 3D grid coordinates. 
+Analog PnR has a semi-analogous sister problem: creation of the _cell libraries_ used by the digital PnR flow. The digital flow relies on the availability of a library of logic gates which can excute the core combinational logic functions (e.g. NAND, NOR, INV), sequential data storage (e.g. flip-flops and latches), and often more elaborate combinations thereof (e.g. and-or-invert operations or multi-bit storage cells). Common practice is to design these circuits, or at least their layouts, "the analog way", in graphical, polygon-by-polygon mode.
 
-All, or at least all familiar to the author, remain pretty tough. Generalizing these layout programs across circuit parameters - e.g. the size of devices, or the resolution of a DAC - makes them much more so. Perhaps the most challenging parameter to generalize across is _process technology_. Each technology-independent framework generally requires some interface to producing tech-specific content, including all physically-valued coordinates. BAG does so through an elaborate YAML markup specification per technology, coupled with process-portable low-level "p-cells" to produce primitive device layouts. 
+These cells are highly performance, power, and area constrained, and accordingly provide highly challenging design-rule optimization problems in designing their layouts. This effort is highly leveraged. Like the bit-cells of widely used SRAM, the most core standard logic cells are reused billions, sometimes trillions of times over.
 
-Tetris, in contrast, takes the approach of digital PnR: it is agnostic about the source of primitive-level layouts. In the digital flow, standard cells are commonly generated "the analog way"; PnR operates solely on their abstract layouts, commonly provided as LEF. Tetris similarly separates the production of primitive-level cells and module-level combinations thereof. 
+Modern standard cell libraries are large, often comprising thousands of cells. Modern designs also commonly require a variety of such libraries (or at least one even larger library) to make trade-offs between power, area, and performance. One set of cells may consistently choose a higher-performance, higher-power, higher-area design style, while another makes the opposite trade-off on all three. Mixing and matching of these library level trade-offs often cannot be done within a single design macro, or the output of a single PnR layout generation, as libraries making varying trade-offs often feature mutually-incompatible physical designs, e.g. different cell-height "pitches". The aforementioned low-area library may be designed to a regular pitch of X, while the high-performance library to a pitch of Y, where X / Y is not a rational number (or at least not a convenient value of one). There has therefore been a longstanding desire to produce standard cell layouts more automatically, i.e. leveraging PnR-like techniques.
 
----
+This problem has many analogies to the analog PnR problem. Standard cells are principally comprised of individual transistors, which often feature a diverse set of complex design rules, highly difficult to _a priori_ encode into a solver. The two problems also differ in important respects, particulary those of incentives and intent. The desire for maximal area and power efficiency of standard cells drives a highly optimized design style. This is generally paired with a similarly stringent optimization criteria for producing their layouts. Techniques such as (mixed) integer linear programming ((M)ILP) are often deployed, e.g. in [@ryzhenko2012] and [@bonncell], to produce layouts which provably optimize goals such as minimum area or maximum transistor-diffusion sharing. The downside is, this scales poorly with circuit size, and is not especially fast even for small circuits. As noted in [@gupta98ilp], ILP based placement "implicitly explores all possible transistor placements". Recently research including [@nvcell] has propsed machine learning techniques to aid in searching these spaces.
 
-The (relatively sad) state of analog layout production does offer considerable opportunity, and considerable low-hanging fruit. Consider a typical design feedback loop:
+Analog layouts also have several key differences. Perhaps most importantly, each analog circuit layout tends to be "more custom", less amortized over vast numbers of instances created by the PnR flow. Each is often custom tuned to its environment, e.g. an op-amp that is in some sense general-purpose but whose parameteric design is highly tuned to its specific use case.
 
-- 1. A designer produces a schematic-level circuit, generally iteratively through a simulation-based feedback process.
-- 2. Once satisfied, the schematic is (manually) hardened into layout. This may be done by the same designer as performed step 1 (typical for broke grad students), or may entail a handoff to a dedicated layout-design specialist (more common for pros). The layout is completed to some level of desired quality, generally including successful layout vs schematic (LVS) checks which enable layout extraction.
-- 3. The designer of step 1 evaluates the layout, applying a combination of simulation-based feedback and technical judgement based on direct review. Criteria for "good" and "good enough" are often fairly abstract, e.g. "put these two devices as close together as we can", or "match these two signals as well as we can". If:
-   a. Evaluations all succeed, congratulations! Circuit's done.
-      b. Evaluations indicate a sound circuit but deficient layout, return to step (2).
-      c. Evaluations indicate the need for circuit-level changes, e.g. due to inaccurate assumptions about layout effects, return to step (1).
-
-The good news: we need not automate the entirety of this process to make valuable progress. Improving any of them helps. 
-
-The BAG project began with the intent to (more or less) automate the entirety of this design feedback loop, via per-circuit "generator programs" which could adapt a circuit and layout to target specifications. Practical usage of BAG, observed both in academic and industry contexts, has instead focused on the "forward" aspects of the loop, particularly step (2), layout production. The feedback-based evaluations of step (3) remain offline and manual. Crucially, the goal is not just for _software_ to perform step 2. The goal is to _perform step 2 more effectively than the manual methods_. This is where the programmed-custom systems tend to fail.
+Morever, these circuits often lack such clear optimality goals. Perhaps more important, even if they do have such a goal - e.g. that for "perfect" symmetry - solutions which acheive these optima are often fairly evident to designers knowledgeable of the circuit. In other words, the effort of the optimizer - which tends to be _slow_, for all but the smallest circuits - tends to go to waste. Where a standard-cell placer can, or at least is more likely to, find counterintuitive solutions that can be proven superior, analog PnR is much less likely to do so. Even when it does, it generally must meet another, highly inscrutable optimailty constraint: the opinion of its analog designer.
 
 
 ## `ALIGN`
@@ -3007,22 +3006,21 @@ Figure~\ref{fig:adc-vco1-layout} shows the VCO breakout section, including the c
 
 Each of the test chip's key circuits are generated from the combination of Hdl21 and ALIGN. Top-level assembly is done "the analog way", via a popular graphical custom layout editor. 
 
+### ADC Circuits
 
-
-
+Each oscillator is comprised of a ring-connected set of pseudo-differential delay stages. Stages use a common, weighted combination of CMOS inverters in forward propagation and positive feedback configurations to ensure differential operation. 
 
 ```python
+# Simplified Pseudo-Differential RO Stage
+
 @h.paramclass
 class RoStageParams:
     uinv = h.Param(dtype=h.Instantiable, desc="Unit Inverter")
     ratio = h.Param(dtype=int, desc="Fwd/Cross Ratio", default=4)
 
-
 @h.generator
 def RoStage(params: RoStageParams) -> h.Module:
     """# Pseudo-Diff Ring Oscillator Stage """
-
-    uinv = params.uinv
 
     @h.module
     class RoStage:
@@ -3035,36 +3033,56 @@ def RoStage(params: RoStageParams) -> h.Module:
         # Internal Implementation
         ## Cross-Coupled Output Inverters
         cross = h.Pair(params.uinv)(i=out, o=h.inverse(out), ...)
-
-    ## Forward Inverters
-
-		R
-    conns = dict(
-        TOP=RoStage.TOP, BOT=RoStage.BOT, NWELL=RoStage.NWELL, PSUB=RoStage.PSUB
-    )
-    for k in range(params.ratio):
-        fwd_p_insts.append(
-            RoStage.add(
-                uinv(i=RoStage.inp.p, o=RoStage.out.p, **conns), name=f"fwd_p{k}"
-            )
-        )
-        fwd_n_insts.append(
-            RoStage.add(
-                uinv(i=RoStage.inp.n, o=RoStage.out.n, **conns), name=f"fwd_n{k}"
-            )
-        )
+        ## Forward Inverters
+        fwd_p = params.ratio * params.uinv(i=inp.p, o=out.p, ...)
+        fwd_n = params.ratio * params.uinv(i=inp.n, o=out.n, ...)
 
     # Create PnR placement
-    cols = fwd_p_insts + [RoStage.cross_p, RoStage.cross_n] + fwd_n_insts
-    placement = ah.Placement(root=ah.Row(cols))
-    ah.PnrInput(
-        module=RoStage, placement=placement, constraints=[ah.ConfigureCompiler()]
-    )
+    placement = ah.Placement(root=ah.Row(cols=[
+        RoStage.fwd_p, RoStage.cross, RoStage.fwd_n
+    ]))
+    ah.PnrInput(module=RoStage, placement=placement, ...)
     return RoStage
 ```
 
-FIXME: write
+Like most of the ADC's circuits, the RO stages are designed to be process portable through the use of control-inversion parameters. A separate technology-specific invocation program applies PDK-compatible devices as parameters to these generators. 
 
+The `RoStage`  unit inverter module `uinv` is arrayed twice in positive feedback and two times a parametric coupling `ratio` in the forward configuration. In each oscillator the value of this `ratio` is set four.
+
+ADC sampling is performed by an array of dual-tail comparators (or "sense amps", or DTSAs). 
+
+```python
+@h.generator
+def Dtsa(params: Params) -> h.Module:
+    """# Dual Tail Sense Amp"""
+
+    @h.module
+    class Dtsa:
+        # IO
+        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        clk = h.Diff(port=True, role=h.Diff.Roles.SINK)
+        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        VDD, VSS = h.PowerGround()
+
+        # Implementation
+        mid = h.Diff()
+        ntail, ptail = 2 * h.Signal()
+
+        # Input Stage
+        tailn = params.tailn(d=ntail, g=clk.n, ...)
+        ninp = h.Pair(params.ninp)(d=h.inverse(mid), g=inp, s=ntail, ...)
+        pload = h.Pair(params.pload)(d=h.inverse(mid), g=clk.n, ...)
+
+        # Output/ Latch Stage
+        tailp = params.tailp(d=ptail, g=clk.p, s=VDD, b=VDD)
+        plat = h.Pair(params.plat)(d=h.inverse(out), g=out, s=ptail, ...)
+        nlat = h.Pair(params.nlat)(d=h.inverse(out), g=out, ...)
+
+        # Forwarding between the two
+        nfwd = h.Pair(params.nfwd)(d=h.inverse(out), g=mid, ...)
+    
+    return Dtsa
+```
 
 ```python
 
@@ -3166,71 +3184,15 @@ def RoAdc(params: RoAdcParams) -> h.Module:
             clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=h.bundlize(p=samp_p, n=samp_n)
         )
 
-    """ 
-    NOTE: this seems like it should be, like, two `Half`s. As in the snippet below. 
-    Align seems to choke on that so far? 
-    We think it doesn't like having a module that is only a single pair of instances(?).
-    Luckily `Half` is not very big either; it's just "expanded" above. 
-
-```
-        # Implementation
-        halves = h.Pair(RoAdcHalf(params))(
-            inp=inp, clk=clk, samp=h.bundlize(p=samp_p, n=samp_n), VDD=VDD, VSS=VSS
-        )
-    
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[RoAdc.halves]))
-    ```
-    """
-    
     # Create a placement
     placement = ah.Placement(ah.Column(rows=[RoAdc.res, RoAdc.rings]))
-    
     # Create some `PnrInput`
     ah.PnrInput(
         module=RoAdc,
         placement=placement,
         constraints=[ah.ConfigureCompiler()],
-        params=params,
     )
     return RoAdc
-```
-
-```python
-
-@h.generator
-def DtsaDansVersion(_: h.HasNoParams) -> h.Module:
-    """# Dual Tail Comparator"""
-
-    plvt, nlvt = pdk.modules.plvt, pdk.modules.nlvt
-
-    @h.module
-    class DtsaDansVersion:
-        # IO
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        clk = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-        VDD, VSS = h.PowerGround()
-
-        # Implementation
-        mid = h.Diff()
-        ntail, ptail = h.Signals(2)
-
-        # Input Stage
-        tailn = nlvt(nf=2)(d=ntail, g=clk.n, s=VSS, b=VSS)
-        ninpp = nlvt(nf=8)(d=mid.n, g=inp.p, s=ntail, b=VSS)
-        ninpn = nlvt(nf=8)(d=mid.p, g=inp.n, s=ntail, b=VSS)
-        ploadp = plvt(nf=8)(d=mid.p, g=clk.n, s=VDD, b=VDD)
-        ploadn = plvt(nf=8)(d=mid.n, g=clk.n, s=VDD, b=VDD)
-
-        # Output/ Latch Stage
-        tailp = plvt(nf=4)(d=ptail, g=clk.p, s=VDD, b=VDD)
-        plat = h.Pair(plvt(nf=2))(d=h.inverse(out), g=out, s=ptail, b=VDD)
-        nlat = h.Pair(nlvt(nf=2))(d=h.inverse(out), g=out, s=VSS, b=VSS)
-
-        # Forwarding between the two
-        nfwd = h.Pair(nlvt(nf=4))(d=h.inverse(out), g=mid, s=VSS, b=VSS)
-
 ```
 
 ```python
