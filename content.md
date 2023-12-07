@@ -12,18 +12,16 @@ Why? To date, the primary manifestation of our semiconductor-based information a
 
 Moreover, these machines kept getting better, year after year. In 1965's _Cramming More Components onto Integrated Circuits_ [@moore1998cramming], Gordon Moore introduced the now-famous "law" setting the field on an exponential rate of progress for the foreseeable future. But the phrase _Moore’s Law_ has always been off. The inclusion of the term _law_, coupled with the fact that it concerns a complicated scientific-seeming topic, leads people to believe it is some law of nature, like Newton’s laws of motion or the second law of thermodynamics. Or perhaps more like Ahmdal’s law, which sets a theoretical limit on a category of abstract quantities (computer programs). 
 
-What Gordon Moore made in truth was a prediction, and one about people. Particularly the intellectual progress of a group of people driving semiconductor fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. (Strangely for most, the notion of it having an end failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow limited to the late 20th century.)
-
-Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but at the time of this writing, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including figure~\ref{fig:patterson_moore}, excerpted from Patterson \& Hennessy's seminal computer architecture text. 
+What Gordon Moore made in truth was a prediction, and one about people. Particularly the intellectual progress of a group of people driving semiconductor design and fabrication. He predicted an exponential rate of progress in this field, extending indefinitely into the future. Most incredibly, he proved right, for decades on end. Countless inventions and person-years were required; the "law" became a sort of self-sulfilling prophecy as the north-star goal for the field. Later, predicting the _end_ of Moore's Law became a popular prognostication game. Strangely for many, including some of the leaders of our field, the notion of it having an _end_ failed to dispel the idea of its inevitability. No one expects gravity or entropy to end, much less any time soon. But many accept chip-progress as a fact of nature, somehow confined to the late 20th century.
 
 \setkeys{Gin}{width=\linewidth}
 ![patterson_moore](./fig/patterson_moore.png "Patterson and Hennessy's Depiction of the End of Moore's Law")
 
-The end of the Moore Era coincided with large swaths of human activity just catching on to just how useful all this computation could be. And perhaps more impactfully, other swathes realized that incredibly computation-intensive methods (i.e. those of machine learning) proved aways more suitable to a variety of tasks than prior, "expert" programmed methods. 
+Herbert Stein made a more ironclad epinomymous "law" a few decades later: _if something cannot go on forever, it will stop_. So it is with Moore's great prediction. There is no definitive accounting for when it ended, but at the time of this writing, the "Moore Era" is over. Countless accounts of its wind-down have been offered, including figure~\ref{fig:patterson_moore}, excerpted from Patterson \& Hennessy's seminal computer architecture text. 
 
-The combination means one thing: there will be much more need for much more specialized, task-centric hardware. Where software "ate" the last era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. 
+The end of the Moore Era coincided with large swaths of human activity just catching on to just how useful all this computation could be. And perhaps more impactfully, other swathes realized that incredibly computation-intensive methods (i.e. those of machine learning) proved aways more suitable to a variety of tasks than prior, "expert" programmed methods. The combination means one thing: there will be much more need for much more specialized, task-centric hardware. Where software "ate" the last era, hardware will eat the next one. And there is no more free lunch to be dined-out on from a rapidly ever-improving set of process technologies. 
 
-While not especially popular, this outlook is also not novel. The same Patterson \& Hennessy responsible for cataloging the wind-down shown in figure~\ref{fig:patterson_moore} went so far as to deem the combination of developments the dawn of a "new golden age"  [@hennessy2019new]. Whether we view this as a challenge or opportunity, the world of the coming decades will need far more customized electronic hardware than that of decades-past. Integrated circuits will continue to be at their core. ICs are also among the most laborious, most capital intensive, most challenging parts to design - and especially to get right. We will need a lot - perhaps 10x or 100x - more of them. 
+While not especially widespread, this outlook is also not novel. The same Patterson \& Hennessy responsible for cataloging the wind-down shown in figure~\ref{fig:patterson_moore} went so far as to deem the combination of developments the dawn of a "new golden age"  [@hennessy2019new]. Whether we view this as a challenge or opportunity, the world of the coming decades will need far more customized electronic hardware than that of decades-past. Integrated circuits will continue to be at their core. ICs are also among the most laborious, most capital intensive, most challenging parts to design - and especially to get right. We will need a lot - perhaps 10x or 100x - more of them. 
 
 
 ## The IC Design Process
@@ -423,7 +421,7 @@ Hdl21 is implemented in Python. It is targeted and optimized for analog and cust
 
 ### Modules
 
-Hdl21's primary unit of hardware reuse is the `Module`. It intentionally shares this name Verilog's `module` and CHISEL's `Module`, and also bears a strong resemblance to VHDL's `entity` and SPICE's `subckt`. Hdl21 `Modules` are "chunks" of reusable, instantiable hardware. Inside they are containers of a handful of hardware types, including:
+Hdl21's primary unit of hardware reuse is the `Module`. It intentionally shares this name with Verilog's `module` and CHISEL's `Module`, and also bears a strong resemblance to VHDL's `entity` and SPICE's `subckt`. Hdl21 `Modules` are "chunks" of reusable, instantiable hardware. Inside they are containers of a handful of hardware types, including:
 
 - Instances of other `Modules`
 - Connections between them, defined by `Signals` and `Ports`
@@ -1242,7 +1240,15 @@ def Inv(params: InvParams) -> h.Module:
     return Inv
 ```
 
-Here the transistors to be instantiated in `Inv` are provided as parameters. This is an excessively handy knock-on effect of `Module`s, external wrappers thereof, and PDKs all be rich Python objects: they're all just more variables in the program. This "control inversion parameters" style extends to any target technology, and to the built-in generic primitives. Here `Inv` uses the built-in generic `Nmos` and `Pmos` as default arguments, which can be overridden by each `Inv` instance. Higher-level generators can alternately create `Inv` with the default built-in generics, later passing them through a PDK compiler function.  
+Here the transistors to be instantiated in `Inv` are provided as parameters. This is an excessively handy knock-on effect of `Module`s, external wrappers thereof, and PDKs all be rich Python objects: they're all just more variables in the program. This "control inversion parameters" style extends to any target technology, and to the built-in generic primitives. Here `Inv` uses the built-in generic `Nmos` and `Pmos` as default arguments, which can be overridden by each `Inv` instance. Higher-level generators can alternately create `Inv` with the default built-in generics, later passing them through a PDK compiler function. 
+
+It is common to want such parameters to be any of (a) a `Module`, (b) an `ExternalModule`, with parameter values applied, or (c) a built-in `Primitive`, again with parameter-values set. Hdl21 includes a built-in `Instantiable` union-type which is exactly this: 
+
+```python
+Instantiable = Union[Module, ExternalModuleCall, PrimitiveCall]
+```
+
+Each of the `Call` suffixes to `ExternalModuleCall` and `PrimitiveCall` indicate the addition of the parameter values. The "call" name is a reference to how those parameters are typically applied. Most generators with such control-inversion parameters then use `Instantiable` as their datatype. 
 
 
 ### PDK Corners
@@ -1535,13 +1541,11 @@ Customizing the elaboration process generally involves (a) defining new `ElabPas
 
 ## OK, not _all_ of those schematics are bad
 
-Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. Based on personal experience as a researcher and industry practitioner, designing systems and integrated circuits - my experience is that most schematics are worth less than zero. Not that they shouldn't exist; most of the bad ones don't have much of a choice. but that the limitations of their form do net harm to the underlying design task they exist to support. 
+I call this a dinner party test. The setup: you're at a dinner party. The other people there are smart - but not _your kind_ of smart. They might be from different fields or backgrounds. The test: given some artifact of your field, how well can you explain it to them? Better yet, how well can you explain it to, say, your mom? 
 
-But there's still some magic in the good ones. 
+Ultimately this is a test of _your own_ understanding, much in the way Richard Feynman might have evaluated it. 
 
-I call this a dinner party test. The setup: you're at a dinner party. The other people there are smart - but not _your kind_ of smart. They might be from different fields or backgrounds. The test: given some technical artifact of your field, how well can you explain it to them? How well can you explain it to them in a way that they can understand, and that they can appreciate the value of? Better yet, how well can you explain it to, say, your mom?
-
-An example prompt for such a test: 
+An example such test: 
 
 ```python
 print("Hello World!")
@@ -1556,21 +1560,26 @@ while a_number > 3:
    a_number = get_a_random_number()
 ```
 
-My own explanation: this is a sequence of "instructions" for your computer to run. (Although not the term of art "instruction" as in ISA.) Like a recipe or a novel, it generally flows from top to bottom, executing in order. There are a few execeptional cases like the `if` and `while` clauses which alter _control flow_ - i.e. which part of the program runs next. They work more like a "choose your adventure" book, in which the values of variables in the program determine whether it jumps to, say, page 53 or page 87 next.
+My own explanation: this is a sequence of instructions for your computer to run. Like a recipe or a novel, it generally flows from top to bottom, executing in order. There are a few execeptional cases like the `if` and `while` clauses which alter _control flow_ - i.e. which part of the program runs next. They work more like a "choose your adventure" book, in which the values of variables in the program determine whether it jumps to, say, page 53 or page 87 next.
 
+\\newpage
 A second example:
 
 ![sky-stdcell-layout](./fig/sky-stdcell-layout.jpg "Test 2")
 
 This is several things on several different levels: a flip-flop, a standard logic cell, a layout, a piece of the open-source SkyWater PDK. The dinner-party version should be clear to readers of Chapter 1: this is a blueprint. It's a set of instructions for what to build on a silicon die. The x and y axes are dimensions across the die surface. The colors represent different z-axis "layers", which can be various layers of metal, places to shoot ion doping infusions, polysilicon, and a handful of other pieces of the transistor-making stack. This coupled with some annotations for which color/ layer means what are the necessary instructions for a fabricator to build this circuit. 
 
-Now, a much harder third example: 
+\\newpage
+Now, a third, much harder example: 
 
-\setkeys{Gin}{width=.75\linewidth}
-![high-quality-schematic](./fig/high-quality-schematic.png "A High Quality Schematic")
+\setkeys{Gin}{width=.5\linewidth}
+![high-quality-schematic](./fig/high-quality-schematic.png "Test 3")
 
-_We_ know this is a schematic. But counterintuitively, despite being over a decade into a career largely made out of such pictures, on some deep level I do not know what makes them work. I.e. _why_ that pictorial form resonates as such a clear representation of the underlying circuit it represents, where others (e.g. the code) fail. It just does. 
+If you're reading this, you almost certainly know this is a schematic. I certainly do. Much of my adult life has been spent making such pictures. But counterintuitively, on some deep level I really do not know what they are. Why do we find such value in this picture? Why do _I_? How did we decide on those little squiggles of lines which represent the elements? Why do they also seem to have such intuitive power? What makes it such a clear representation of the underlying circuit it represents, as compared to so many others - like, say, code?  It's on some level mysterious, at least to me; it just works. 
 
+Hdl21 is largely designed to replace graphical schematics. A central thesis is that most schematics would be better as code. Based on personal experience as a researcher and industry practitioner, designing systems and integrated circuits, my experience is that most schematics are worth less than zero. Not that they shouldn't exist; most of the bad ones don't have much of a choice. But that the limitations of their form do net harm to the underlying design-task they exist to support. 
+
+But there's still some magic in the good ones. 
 
 ## What's a schematic really?
 
@@ -2930,7 +2939,7 @@ class Walker(h.HierarchyWalker):
         # Series Stack Case
         # Call our `Stack` generator to array those out.
         unit_params = intel16_hdl21.MosParams.convert(call.params)
-        stack = Stack(unit=lvs_modules(call.module)(unit_params), nser=params.stack)
+        stack = Stack(unit=lvs_modules(call.module), nser=params.stack)
         # `Stack` also uses stuff that needs to be elaborated out. 
         h.elaborate(stack)
         return stack
@@ -2947,7 +2956,7 @@ class StackParams:
 @h.generator
 def Stack(p: StackParams) -> h.Module:
     """# Stack Generator
-    Create a series-stack of `nser` identical `unit` transistor devices."""
+    Create a series-stack of `nser` identical `unit` devices."""
 
     # Create the result module, with a Mos-set of ports
     m = h.Module()
@@ -3006,7 +3015,7 @@ Figure~\ref{fig:adc-vco1-layout} shows the VCO breakout section, including the c
 
 Each of the test chip's key circuits are generated from the combination of Hdl21 and ALIGN. Top-level assembly is done "the analog way", via a popular graphical custom layout editor. 
 
-### ADC Circuits
+### Excerpted ADC Circuits
 
 Each oscillator is comprised of a ring-connected set of pseudo-differential delay stages. Stages use a common, weighted combination of CMOS inverters in forward propagation and positive feedback configurations to ensure differential operation. 
 
@@ -3084,52 +3093,44 @@ def Dtsa(params: Params) -> h.Module:
     return Dtsa
 ```
 
+A complete comparator (or "slicer", in more serial-link terms) combines such a sense amp with an SR latch. 
+
 ```python
-
 @h.paramclass
-class StageParams:
-    # Optional
-    ro_stage = h.Param(dtype=h.Instantiable, desc="Delay Cell", default_factory=RoStage)
-    slicer = h.Param(dtype=h.Instantiable, desc="Slicer Module", default_factory=Slicer)
-
+class SlicerParams:
+    sa = h.Param(dtype=h.Instantiable, default_factory=Dtsa)
+    sr = h.Param(dtype=h.Instantiable, default_factory=SrLatch)
 
 @h.generator
-def Stage(params: StageParams) -> h.Module:
-    """# RO ADC Stage
-    Combination of an RO delay stage, plus a phase-sampling slicer."""
+def Slicer(params: SlicerParams) -> h.Module:
+    """# Slicer"""
 
     @h.module
-    class Stage:
-        VDD, VSS = h.PowerGround()  # IO
-        ctrl = h.Input(desc="RO Control Voltage")
-        clk = h.Input(desc="Sampling Clock")
+    class Slicer:
+        # IO
+        VDD, VSS = h.PowerGround()
         inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
         out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-        samp = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
+        clk = h.Diff(port=True, role=h.Diff.Roles.SINK)
 
         # Internal Implementation
-        ro_stage = params.ro_stage(
-            inp=inp, out=out, TOP=VDD, NWELL=VDD, BOT=ctrl, PSUB=VSS
-        )
-        slicer = params.slicer(inp=out, out=samp, clk=clk, VDD=VDD, VSS=VSS)
+        ## Slicer
+        sa = params.sa(inp=inp, clk=clk, VDD=VDD, VSS=VSS)
+        ## SR Latch
+        sr = params.sr(inp=sa.out, out=out, VDD=VDD, VSS=VSS)
 
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[Stage.slicer, Stage.ro_stage]))
-
+    # Create some PnR input
     ah.PnrInput(
-        module=Stage,
-        placement=placement,
-        constraints=[
-            ah.ConfigureCompiler(),
-            ah.PortLocation(ports=["clk", "samp_p", "samp_n"], location="TC"),
-        ],
+        module=Slicer,
+        placement=ah.Placement(root=ah.Column(rows=[Slicer.sa, Slicer.sr])),
+        constraints=[ah.ConfigureCompiler()],
     )
-    return Stage
+    return Slicer
 ```
 
+The overall ADC is built of a pseudo-differential pair of instances of half-ADCs. Each single-ended half-ADC is in turn comprised of a ring of oscillator delay stages, each coupled with a phase-sampling comparator, plus an input bias resistor divider which drives the ring's control terminal.
 
 ```python
-
 @h.generator
 def RoAdcHalf(params: RoAdcParams) -> h.Module:
     """# RO ADC Half
@@ -3144,19 +3145,18 @@ def RoAdcHalf(params: RoAdcParams) -> h.Module:
         samp = h.Output(width=params.nstg, desc="Sampled Output")
 
         # Implementation
-        rdiv = h.Signal()
-        res = params.input_res(inp=inp, out=rdiv, VSS=VSS)
-        ring = Ring(params)(clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=samp)
+        res = params.input_res(inp=inp, VSS=VSS)
+        # This `Ring` is a little different from the one above;
+        # it has both the delay stages and comparators inside.
+        ring = Ring(params)(
+            clk=clk, ctrl=res.out, VDD=VDD, VSS=VSS, samp=samp
+        )
 
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[RoAdcHalf.res, RoAdcHalf.ring]))
-
-    # Create some `PnrInput`
     ah.PnrInput(
         module=RoAdcHalf,
-        placement=placement,
-        constraints=[ah.ConfigureCompiler()],
-        params=params,
+        placement=ah.Placement(
+            ah.Column(rows=[RoAdcHalf.res, RoAdcHalf.ring])
+        ),
     )
     return RoAdcHalf
 
@@ -3174,64 +3174,19 @@ def RoAdc(params: RoAdcParams) -> h.Module:
         VDD, VSS = h.PowerGround()
         inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
         clk = h.Input(desc="Sampling Clock")
-        samp_p = h.Output(width=params.nstg, desc="Sampled Output (Positive)")
-        samp_n = h.Output(width=params.nstg, desc="Sampled Output (Negative)")
+        samp_p, samp_n = 2 * h.Output(width=params.nstg)
 
         # Implementation
-        rdiv = h.Diff()
-        res = h.Pair(params.input_res)(inp=inp, out=rdiv, VSS=VSS)
-        rings = h.Pair(Ring(params))(
-            clk=clk, ctrl=rdiv, VDD=VDD, VSS=VSS, samp=h.bundlize(p=samp_p, n=samp_n)
+        halves = h.Pair(RoAdcHalf(params))(
+            inp=inp, clk=clk, samp=h.bundlize(p=samp_p, n=samp_n), ...
         )
-
-    # Create a placement
-    placement = ah.Placement(ah.Column(rows=[RoAdc.res, RoAdc.rings]))
-    # Create some `PnrInput`
     ah.PnrInput(
         module=RoAdc,
-        placement=placement,
-        constraints=[ah.ConfigureCompiler()],
+        placement=ah.Placement(
+            root=ah.Column(rows=[RoAdc.halves.p, RoAdc.halves.n])
+        ),
     )
     return RoAdc
-```
-
-```python
-
-@h.paramclass
-class SlicerParams:
-    sa = h.Param(dtype=h.Instantiable, desc="StrongArm", default_factory=NmosStrongArm)
-    sr = h.Param(dtype=h.Instantiable, desc="SR Latch", default_factory=SrLatch)
-
-
-@h.generator
-def Slicer(params: SlicerParams) -> h.Module:
-    """# StrongArm Based Slicer"""
-
-    @h.module
-    class Slicer:
-        # IO
-        VDD, VSS = h.PowerGround()
-        inp = h.Diff(port=True, role=h.Diff.Roles.SINK)
-        out = h.Diff(port=True, role=h.Diff.Roles.SOURCE)
-        clk = h.Input()
-
-        # Internal Implementation
-        ## StrongArm Comparator
-        sa = params.sa(inp=inp, clk=clk, VDD=VDD, VSS=VSS)
-        ## SR Latch
-        sr = params.sr(inp=sa.out, out=out, VDD=VDD, VSS=VSS)
-
-    # placement = None
-    placement = ah.Placement(root=ah.Column(rows=[Slicer.sa, Slicer.sr]))
-
-    # Create some PnR input
-    ah.PnrInput(
-        params=params,
-        module=Slicer,
-        placement=placement,
-        constraints=[ah.ConfigureCompiler()],
-    )
-    return Slicer
 ```
 
 
