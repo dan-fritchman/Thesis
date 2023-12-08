@@ -26,39 +26,13 @@ That also explains the seeming condescension. It's because these things are so d
 
 That's all to say: it's been great to be at home these past 18 months. 
 
----
+It's also to say, the primary acknowledgments here belong to Lauren, Danny, and the new guy joining our family in 2024. There is an apparent practice of having a separate dedication section for writings like this, in which the totality of the content is dedicated "to", like, the author's mom, or wife, or cat, or whoever. Who on earth wants this nerdy engineering-stuff dedicated to them? Poetry, music, deep investigations of the human soul, sure. But this stuff? Hopefully I can save them a cringe or two by omitting that section, and better communicate how important they are through ramblings like these. 
 
-That's also the real acknowledgment here: to Lauren, Danny, and 
+My deepest appreciation to this work's advisor, Vladimir Stojanovic, and to Bora Nikolic and Elad Alon for guiding its early and middle stages. Vladimir said I should write this (the real thesis, not this soft-core warmup section) for a first year grad student. Not "like a dry academic paper", and not "like my blog". I am confident it achieves at least one of those. 
 
-There is an apparent practice of having a separate dedication section 
+Thanks to Kris Pister, Ali Niknejad, and Bora for inviting me into their one of a kind education experience. Aviral Pandey and Arya Reais-Parsi have been incredible collaborators on most of the work presented here. Thanks are due to the teams at Blue Cheetah and at GoogleX, including Elad, Krishna Settaluri, Dino Ruic, Raj Apte, and many more. 
 
+Thanks to the people who taught me how to do this job: Raman Thiara, Gin Yee, Emerson Fang, Jafar Savoj, Dennis Fischette, Brian Leibowitz, Jose Tierno, Edwin Guo, and so many more, especially Sanjeev Maheshwari. Jared Zerbe deserves special thanks for engendering much of Apple's research outreach in our field, and for providing invaluable real-world design review feedback to our student-designers. Jason Jacobs has long been a great friend and collaborator. He, Elad, and Brian provided some of the first inclings that something like the work presented here would be possible, and that I could do it, and that I should. 
 
-
-Vladimir said I should write this (the real thesis, not this soft-core warmup section) for a first year grad student. Not like a dry academic paper, and not like "my blog". I am confident it achieves at least one of those. 
-
-
-
-Vladimir Stojanovic
-
-Elad Alon and Bora Nikolic
-
-Kris Pister, Ali Niknejad, and Bora Nikolic
-
-
-
-Aviral Pandey and Arya Reais-Parsi
-
-
-
-To the people who taught me how to do this job: Raman Thiara, Gin Yee, Emerson Fang, Jafar Savoj, Dennis Fischette, Brian Leibowitz, Jose Tierno, Edwin Guo, and especially Sanjeev Maheshwari. 
-
-
-
-
-
-Jason Jacobs has long been a great friend and co-conspirator. He, Elad, and Brian provided some of the first inclings that I 
-
-
-
-Ming-Shuan Chen once tried to shout me out in [his own](https://escholarship.org/content/qt1h08466w/qt1h08466w.pdf) dissertation. He failed, and instead thanked Dan *Friedman*. Dan is a much more reknown figure in our field, primarily known for his work at IBM. To my knowledge, Dan and Ming-Shuan have never met. And in that vein I would especially like to thank [Shaun Chen](https://en.wikipedia.org/wiki/Shaun_Chen). 
+Lastly, Ming-Shuan Chen, who once tried to shout me out in [his own](https://escholarship.org/content/qt1h08466w/qt1h08466w.pdf) dissertation. He failed, and instead thanked Dan *Friedman*. Dan is a much more reknown figure in our field, primarily known for his work at IBM. To my knowledge, Dan and Ming-Shuan have never met. And in that vein I would especially like to thank [Shaun Chen](https://en.wikipedia.org/wiki/Shaun_Chen). 
 
