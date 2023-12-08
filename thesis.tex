@@ -6,16 +6,32 @@
 % https://www.overleaf.com/latex/templates/uc-berkeley-thesis-template/mfzmtxfqvtxx
 % 
 
-\documentclass{ucbthesis}
-\usepackage{biblatex}
-\usepackage{rotating} % provides sidewaystable and sidewaysfigure
-\usepackage{minted}
-\usepackage[inlineFootnotes,fencedCode,citations,definitionLists,hashEnumerators,smartEllipses,pipeTables,tableCaptions,hybrid]{markdown}
-\usepackage{svg}
+\documentclass{ucbthesis} % Thanks to Paul Vojta, https://www.overleaf.com/latex/templates/uc-berkeley-thesis-template/mfzmtxfqvtxx 
 
-\usepackage{hyperref}
+% If the Grad. Division insists that the first paragraph of a section
+% be indented (like the others), then include this line:
+% \usepackage{indentfirst}
+
+\usepackage{biblatex} % bib format references
+\usepackage{rotating} % provides sidewaystable and sidewaysfigure
+\usepackage{minted} % code syntax highlighting
+\usepackage{svg} % SVG rendering
+\usepackage{hyperref} % Creates hyperlinks
+% And our really important package: markdown
+\usepackage[inlineFootnotes,fencedCode,citations,definitionLists,hashEnumerators,smartEllipses,pipeTables,tableCaptions,hybrid]{markdown}
+
+% This prevents hyperref's default behavior of
+% putting those ugly rectangles around each link.
+\hypersetup{
+    colorlinks={true},
+    linktoc={all},
+    linkcolor={black},
+    citecolor={black},
+    urlcolor={black}
+}
+
 %%begin novalidate
-\markdownSetup{rendererPrototypes={
+\markdownSetup{renderers={
   link = {\href{#2}{#1}},
   image = {\begin{figure}[hbt!]
     \centering
@@ -28,9 +44,6 @@
 }}
 %%end novalidate
 
-% If the Grad. Division insists that the first paragraph of a section
-% be indented (like the others), then include this line:
-% \usepackage{indentfirst}
 
 \addtolength{\abovecaptionskip}{\baselineskip}
 \bibliography{refs}
