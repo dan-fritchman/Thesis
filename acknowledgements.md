@@ -1,3 +1,64 @@
+What are we doing here? Why did I do any of this? 
+
+Some background: as compared to most authors of these dissertation-acknowledgments, I'm, like, pretty old. I had been a pro for a bit over a decade, designing embedded systems, analog integrated circuits, and software for their designers. Most of that time was at Apple Inc. When I left there in early 2019, my wife Lauren and I hit the road, and were traveling for about the following year, right up until coming to Berkeley at the start of 2020. 
+
+Likely related, I always saw the PhD through the lens of at-will employment. It's a research job. A weird one. It's highly disorganized, the pay is pretty bad, but the level of freedom can't be beat. Every job has some element of education attached to it; this one has more than most. And it's got an extra weird bonus after five or so years: once you're any good at it, you're fired. 
+
+There is a tell I often detect in how people think of this. It only takes a single word. The word is  *getting*. As in, what you're doing here is *getting* a degree. As in, the actions along the way are the means to an end. And I get it. For most people, at most places in education, that's a fair description. But in this case it was never about a credential. I don't expect there will ever be a job that I want, and could get as Dr-Dan, but couldn't get as regular-Dan. There are were no ends to be justified; this was always about what happened along the way. (Notably, that is a lot easier outlook to have while cash flows from the university to me, and not the other way around.)
+
+So, why? There were a few things I wanted to get out of it. I wanted to spend a chunk of my life and career putting something helpful out into the world, without the usual commercial burdens attached. Something that people throughout our field (notably including myself) could benefit from. And I didn't know exactly what it would be. It was always likely to end up in the space it did (the software for the chip designers). But I came in open-minded about a broader change. Sophia Shao, Krste Asanovic, Alberto Sangiovanni-Vincentelli, Kurt Keutzer, and Pieter Abbeel all provided invaluable guidance in this search. 
+
+Given that freedom, I thought there was a small (but reasonable) chance of landing on something really cool. I also thought there was a reasonable chance of absolutely hating it and quickly bailing. This ties back to the *getting* mentality. In the means-justifying view, walking away is an admission of failure, in the way that, say, taking a new job, disliking it and quitting is not. I never had that feeling of signing up for an extended commitment; I always figured if things  weren't good at this weird research job, I could try the next one. 
+
+And lastly, I figured that at the end of my life, trying so would be an experience that I either had, or didn't. And I figured between those, I'd prefer to have it.
+
+How did it go? Overall, somewhere between OK and good. Those big-picture goals were certainly met. As well as I could have imagined? Not even close. Would I recommend doing the same, to someone similarly situated? Only if you have a very specific program of research in mind, and a great partnership and buy-in to pursue it. So, only for very few extra-weird weirdos like me. 
+
+There were a few things I didn't realize going in. For one, we do collaboration different, and I would say on balance, worse. If the department has 1000 grad students (give or take, that's about right), those 1000 people work far more like 1000 one-person start-ups than a single 1000 person company. There's some collaboration, sure, but most of the important stuff is the product of individuals doing what they think is best. Most successful collaboration is self-organized, peer to peer. There aren't great mechanisms for setting a broader agenda, or aligning large swathes of people towards common projects. These agendas can even directly contradict! That is, to a large extent, the nature of the research organization. It's perfectly self-consistent, for example, for someone in the physics department to be trying to prove there is a Higgs boson, and for someone else just down the cube-hall to be trying to prove there is *no* Higgs boson. Those goals conflict one another, but both serve the institution's broader goal, creating new knowledge wherever it can be found. 
+
+Oh and COVID. That didn't help. You may have noticed I mentioned starting in January 2020, shortly before most of the world shut down. Berkeley shut down especially early, especially long, and especially hard. By the time the campus returned to normal, habits had set in, and I more or less continued to work remotely. I had the space and the money to make a nice home office. My home in San Francisco was always just far enough away to make the trans-bay commute a deterrent. That all didn't help to foster collaboration, and ultimately probably hurt the work. But the combination of research-life and WFH-life had an upside I didn't expect, and in retrospect couldn't imagine having gone without. 
+
+The COVID era, especially those early days, seemed to drive a lot of locked-down laptop-jockeys pretty crazy. Lauren and I were less affected. We'd already been doing something similar for over a year. We had been on the road, usually not knowing anyone but ourselves and our dog, Alice. Of course there were differences. We could no longer hop between cafes or check out new restaurants. But not having an office and having to entertain each other were old hat. Our cat, Sammy, joined the family shortly thereafter and brought his own brand of entertainment. But the fun really began in 2022, when with the birth of our son Daniel. 
+
+I can recall hearing so, so many condescending-sounding things about being a parent before becoming one. "You'll understand when you have kids of your own" was a common way my own family tended to put it, as a sort of conversation-ender. That and countless others did sound condescending at the time. But they reflect some deep truth, on a few levels. There really is a great deal that there's no preparing for, no intellectualizing, no point trying to understand any way but firsthand. Most of this is emotional. It's very hard, and I think typically comes across as very tacky, to try to accurately express how one feels about their kids. It's different from every other close relationship, including those to the rest of family, to friends, to a romantic partner. The non-tacky version tends to be something like: your mother and I love you more than anything, and would do anything for you. That sentence is both true, and immeasurably lacking in reflecting the reality behind it. I have to imagine all parents feel this way. I certainly do, and by any outward indication Lauren does so even more. 
+
+That also explains the seeming condescension. It's because these things are so difficult to put into words; all but the most expressive writers and speakers are quickly tongue-tied by any attempt. Mere mortals fumble around for awhile, then blurt out some generalities which either make them sound dumb, or make them sound like they think their audience is dumb. I get it now. 
+
+That's all to say: it's been great to be at home these past 18 months. 
+
+---
+
+That's also the real acknowledgment here: to Lauren, Danny, and 
+
+There is an apparent practice of having a separate dedication section 
 
 
-(FIXME: acknowledgements coming soon)
+
+Vladimir said I should write this (the real thesis, not this soft-core warmup section) for a first year grad student. Not like a dry academic paper, and not like "my blog". I am confident it achieves at least one of those. 
+
+
+
+Vladimir Stojanovic
+
+Elad Alon and Bora Nikolic
+
+Kris Pister, Ali Niknejad, and Bora Nikolic
+
+
+
+Aviral Pandey and Arya Reais-Parsi
+
+
+
+To the people who taught me how to do this job: Raman Thiara, Gin Yee, Emerson Fang, Jafar Savoj, Dennis Fischette, Brian Leibowitz, Jose Tierno, Edwin Guo, and especially Sanjeev Maheshwari. 
+
+
+
+
+
+Jason Jacobs has long been a great friend and co-conspirator. He, Elad, and Brian provided some of the first inclings that I 
+
+
+
+Ming-Shuan Chen once tried to shout me out in [his own](https://escholarship.org/content/qt1h08466w/qt1h08466w.pdf) dissertation. He failed, and instead thanked Dan *Friedman*. Dan is a much more reknown figure in our field, primarily known for his work at IBM. To my knowledge, Dan and Ming-Shuan have never met. And in that vein I would especially like to thank [Shaun Chen](https://en.wikipedia.org/wiki/Shaun_Chen). 
+
