@@ -2175,7 +2175,7 @@ Analog and custom circuits have long been identified as a bottleneck in the IC d
 
 Surveys and summaries of these techniques such as [@spence89] have now appeared for more than three decades. Figure~\ref{fig:fraunhofer-history}, originally published in [@laygenii] and later extended by Fraunhofer IIS, catalogs these efforts across time and several axes of their approach.
 
-![fraunhofer-history](./fig/fraunhofer_history.png "History of Analog Automation")
+![fraunhofer-history](./fig/fraunhofer_history.png "History of Analog Automation, Originally from [@laygenii]")
 
 These research efforts largely fall into one of two large families:
 
@@ -3312,8 +3312,9 @@ def Fcasc(params: FcascParams) -> h.Module:
 
 It is possible, and in fact likely, that given sufficient effort machine learning agents will "learn" this domain knowledge for themselves. There are many such hard-won insights - the entire concept of differential signaling and matched devies; how these devices are identified by connection; the fact that each input pair should probably be of identical size. How much learning effort this will take, remains to be seen. 
 
+# Future Work
 
-## Future ML Designers
+## ML Designers
 
 ![ml-designer](./fig/ml-designer.png "ML Designer")
 
