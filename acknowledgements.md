@@ -1,6 +1,6 @@
 What are we doing here? Why did I do any of this? 
 
-Some background: as compared to most authors of these dissertation-acknowledgments, I'm, like, pretty old. I had been a pro for a bit over a decade, designing embedded systems, analog integrated circuits, and software for their designers. Most of that time was at Apple Inc. When I left there in early 2019, my wife Lauren and I hit the road, and were traveling for about the following year, right up until coming to Berkeley at the start of 2020. 
+Some background: as compared to most authors of these dissertation-acknowledgments, I'm pretty old. I had been a pro for a bit over a decade, designing embedded systems, analog integrated circuits, and software for their designers. Most of that time was at Apple Inc. When I left there in early 2019, my wife Lauren and I hit the road, and were traveling for about the following year, right up until coming to Berkeley at the start of 2020. 
 
 Likely related, I always saw the PhD through the lens of at-will employment. It's a weird research job. It's highly disorganized, the pay is pretty bad, but the level of freedom can't be beat. Every job has some element of education attached to it; this one has more than most. And it's got an extra weird bonus after five or so years: once you're any good at it, you're fired. 
 
