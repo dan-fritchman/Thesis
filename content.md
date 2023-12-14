@@ -2249,6 +2249,8 @@ Differences between the inferred and stored dot locations are logged and reporte
 
 ## Possible Directions
 
+\label{section:schematic-directions}
+
 The "right" way to draw schematics is a popular topic among practitioners. (Engineers also love to argue about "right ways" to write software, draw layout, eat ice cream, etc; this one is no different.) Hdl21 schematics have an opinionated author whose opinions are, to some extent, embedded in their design. Some of those opinions are more popular than others. 
 
 The schematic-system's central premise - designing schematics into a general-purpose image format, renderable on platforms such as GitHub - has proven uncontroversial. Other design decisions have generated more contention. 
@@ -3430,13 +3432,66 @@ It is possible, and in fact likely, that given sufficient effort machine learnin
 # Future Work
 \label{chap:future}
 
+All of the software presented in this manuscript is publicly available in open-source form under the permissive Berkeley BSD license. ^[Save for the parts with proprietary third-party dependencies, e.g. silicon process technologies.] ^[AlignHdl21 is, as of this writing, entangled in such a dependency. This will be unwound, and it will be freely available, soon, at https://github.com/dan-fritchman/AlignHdl21.] Handfuls of like-minded researchers and practitioners have adopted its various pieces, often while they remained work in progress. These real-world use-cases, and particularly those of our own research designs, motivated countless invaluable improvements and changes of direction over time. 
+
+As open-source projects they are living artifacts. Hdl21 and VLSIR are the most mature, and operate as the most "real" open-source projects of the bunch, with tactical [issue tracking](https://github.com/dan-fritchman/Hdl21/issues), consistent test pipelines, automatic test-coverage reviews, and many other common tools of popular open-source projects. Most importantly they have attracted a subset of user-contributors outside their original authors who have volunteered their time, thoughts, and code-contributions. These updates will continue. This manuscript will serve as a snapshot in time of these projects' state as they inevitably mature away from it. Potential future directions for the Hdl21 schematics system are discussed in \autoref{section:schematic-directions}. 
+
+Layout remains more open-ended. A central takeaway from this work has been that the best way to do custom layout is "it depends". There has been only one successful model - "the analog way". That may remain the case through the end of the silicon-era roadmap. While this work explored the programmed-custom and analog PnR attempts at its replacement, I suspect there is an even more valuable combination of the two to be had. The methods of ALIGN have proven invaluable for transistor and primitive level layouts. Higher-level circuits such as data converters, transceivers, or PLLs demand a more hierarchical design process. This applies both to their physical design and to their verification. Such a combined workflow could include: 
+
+* Layout21's `Tetris` style blocks, with enumerable port locations on the edges of their filled, fully-blocked 3D innards
+* Analog PnR designing the innards of each, provided with target specs, outlines, and port locations
+* An available combination of automatic and programmatic routing between them
+* A fluid combination of code-based and graphical entry means, such as those afforded by Hdl21 and its paired schematic system, for "floorplanning" and divying up these subproblems
+* Feedback including the _difficulty_ of each subproblem. This can include both circuit-level metrics (e.g. what fraction of area allocated was required, did a given signal have enough metal resources to have sufficient bandwidth) and execution-level metrics (e.g. the runtime of the inner-block PnR)
+
+This would require a handful of new components including the graphical floorplanning facilities, and updates to the analog PnR process to allow designer-fixed outlines and port locations. 
+
+Elsewhere in layout, there is a dark art that went little-discussed in our relevant chapters: the crafting of low-level, design-rule-compliant primitive device layouts. BAG calls these its _primitives_, while many other popular environments call them _programmatic cells_ or _p-cells_ for short. I have not seen what I would regard as an easy, or automatic, or good way to create these cells. BAG produces them through a combination of process-portable Python code and highly detailed YAML-format markup describing each technology. ALIGN and most popular custom design environments do so through process-specific code. In ALIGN these "generators" are Python modules. Layout21's Tetris takes an approach more akin to that of digital PnR. It is agnostic as to the source of low-level primitive cells, and even to their contents. It solely operates on their abstract views, manipulating them essentially as outlines and located ports. The low-level implementations are commonly either designed "the analog way" (via GUI) or in programmed-custom style, e.g. using Layout21's `raw` layer. 
+
+This effort to produce technology-specific low-level layouts is reasonably well amortized, across all of the devices created in the combination of technology and framework. Nonetheless it remains a significant burden to _starting_ to use a new framework in a new technology. It was only for our research partnership with Intel, and for their authoring the initial 16nm ALIGN primitives, that we took a serious interest in ALIGN-based PnR. 
+
+Creation of such cells is therefore a desirable facet of a process-portable framework. Ideally each could be crafted from as little bespoke content (markup, code, countless iterations through design-rule-checking programs) as possible, and instead leverage the existing PDK collateral for either digital or analog design. The popular analog design environments supported by popular commercial PDKs are an unlikely source. Their implementations are generally within proprietary, tied-in programming languages. More important, these implementations are often encrypted and unavailable to any but the source fab and target EDA platform. The digital flow's collateral may prove more useful. The primary design-rule input to digital PnR is a simplified set of DRC rules, often encoded in LEF format. ^[While we have discussed LEF for abstract-layout libraries, it is _also_ the most popular format for these streamlined design rules. The latter subset is often referred to as _tech-LEF_.] This may serve as more valuable guidance, at least to a certain level of details (e.g. determining suitable transistor pitches from those of the lowest-layer metals). The [BFG](https://github.com/growly/bfg) FGPA generator project, a founding and motivating use-case of the VLSIR framework, attempts to make similar streamlined design rules in VLSIR's protobuf schema. Automatic generation of such rules remains a future, valuable task. Doing so may prove a relevant space for ML-based exploration. 
+
+The "cloud-era-ness" of VLSIR and its ProtoBuf-based underpinnings make the prospects of VLSIR-based web services a readily available possibility. The `CktGym` machine learning project serves as an initial example. Further candidates include prospective services for routing and physical verification (LVS, DRC). Perhaps the most mature such example is VLSIR's handling of SPICE simulation. VLSIR-driven SPICE simulation is designed through ProtoBuf's native `service` and `rpc` definitions, which define procedures callable on a (potentially) remote machine. This `Sim` RPC takes a single `SimInput` message - conceptually the content of a SPICE "deck" as input - and returns a `SimResult` message comprised of waveforms, measurements, and other simulation results. To date all invocations of the `Spice` service have been local, as function-calls within a VLSIR-based Python program. The structure of its design nonetheless affords a straightforward method to accept simulation requests from arbitrary programs and machines.
+
+```protobuf
+// # The SPICE Service
+service Spice {
+  rpc Sim(SimInput) returns (SimResult);
+}
+
+// # Simulation Input 
+message SimInput {
+  // # Circuit Input 
+  // The DUT circuit-package under test 
+  vlsir.circuit.Package pkg = 1;
+  // Top-level module (name)
+  string top = 2;
+  // # Simulation Configuration Input 
+  // List of simulator options
+  repeated SimOptions opts = 10;
+  // List of circuit analyses
+  repeated Analysis an = 11;
+  // Control elements. 
+  repeated Control ctrls = 12;
+}
+// # Simulation Result 
+// A list of results per analysis 
+message SimResult {
+  repeated AnalysisResult an = 1;
+}
+```
+
+Our work in machine learning for circuit design, and the application of the framework presented here towards those ends, is among our least mature contributions. The space to be explored here is vast, as are its possibilities for improvements. A promising future direction is detailed in \autoref{section:ml-designers}.
+
 ## ML Designers
+\label{section:ml-designers}
 
 ![ml-designer](./fig/ml-designer.png "ML Designer")
 
-The combination of VLSIR and CktGym further motivate several new, early-stage directions in circuits-for-ML research, too cool to not mention here. 
+The combination of VLSIR and CktGym further motivate several new, early-stage directions in circuits-for-ML research. 
 
-We begin by noting, in many (maybe most) works in this nascent area,  problem formulations are of the form: given a fixed circuit topology and fixed figure of merit, find optimum sizes for each device in the circuit. Moving a new circuit topology or new FOM generally requires an altogether new agent, each of which requires a training process many-times the length of its actual task. Attempts at transfering the learning derived from each circuit, where attempted, are generally limited to highly-correlated cases, such as the differences between schematic-based and layout-parasitic-annotated versions of the same circuit.
+We begin by noting that in many works in this nascent area,  problem formulations are of the form: given a fixed circuit topology and fixed figure of merit, find optimum sizes for each device in the circuit. Moving a new circuit topology or new FOM generally requires an altogether new agent, each of which requires a training process many-times the length of its actual task. Attempts at transfering the learning derived from each circuit, where attempted, are generally limited to highly-correlated cases, such as the differences between schematic-based and layout-parasitic-annotated versions of the same circuit.
 
 This is far from how human designers approach the task on several fronts.
 
@@ -3464,13 +3519,10 @@ We endeavor to produce an ML circuit designer which:
 
 It includes:
 
-- Programmable circuit goals, each of which includes
-- A test suite, generally comprised of simulation-based testbenches
-- A scalar figure of merit, and
-- A set of constraints, including both performance requirements (e.g. "power < 1mW") and availability constraints, e.g. the device-set available in a particular implementation technology.
+- Programmable circuit goals, each of which includes a test suite, a scalar figure of merit, and a set of constraints, including both performance requirements (e.g. "max power 1mW") and availability constraints, e.g. the device-set available in a particular implementation technology.
 - A comprehensive database of past goals, attempts, and their results.
-- A designer-agent, which manipulates and evaluates circuits through a discrete action-space.
-- An overseeing "boss", which provides the designer-agent with a stream of circuit-goals
+- A designer-agent which edits and evaluates circuits through a discrete action-space.
+- An overseeing "boss" which provides the designer-agent with a stream of circuit-goals
 
 The designer-agent's performance is rewarded against a single metric: performance relative to the best existing figure-of-merit for the given goal. The designer-agent is therefore perennially incentivized to create "state of the art" circuits for each goal.
 
@@ -3523,7 +3575,7 @@ enum Action {
 }
 ```
 
-Actions are encoded similarly to how compilers commonly lay out tagged unions. An initial integer-value indicates the action-type, while remaining fields dictate their data. The designer action-space is therefore encodable as a four-integer tuple: one for the discriminant, and three for the parameters of the largest actions (Connect and SetParam). Actions with invalid discriminant-values incur the minimum reward, and do not modify the circuit.
+Actions are encoded similarly to how compilers commonly lay out tagged unions. An initial integer-value indicates the action-type, while remaining fields dictate their data. The designer action-space is therefore encodable as a four-integer tuple: one for the discriminant, and three for the parameters of the largest actions (`Connect` and `SetParam`). Actions with invalid discriminant-values incur the minimum reward, and do not modify the circuit.
 
 
 ### The Environment
@@ -3532,11 +3584,7 @@ The designer-agent's sole reward function is its circuit's performance relative 
 
 - Its currently-designed circuit, as produced by its prior actions
 - Simulation results for its most-recently simulated circuit
-- A detailed representation of its current goal, including:
-- Circuit representations of the goal's testbenches
-- Serialized representations of its constraints, generally in the form of mathematical inequalities
-- The serialized figure-of-merit evaluation routine, represented as an evaluation tree
-- The state of the art circuit for its current goal, and its simulation results
+- A detailed representation of its current goal, including a circuit representations of the goal's testbenches, serialized representations of its constraints, generally in the form of mathematical inequalities, the serialized figure-of-merit evaluation routine, represented as an evaluation treem and the state of the art circuit for its current goal.
 
 Much more of the environment-information would be of use to the designer-agent, and may be worth adding to its observation-space. High-utility information may include:
 
