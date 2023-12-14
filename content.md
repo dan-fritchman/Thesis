@@ -63,9 +63,9 @@ The period during which this work was completed (2020-23) corresponded to someth
 
 We note that three related, relevant quantities can in principle be distributed in open-source form: 
 
-- 1. Open-source _design content_, i.e. HDL code, circuits, and/or layouts, possibly coherently arranged into instantiable silicon Intellectual Property (IP),
-- 2. Open-source _EDA software_, the programs required to produce these circuits,
-- 3. Open-source _process technology_, i.e. the underlying fabrication steps, or the designer "API" to these technologies, commonly called a Process Design Kit (PDK).
+#. Open-source _design content_, i.e. HDL code, circuits, and/or layouts, possibly coherently arranged into instantiable silicon Intellectual Property (IP),
+#. Open-source _EDA software_, the programs required to produce these circuits,
+#. Open-source _process technology_, i.e. the underlying fabrication steps, or the designer "API" to these technologies, commonly called a Process Design Kit (PDK).
 
 The three are separable in principle, but tightly tied in practice.
 
@@ -1561,20 +1561,20 @@ However Hdl21 does not endeavor to reproduce the entirety of the EDA software fi
 
 These transformations occur in nested layers of several steps. A key component is the VLSIR data model and its surrounding software suite. The `vlsir.circuit` schema-package covered in \autoref{chap:vlsir} defines VLSIR's circuit data model. VLSIR's model is intentionally low-level, similar to that of structural Verilog. Hdl21's transformation from its own data model to legacy EDA formats is, in an important sense, divided in two steps:
 
-- 1. Transform Hdl21 data into VLSIR
-- 2. Hand off to the VLSIR libraries for conversion into EDA content
+#. Transform Hdl21 data into VLSIR
+#. Hand off to the VLSIR libraries for conversion into EDA content
 
 This division, particularly the definition of the intermediate data model, allows the latter to be reused across a variety of VLSIR-system programs and libraries beyond Hdl21. The former step - transforming HDL data into VLSIR - is Hdl21's primary "behind the scenes" job. It similarly divides in two:
 
-- 1. An elaboration step, in which the more complex facets of the Hdl21 data model are "compiled out". These include `Bundle`s, instance arrays, and a variety of compound hierarchical references.
-- 2. An export step, in which the elaborated Hdl21 data is translated into VLSIR's protobuf-defined content. This step is fairly mechanical as the elaborated Hdl21 model is designed to closely mirror that of VLSIR, excepting the native differences between a serializable data language such as protobuf versus an executable model such as in Python. (Particularly: only the latter has real pointers.)
+#. An elaboration step, in which the more complex facets of the Hdl21 data model are "compiled out". These include `Bundle`s, instance arrays, and a variety of compound hierarchical references.
+#. An export step, in which the elaborated Hdl21 data is translated into VLSIR's protobuf-defined content. This step is fairly mechanical as the elaborated Hdl21 model is designed to closely mirror that of VLSIR, excepting the native differences between a serializable data language such as protobuf versus an executable model such as in Python. (Particularly: only the latter has real pointers.)
 
 ### Elaboration
 
 Hdl21 elaboration is inspired by popular compiler designs and by Chisel's elaboration process. During elaboration a user-design `Module` or set of `Module`s are compiled into a simplified version of the Hdl21 data model suitable for export. Programs using Hdl21 therefore divide into two conceptual regions:
 
-- 1. _Generation time_, which might alternately be called "user time". This is when user-level code runs, constructing hardware content. This informally describes essentially all Hdl21-user-code, including all this document's preceding examples.
-- 2. _Elaboration time_. That hierarchical hardware tree is handed off to Hdl21's internally-defined elaboration process. This is where Hdl21 does most of its heavy lifting.
+#. _Generation time_, which might alternately be called "user time". This is when user-level code runs, constructing hardware content. This informally describes essentially all Hdl21-user-code, including all this document's preceding examples.
+#. _Elaboration time_. That hierarchical hardware tree is handed off to Hdl21's internally-defined elaboration process. This is where Hdl21 does most of its heavy lifting.
 
 Elaboration consists of an ordered set of _elaboration passes_. Each elaboration pass is implemented as a Python class. Many core functions such as common data-model traversal operations are implemented in a shared base class. Each elaboration pass performs a targeted, highly specific task, over a design hierarchy at a time. Examples include resolving undefined references, flattening `Bundle` definitions, and checking for valid port connections. Elaboration is performed by an `Elaborator`, which is principally comprised of an ordered list of such elaboration-pass classes. This enables customization of the elaboration process by downstream (advanced) usage, e.g. to add custom transformations or extract custom metrics at arbitrary points in the process.
 
@@ -1714,8 +1714,8 @@ But there's still some magic in the good ones.
 
 Schematics are, at bottom, graphical representations of circuits. They include both the circuit-stuff required to populate a netlist or HDL code, as well as visual information about how the circuit should be rendered. In short: a schematic is two things -
 
-- 1. A Circuit
-- 2. A Picture
+#. A Circuit
+#. A Picture
 
 The "picture part" generally consists of a set of two dimensional shapes and paths, generally annotated by purposes such as "part of an instance", "defines a wire", "annotation only", and the like. In this sense the content of schematics mirrors that of IC layout. Unlike layout, schematics lack physical meaning of the third ("2.5th") dimension. Popular schematic data-formats make use of exactly the very same data structures and models used for layout, with the z-axis layer annotations repurposed to denote those schematic-centric purposes. Hierarchy is represented through instances of _schematic symbols_, which serve as references to other schematics or of primitive devices.
 
@@ -1798,8 +1798,8 @@ Embedding in SVG also allows for rich, arbitrary annotations and metadata, such 
 
 In other words, Hdl21 schematics reverse the order of what a schematic is, to be:
 
-- 1. A Picture
-- 2. A Circuit
+#. A Picture
+#. A Circuit
 
 The schematic-schema of structure and metadata, detailed later in this document, is what makes an SVG a schematic.
 
@@ -2129,7 +2129,7 @@ An example `Instance`:
 </g>
 ```
 
-The three child elements are required to be stored in the order (symbol, name, of). The lack of valid values for any of the three child elements renders the instance invalid. The presence of any additional children shall also renders the instance invalid.
+The three child elements are required to be stored in the order (symbol, name, of). The lack of valid values for any of the three child elements renders the instance invalid. The presence of any additional children also renders the instance invalid.
 
 ### Circuit Elements
 
@@ -2177,7 +2177,7 @@ An example `Wire`:
 
 Wire vertices are dictated by the SVG `path`'s `d` attributes. Each wire vertex must be located on the schematic's 10x10 pixel grid. Each wire segment must use a "Manhattan" orthogonal routing style, i.e. each point must have either an x or y coordinate equal to that of the previous point. Wire paths are _open_ in the SVG sense; there is no implicit segment from the final point back to the first.
 
-Wire-names serve as the mechanism for schematic "connections by name". Any two wires with the same name shall be considered connected. There is one special `wire-name` value: the empty string, which implies that (a) the wire's is not explicitly set, and (b) importers shall assign it a net-name consistent with any other connected element, e.g. a `Port` or another `Wire`.
+Wire-names serve as the mechanism for schematic "connections by name". Any two wires with the same name are be considered connected. There is one special `wire-name` value: the empty string, which implies that (a) the wire's is not explicitly set, and (b) importers are to assign it a net-name consistent with any other connected element, e.g. a `Port` or another `Wire`.
 
 ### `Port`
 
@@ -2212,7 +2212,7 @@ An example `Port`:
 </g>
 ```
 
-Valid port names must be non-zero length. All wires connected to a port shall be assigned a net-name equal to the port's name. Any connected wire with a conflicting net-name renders the schematic invalid. Any wire or connected combination of wires which are connected to more than one port - even if the ports are identically named - also renders the schematic invalid.
+Valid port names must be non-zero length. All wires connected to a port are assigned a net-name equal to the port's name. Any connected wire with a conflicting net-name renders the schematic invalid. Any wire or connected combination of wires which are connected to more than one port - even if the ports are identically named - also renders the schematic invalid.
 
 ### Connection `Dot`
 
@@ -2228,7 +2228,7 @@ An example `Dot`:
 
 The center location dictating `cx` and `cy` attributes are the sole schema-relevant attributes of a dot-circle. All other attributes such as the radius `r` are not part of the schema, and may be any valid SVG value.
 
-While powerful visual aids and a notional part of the schematic-schema, `Dot`s _do not_ have semantic meaning in schematics. They are entirely a visual aid. Schematic importers _shall not_ imbue them with meaning. I.e. any valid schematic with any combination of `Dot`s yields an identical circuit with _any other_ combination of `Dot`s.
+While powerful visual aids and a notional part of the schematic-schema, `Dot`s _do not_ have semantic meaning in schematics. They are entirely a visual aid. Any valid schematic with any combination of `Dot`s yields an identical circuit with _any other_ combination of `Dot`s.
 
 The primary editor application infers `Dot`s at load time, and uses those stored in SVG as a check. This process includes:
 
@@ -2270,8 +2270,8 @@ Disallowing symbol-based hierarchy has a side benefit: it's much more straightfo
 
 In 2018 the Computer History Museum [estimated](https://computerhistory.org/blog/13-sextillion-counting-the-long-winding-road-to-the-most-frequently-manufactured-human-artifact-in-history) that in the IC industry's roughly 65 year history, it has shipped over 13 sextillion (1.3e22) total transistors. (That total has risen dramatically in the few years since.) Essentially all of them have been designed by one of two methods:
 
-- 1. "The digital way", using a combination of HDL code, logic synthesis, and automatically placed and routed layout.
-- 2. "The analog way", using a graphical interface to produce essentially free-form layout shapes.
+#. "The digital way", using a combination of HDL code, logic synthesis, and automatically placed and routed layout.
+#. "The analog way", using a graphical interface to produce essentially free-form layout shapes.
 
 ## The Digital Way
 
@@ -2731,16 +2731,16 @@ Third, these delays have easily computable surrogates. In a common example, layo
 
 In summary:
 
-- 1. Synchronous logic offers a very straightforward set of pass/ fail measures;
-- 2. Static timing analysis offers an efficient means of computing those measures;
-- 3. Readily available surrogates for STA quantities offer _even more_ efficient means of estimating those quantities
-- 4. All of those same methods apply to _all synchronous digital circuits_.
+#. Synchronous logic offers a very straightforward set of pass/ fail measures;
+#. Static timing analysis offers an efficient means of computing those measures;
+#. Readily available surrogates for STA quantities offer _even more_ efficient means of estimating those quantities
+#. All of those same methods apply to _all synchronous digital circuits_.
 
 Contrast this with analog circuits:
 
-- 1. Virtually no two circuits have the same set of success and failure metrics;
-- 2. Transistor-level simulation is the sole means of evaluating those metrics;
-- 3. Even the production of simulation collateral and metric extraction is highly circuit and context-specific
+#. Virtually no two circuits have the same set of success and failure metrics;
+#. Transistor-level simulation is the sole means of evaluating those metrics;
+#. Even the production of simulation collateral and metric extraction is highly circuit and context-specific
 
 In short: fail across the board. Analog circuits have no "analog" (ahem) to STA which applies universally and establishes a common success criteria. Each circuit must instead be evaluated against its own, generally circuit-specific, set of criteria. The success or failure of a comparator, an LC oscillator, and a voltage regulator each depends on wholly different criteria. 
 
