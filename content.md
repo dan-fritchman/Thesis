@@ -1831,9 +1831,9 @@ _Reading_ schematics (as pictures) requires any old computer. _Writing_ them can
 
 The Hdl21 schematic system accordingly includes a web-stack graphical editor. It runs in three primary contexts:
 
-- (1) as a standalone desktop application, 
-- (2) as an extension to the popular IDE VsCode, and 
-- (3) as a web application. 
+1. As a standalone desktop application, 
+2. As an extension to the popular IDE VsCode, and 
+3. As a web application. 
 
 Figure~\ref{fig:schematic-system} outlines the overall system. The IDE platform is pictured in Figure~\ref{fig:schematic-vscode}.
 
@@ -2002,8 +2002,8 @@ Both `import_schematic` and the `import` keyword override return a standard-libr
 
 SVG schematics are commonly interpreted by two categories of programs:
 
-- (1) General-purpose image viewer/ editors such as Google Chrome, Firefox, and InkScape, which comprehend schematics _as pictures_.
-- (2) Special-purpose programs which comprehend schematics _as circuits_. This category notably includes the primary `hdl21schematicimporter` Python importer.
+1. General-purpose image viewer/ editors such as Google Chrome, Firefox, and InkScape, which comprehend schematics _as pictures_.
+2. Special-purpose programs which comprehend schematics _as circuits_. This category notably includes the primary `hdl21schematicimporter` Python importer.
 
 Note the graphical schematic _editor_ is a special case which combines _both_ use-cases. It simultaneously renders schematics as pictures while being drawn and dictates their content as circuits. The graphical editor holds a number of additional pieces of non-schema information about schematics and how they are intended to be rendered as pictures, including their style attributes, design of the element symbols, and locations of text annotations. This information _is not_ part of the schematic schema. Any valid SVG value for these attributes is to be treated as valid by schematic importers.
 
