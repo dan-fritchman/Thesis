@@ -397,15 +397,13 @@ We envision the VLSIR reference system extending in a few more directions, e.g. 
 # Analog HDL
 ~\label{chap:hdl21}
 
-The primary high-productivity interface to producing VLSIR circuits and simulations is the [Hdl21](https://github.com/dan-fritchman/Hdl21) hardware description library.
-
-Hdl21 is implemented in Python. It is targeted and optimized for analog and custom integrated circuits, and for maximum productivity with minimum fancy-programming skill. Hdl21 exposes the root-level concepts that circuit designers know and think in terms of, in the most accessible programming context available. It is principally designed as a replacement for the _lingua franca_ of analog and custom circuits - the graphical schematic.
+The primary high-productivity interface to producing VLSIR circuits and simulations is the [Hdl21](https://github.com/dan-fritchman/Hdl21) hardware description library. Hdl21 is a Python library, targeted and optimized for analog and custom integrated circuits, and for maximum productivity with minimum fancy-programming skill. Hdl21 exposes the root-level concepts that circuit designers know and think in terms of, in the most accessible programming context available. It is principally designed as a replacement for the _lingua franca_ of analog and custom circuits - the graphical schematic.
 
 ## A (Somewhat) Brief Intro to Hdl21
 
 ### Modules
 
-Hdl21's primary unit of hardware reuse is the `Module`. It intentionally shares this name with Verilog's `module` and CHISEL's `Module`, and also bears a strong resemblance to VHDL's `entity` and SPICE's `subckt`. Hdl21 `Modules` are "chunks" of reusable, instantiable hardware. Inside they are containers of a handful of hardware types, including:
+Hdl21's primary unit of hardware reuse is the `Module`. It intentionally shares this name with Verilog's `module` and Chisel's `Module`, and also bears a strong resemblance to VHDL's `entity` and SPICE's `subckt`. Hdl21 `Modules` are "chunks" of reusable, instantiable hardware. Inside they are containers of a handful of hardware types, including:
 
 - Instances of other `Modules`
 - Connections between them, defined by `Signals` and `Ports`
@@ -702,11 +700,11 @@ assert p.width == 8  # Passes. Note this is an `int`, not a `Param`
 assert p.text == "Your Favorite Module"  # Also passes
 ```
 
-### A Note on Parametrization
+### A Note on Parameterization
 
 Hdl21 `Generators` have parameters. `Modules` do not.
 
-This is a deliberate decision, which in this sense makes `hdl21.Module` less feature-rich than the analogous `module` concepts in existing HDLs (Verilog, VHDL, and even SPICE). These languages support what might be called "static parameters" - relatively simple relationships between parent and child-module parameterization. Setting, for example, the width of a signal or number of instances in an array is straightforward. But more elaborate parametrization-cases are either highly cumbersome or altogether impossible to create. Hdl21, in contrast, exposes all parametrization to the full Python-power of its generators.
+This is a deliberate decision, which in this sense makes `hdl21.Module` less feature-rich than the analogous `module` concepts in existing HDLs (Verilog, VHDL, and even SPICE). These languages support what might be called "static parameters" - relatively simple relationships between parent and child-module parameterization. Setting, for example, the width of a signal or number of instances in an array is straightforward. But more elaborate parameterization-cases are either highly cumbersome or altogether impossible to create. Hdl21, in contrast, exposes all parameterization to the full Python-power of its generators.
 
 ### Just what does `h.generator`... do?
 
@@ -728,7 +726,7 @@ def NotGenerator(params: MyParams) -> h.Module:
 
 In short, these are identical function definitions, one of which is decorated by `h.generator` and therefore wrapped in an `h.Generator` object. In truth, both can work just fine. Advanced usage in fact tends to mix and match the two, based on the typically (but not always) helpful aids provided by `h.generator`. The function `IsGenerator` is run as-is, without modification, by the `h.Generator` wrapper. The generator machinery adds a few facilities, with the general intent of embedding calls to `IsGenerator` in a hierarchical hardware tree.
 
-First and foremost are two related tasks: naming and caching. Hdl21 generally ultimately expects to produce code in legacy EDA formats (Verilog, SPICE, etc) which lack the _namespacing_ feature of popular modern programming languages. Moreover these formats tend to reject input in which a module is "multiply defined", even if with identical contents. This might, absent the `h.generator`'s naming and caching facilities, generate problems for programs like so:
+First and foremost are two related tasks: naming and caching. In many use-cases Hdl21 ultimately expects to produce code in legacy EDA formats (Verilog, SPICE, etc) which lack the _namespacing_ feature of popular modern programming languages. Moreover these formats tend to reject input in which a module is "multiply defined", even if with identical contents. This might, absent the `h.generator`'s naming and caching facilities, generate problems for programs like so:
 
 ```python
 def G(params: Params) -> h.Module:
@@ -828,10 +826,10 @@ Note the use of such caching places a constraint on generator parameters: they m
 
 `Generator`s third and final task is _enforcement_. (This may be a feature or a bug per individual perspective.) Hdl21 was designed in the wake of a number of other academic analog-design libraries, and had the opportunity to observe their usage. One take-away: circuit designers are often not experienced programmers, and are accordingly unacquainted with countless practices that tend to make code more debuggable and understandable, both by others and by their future selves. Hdl21, and particularly its generator facility, attempts to enforce a few of these practices. These include:
 
-- Generator parameters must be organized into a type,
-- Each parameter has a required "docstring" description,
-- Each parameter has a required datatype,
-- Parameter values are type-checked at runtime,
+- Generator parameters must be organized into a type
+- Each parameter has a required "docstring" description
+- Each parameter has a required datatype
+- Parameter values are type-checked at runtime
 - Generator return values (and their annotations) are similarly type-enforced at runtime
 
 The latter practices regarding runtime type-strictness are pervasive throughout Hdl21. Generator parameters extend these practices to its most prominent user-facing interface.
@@ -1048,7 +1046,7 @@ The leaf-nodes of each hierarchical Hdl21 circuit are generally defined in one o
 
 ### `Primitives`
 
-Drawing an analogy to general-purpose programming languages, Hdl21's `Primitives` are its "built-in types". Figure~\ref{fig:hdl21-primitives} illustrates this comparison. In every typed programming language (or "system"), programmers define a data hierarchy of their target domain. Layers in this hierarchy are often called "structs" or "classes", and ideally map onto the reusable entities in the problem domain (e.g. Figure~\ref{fig:hdl21-primitives}' s' `League` and `Player`). The system must ultimately supply the lowest-level types which fill these hierarchies. Numeric types, strings, and pointers are common examples. Hdl21's analogous hierarchy is of `Module` definitions, each of which is a "struct-ful" of hardware content. It similarly must provide the lowest-level atomic types. 
+Drawing an analogy to general-purpose programming languages, Hdl21's `Primitives` are its "built-in types". Figure~\ref{fig:hdl21-primitives} illustrates this comparison. In every typed programming language (or "system"), programmers define a data hierarchy of their target domain. Layers in this hierarchy are often called "structs" or "classes", and ideally map onto the reusable entities in the problem domain (e.g. Figure~\ref{fig:hdl21-primitives}' s' `League` and `Player`). The system must ultimately supply the lowest-level types which fill these hierarchies. Numeric types, strings, and pointers are common examples. Hdl21's analogous hierarchy is of `Module` definitions, each of which is a "struct" of hardware content. It similarly must provide the lowest-level atomic types. 
 
 ![hdl21-primitives](./fig/hdl21-primitives.png "Primitives in a Typical Programming Language, and in Hdl21")
 
@@ -1136,7 +1134,7 @@ Designing for a specific implementation technology (or "process development kit"
 
 Hdl21 PDKs are Python packages which generally include two primary elements:
 
-- (a) A library `ExternalModules` describing the technology's cells, and
+- (a) A library of `ExternalModules` describing the technology's cells, and
 - (b) A `compile` conversion-method which transforms a hierarchical Hdl21 tree, mapping generic `hdl21.Primitives` into the tech-specific `ExternalModules`.
 
 Hdl21's source repository includes the PDK packages for several popular open-source PDKs, including the academic predictive [ASAP7](https://pypi.org/project/asap7-hdl21/) technology, and the fabricatable [SkyWater 130nm](https://pypi.org/project/sky130-hdl21/) technology.
@@ -1243,7 +1241,7 @@ It is common to want such parameters to be any of (a) a `Module`, (b) an `Extern
 Instantiable = Union[Module, ExternalModuleCall, PrimitiveCall]
 ```
 
-Each of the `Call` suffixes to `ExternalModuleCall` and `PrimitiveCall` indicate the addition of the parameter values. The "call" name is a reference to how those parameters are typically applied. Most generators with such control-inversion parameters then use `Instantiable` as their datatype. 
+Each of the `Call` suffixes to `ExternalModuleCall` and `PrimitiveCall` indicate the addition of the parameter values. The "call" name is a reference to how those parameters are typically applied. Most generators with such control inversion parameters then use `Instantiable` as their datatype. 
 
 
 ### PDK Corners
@@ -1506,7 +1504,7 @@ The rules for port-directions of role-based bundles are:
 - Otherwise the signal is assigned no direction, i.e. `direction=NONE`
 
 
-## Why Use Python? Why _Not_ Use {X}?
+## Why Use Python? Why _Not_ Use `{{X}}`?
 
 Custom IC design is a complicated field. Its practitioners have to know a lot of stuff, independent of any programming background. Many have little or no programming experience at all. 
 
@@ -1528,11 +1526,11 @@ Each SPICE-class simulator, LVS-checker, and most other EDA tools requiring circ
 
 ### (System)Verilog, VHDL, other Existing Dedicated HDLs
 
-The industry's primary, 80s-born digital HDLs Verilog and VHDL have more of the good stuff we want here - notably an open, text-based format, and a more reasonable level of parametrization. And they have the desirable trait of being primary input to the EDA industry's core tools. They nonetheless lack the levels of programmability we desire. And they generally require one of those EDA tools to execute and do, well, much of anything. Parsing and manipulating them is well-renowned for requiring a high pain tolerance. Again Hdl21 sees these as export formats. Verilog is supported as a first-class target by the VLSIR export pipeline. 
+The industry's primary, 80s-born digital HDLs Verilog and VHDL have more of the good stuff we want here - notably an open, text-based format, and a more reasonable level of parameterization. And they have the desirable trait of being primary input to the EDA industry's core tools. They nonetheless lack the levels of programmability we desire. And they generally require one of those EDA tools to execute and do, well, much of anything. Parsing and manipulating them is well-renowned for requiring a high pain tolerance. Again Hdl21 sees these as export formats. Verilog is supported as a first-class target by the VLSIR export pipeline. 
 
 ### Chisel
 
-Explicitly designed for digital-circuit generators at the same home as Hdl21 (UC Berkeley), [Chisel](https://www.chisel-lang.org/) [@chisel12] encodes RTL-level hardware in Scala-language classes. It's the closest of the alternatives in spirit to Hdl21. And it's a ways more mature. If you want big, custom, RTL-level circuits - processors, full SoCs, and the like - you should probably turn to Chisel instead. Chisel makes a number of decisions that make it less desirable for custom circuits, and have accordingly kept their designers' hands-off.
+Explicitly designed for digital-circuit generators at the same home as Hdl21 (UC Berkeley), [Chisel](https://www.chisel-lang.org/) [@chisel12] encodes RTL-level hardware in Scala-language classes. It's the closest of the alternatives in spirit to Hdl21. And it's a ways more mature. If you want big, custom, RTL-level circuits - processors, full SoCs, and the like - you should probably turn to Chisel instead. Chisel makes a number of decisions that make it less desirable for custom circuits.
 
 The Chisel library's primary goal is producing a compiler-style intermediate representation (FIRRTL) to be manipulated by a series of compiler-style passes. We like the compiler-style IR, as evidenced by the content of Chapter 2. But custom circuits really don't want that compiler. The point of designing custom circuits is dictating exactly what comes out - the compiler _output_. The compiler is, at best, in the way.
 
@@ -1544,7 +1542,7 @@ Above all - Chisel is embedded in Scala. It's niche, it's complicated, it's subt
 
 ### Other Fancy Modern HDLs
 
-Many recent hardware-description projects have taken (and in many cases, helped inspire) Hdl21's big-picture approach - embedding hardware idioms as a library in a modern programming language. Most focus on logical and/or RTL-level descriptions, unlike Hdl21's structural, custom, and analog focus. Like CHISEL, they are likely better choices for other (large) classes of circuits. These libraries include:
+Many recent hardware-description projects have taken (and in many cases, helped inspire) Hdl21's big-picture approach - embedding hardware idioms as a library in a modern programming language. Most focus on logical and/or RTL-level descriptions, unlike Hdl21's structural, custom, and analog focus. Like Chisel, they are likely better choices for other (large) classes of circuits. These libraries include:
 
 - [SpinalHDL](https://github.com/SpinalHDL/SpinalHDL)
 - [MyHDL](http://www.myhdl.org/)
@@ -1868,7 +1866,7 @@ The complete element library is shown in Figure~\ref{fig:schematic-symbols}.
 \end{figure}
 
 
-Symbols are technology agnostic. They do not correspond to a particular device from a particular PDK. Nor to a particular device-name in an eventual netlist. Symbols solely dictate:
+Symbols are technology agnostic. They do not correspond to a particular device from a particular PDK. Nor to a particular device name in an eventual netlist. Symbols solely dictate:
 
 - How the element looks in the "schematic picture"
 - Its port list
@@ -1999,7 +1997,6 @@ def import_schematic(path: Path) -> SimpleNamespace
 
 Both `import_schematic` and the `import` keyword override return a standard-library `SimpleNamespace` representing the "schematic module". A central attribute of this module is the generator function, which often has the same name as the schematic file. The `Params` type and all other identifiers defined or imported by the schematic's code-prelude are also available as attributes in this namespace.
 
----
 
 ## The SVG Schematic Schema
 
@@ -2012,9 +2009,7 @@ Note the graphical schematic _editor_ is a special case which combines _both_ us
 
 This section describes the schematic-schema as interpreted for use case (2), as a circuit. 
 
-### `Schematic`
-
-#### SVG Root Element
+### `Schematic` SVG Root Element
 
 Each `Schematic` is represented by an SVG element beginning with `<svg>` and ending with `</svg>`, commonly stored in a file with the `.sch.svg` extension.
 
@@ -2140,7 +2135,7 @@ The three child elements are required to be stored in the order (symbol, name, o
 
 SVG schematics instantiate circuit elements from a library of pre-defined symbols. Any paired schematic importer must be aware of this library's contents, as it dictates much of the schematic's connectivity.
 
-The `kind` field of each `Instance` serves as a reference to a `Element` type. Each `Element` consists of:
+The `kind` field of each `Instance` serves as a reference to its `Element`. Each `Element` consists of:
 
 - The symbol "picture", and
 - A list of named, located ports
@@ -2180,7 +2175,7 @@ An example `Wire`:
 </g>
 ```
 
-Wire vertices are dictated by the SVG `path`'s `d` attributes. Each wire vertex must be located on the schematic's 10x10 pixel grid. Each wire segment must meet "Manhattan" orthogonal routing style, i.e. each point must have either an x or y coordinate equal to that of the previous point. Wire paths are _open_ in the SVG sense; there is no implicit segment from the final point back to the first.
+Wire vertices are dictated by the SVG `path`'s `d` attributes. Each wire vertex must be located on the schematic's 10x10 pixel grid. Each wire segment must use a "Manhattan" orthogonal routing style, i.e. each point must have either an x or y coordinate equal to that of the previous point. Wire paths are _open_ in the SVG sense; there is no implicit segment from the final point back to the first.
 
 Wire-names serve as the mechanism for schematic "connections by name". Any two wires with the same name shall be considered connected. There is one special `wire-name` value: the empty string, which implies that (a) the wire's is not explicitly set, and (b) importers shall assign it a net-name consistent with any other connected element, e.g. a `Port` or another `Wire`.
 
@@ -2250,7 +2245,7 @@ Differences between the inferred and stored dot locations are logged and reporte
 
 The "right" way to draw schematics is a popular topic among practitioners. (Engineers also love to argue about "right ways" to write software, draw layout, eat ice cream, etc; this one is no different.) Hdl21 schematics have an opinionated author whose opinions are, to some extent, embedded in their design. Some of those opinions are more popular than others. 
 
-The schematic-system's central premise - designing schematics into a general-purpose image format, renderable on platforms such as GitHub - has proven uncontroversial. Other design decisions have generated more contention. 
+The schematic system's central premise - designing schematics into a general-purpose image format, renderable on platforms such as GitHub - has proven uncontroversial. Other design decisions have generated more contention. 
 
 The first is the system's level of pairing with Hdl21. (This extends all the way to their name.) The goal of making schematics "graphical code modules", designed to be easily imported into an otherwise code-forward design flow, is not necessarily limited to Hdl21. Obvious alternatives would include connectivity to popular HDLs such as Verilog, or to more mature modern HDLs such as Chisel. 
 
@@ -2264,7 +2259,7 @@ The second (and more contentious) topic of contention is Hdl21 schematics' refus
 
 This was an intentional choice, in furtherance of the goal to "make making the good schematics easy, and make making the bad schematics hard". Schematics tend to be worth more than the paper they're printed on when typical practitioners (other than their authors) understand their contents. A necessary condition is recognizing the symbols. There are relatively few elements which have both (a) pictorial symbols widely understood by the field, and (b) an uncontroversial set of ports. They are the elements of the Hdl21 schematic library. A wider set of elements - op-amps, oscillators, flip-flops, and the like - meet criteria (a), but have a wide diversity of IO interfaces. In Hdl21 schematics (as in all other schematic-systems of which we are aware), symbols dictate instance port-lists. 
 
-Disallowing symbol-based hierarchy has a side benefit: it's much more straightforward to confine a schematic to a single SVG file. This single-file property is a large part of what makes schematics renderable by existing platforms such as GitHub. But we _could_ make it work, I guess. Each schematic would be required to include the symbol-picture of every symbol that it instantiates, as they currently do for any primitive elements they instantiate. And the graphical editor would need to be, or at least desirably would be, edited to comprehend the links between schematics and symbols representing the same circuits. Just where this linkage would lie - within SVG content, or as separate "database metadata" - would remain to be seen. Comprehending schematics as circuits, as by importer programs, would desirably find this structure as straightforwardly as possible. ^[The SVG specification includes a paired definitions (`<defs>`) section and `<use>` element, intended for instantiation of repeated content. In principle this would be a desirable place to hold Hdl21 schematics' element symbol definitions. Doing so would save space in the hypertext content. Sadly we (very quickly) found that the `<defs>` and `<use>` elements are not supported by popular platforms which shall not be named, such as GitHub.]
+Disallowing symbol-based hierarchy has a side benefit: it's much more straightforward to confine a schematic to a single SVG file. This single-file property is a large part of what makes schematics renderable by existing platforms such as GitHub. But we _could_ make it work, I guess. Each schematic would be required to include the symbol-picture of every symbol that it instantiates, as they currently do for any primitive elements they instantiate. And the graphical editor would need to be, or at least desirably would be, updated to comprehend the links between schematics and symbols representing the same circuits. Just where this linkage would lie - within SVG content, or as separate "database metadata" - would remain to be seen. Comprehending schematics as circuits, as by importer programs, would desirably find this structure as straightforwardly as possible. ^[The SVG specification includes a paired definitions (`<defs>`) section and `<use>` element, intended for instantiation of repeated content. In principle this would be a desirable place to hold Hdl21 schematics' element symbol definitions. Doing so would save space in the hypertext content. Sadly we (very quickly) found that the `<defs>` and `<use>` elements are not supported by popular platforms which shall not be named, such as GitHub.]
 
 
 # Programming Models for IC Layout
@@ -3061,7 +3056,7 @@ class Walker(h.HierarchyWalker):
         return stack
 ```
 
-A paired `Stack` generator produces a series-stack of `nser` identical unit transistors. `Stack` accepts its unit transistor module as a parameter (i.e. it uses a control-inversion parameter) to allow MOS stacks of any technology or PDK. Notably these include the simulation and LVS-compatible versions of the target technology. 
+A paired `Stack` generator produces a series-stack of `nser` identical unit transistors. `Stack` accepts its unit transistor module as a parameter (i.e. it uses a control inversion parameter) to allow MOS stacks of any technology or PDK. Notably these include the simulation and LVS-compatible versions of the target technology. 
 
 ```python
 @h.paramclass
@@ -3098,7 +3093,7 @@ def Stack(p: StackParams) -> h.Module:
 
 Hdl21's embedding of hardware generation-code among its background compilation processes allows for the creation of modules such as `Stack` inline. The AlignHdl21 PDK compiler does so for each instance of an ALIGN-compatible series-stacked FinFET which it must convert into an LVS or simulation-compatible replacement. 
 
-This sort of re-use across compilation targets was a central goal of the CHISEL and FIRRTL projects. In their case, output targets tend to be digital implementation platforms: FPGAs, ASIC back-end flows, or RTL simulation models. In Hdl21 they are process technologies, or as in this case, subsets of models within a process technology targeting different verification tasks.
+This sort of re-use across compilation targets was a central goal of the Chisel and FIRRTL projects. In their case, output targets tend to be digital implementation platforms: FPGAs, ASIC back-end flows, or RTL simulation models. In Hdl21 they are process technologies, or as in this case, subsets of models within a process technology targeting different verification tasks.
 
 
 # Applications
@@ -3168,7 +3163,7 @@ def RoStage(params: RoStageParams) -> h.Module:
     return RoStage
 ```
 
-Like most of the ADC's circuits, the RO stages are designed to be process portable through the use of control-inversion parameters. A separate technology-specific invocation program applies PDK-compatible devices as parameters to these generators. 
+Like most of the ADC's circuits, the RO stages are designed to be process portable through the use of control inversion parameters. A separate technology-specific invocation program applies PDK-compatible devices as parameters to these generators. 
 
 The `RoStage`  unit inverter module `uinv` is arrayed twice in positive feedback and two times a parametric coupling `ratio` in the forward configuration. In each oscillator the value of this `ratio` is set four.
 
@@ -3544,9 +3539,9 @@ The designer-agent has a discrete action-space highly similar to that available 
 
 Each (but the last) has a small parameter-space:
 
-- Adding a device is parametrized by a device-type, represented as an integer "device type ID".
+- Adding a device is parameterized by a device-type, represented as an integer "device type ID".
 - Each constraint-set, generally via an underlying implementation-technology component, includes a valid set of devices. Selecting an invalid device-type incurs the minimum reward, and does not modify the circuit.
-- Changing a port-connection is parametrized by three integer values: (a) an instance reference, denoted as an index in the circuit component-list, (b) a port-reference, again represented as an integer, and (c) the net to be connected, again denoted as an integer, as common in SPICE-netlist-style representations. An invalid port-reference incurs the minimum reward, and does not modify the circuit.
+- Changing a port-connection is parameterized by three integer values: (a) an instance reference, denoted as an index in the circuit component-list, (b) a port-reference, again represented as an integer, and (c) the net to be connected, again denoted as an integer, as common in SPICE-netlist-style representations. An invalid port-reference incurs the minimum reward, and does not modify the circuit.
 - Changing a parameter-value has essentially the same three parameters: (instance, param (index), new value). Note this implies that all instance-parameters are integer-valued. An invalid parameter-index again incurs the minimum reward, and does not modify the circuit.
 - The "evaluate" action has no parameters.
 
