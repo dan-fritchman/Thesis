@@ -405,7 +405,7 @@
     \fmfont
     \@title\par
     \vspace{14pt minus 4pt}
-    by \par
+    By \par
     {\@author}\par
     \vspace{28pt minus 8pt}
     A \@dissertation submitted in partial satisfaction of the \par
